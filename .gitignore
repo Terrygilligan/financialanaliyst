@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.cache
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+functions/.env
+
+# Build outputs
+functions/lib/
+*.js.map
+dist/
+build/
+*.log
+
+# Firebase cache
+.firebase/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Test files
+coverage/
+.nyc_output/
+
+# Large files that shouldn't be in repo
+*.pdf
+*.mp3
+*.mp4
+*.zip
+*.tar.gz
+
+# Generated icons - keep these in repo
+# public/icon-192.png
+# public/icon-512.png
+
+# Documentation that might be temporary
+# Keep README.md and TODO.md, but ignore other markdown files if needed
+# *.md

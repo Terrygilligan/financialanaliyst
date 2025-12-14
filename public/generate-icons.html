@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate PWA Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            margin: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .preview {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        .info {
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>💰 AI Financial Analyst - Icon Generator</h1>
+    <div class="info">
+        <p><strong>Instructions:</strong></p>
+        <p>Click "Generate Icons" to create and download both icon files.</p>
+        <p>Then move the downloaded files to the <code>public/</code> folder.</p>
+    </div>
+    
+    <div class="preview">
+        <div>
+            <canvas id="canvas192" width="192" height="192"></canvas>
+            <p>192x192</p>
+        </div>
+        <div>
+            <canvas id="canvas512" width="512" height="512"></canvas>
+            <p>512x512</p>
+        </div>
+    </div>
+    
+    <button onclick="generateIcons()">Generate & Download Icons</button>
+    <p id="status"></p>
+    
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Background - gradient blue
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#4285f4');
+            gradient.addColorStop(1, '#3367d6');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Add rounded corners effect (visual only, PNG will be square)
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Draw money/analyst icon - simple dollar sign
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = size * 0.08;
+            
+            // Dollar sign
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.25;
+            
+            // Draw S shape (simplified dollar sign)
+            ctx.font = `bold ${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', centerX, centerY);
+            
+            // Add a subtle circle around it
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = size * 0.02;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 1.3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        function downloadIcon(canvas, filename) {
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        function generateIcons() {
+            const canvas192 = document.getElementById('canvas192');
+            const canvas512 = document.getElementById('canvas512');
+            const status = document.getElementById('status');
+            
+            // Draw icons
+            drawIcon(canvas192, 192);
+            drawIcon(canvas512, 512);
+            
+            // Download icons
+            status.textContent = 'Generating icons...';
+            
+            setTimeout(() => {
+                downloadIcon(canvas192, 'icon-192.png');
+                setTimeout(() => {
+                    downloadIcon(canvas512, 'icon-512.png');
+                    status.textContent = '✅ Icons generated! Check your downloads folder. Move them to the public/ folder.';
+                    status.style.color = '#34a853';
+                }, 500);
+            }, 500);
+        }
+        
+        // Draw preview on load
+        window.addEventListener('load', () => {
+            drawIcon(document.getElementById('canvas192'), 192);
+            drawIcon(document.getElementById('canvas512'), 512);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="AI Financial Analyst - Automatically extract and organize receipt data">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>AI Financial Analyst</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+
+        // Make available globally
+        window.firebase = { app, auth, storage, db };
+    </script>
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 AI Financial Analyst</h1>
+            <div id="auth-section">
+                <div id="user-info" style="display: none;">
+                    <span id="user-email"></span>
+                    <button id="logout-btn" class="btn-secondary">Logout</button>
+                </div>
+                <div id="login-section">
+                    <a href="login.html" class="btn-primary" style="text-decoration: none; display: inline-block;">Login</a>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" style="display: none;">
+            <section class="upload-section">
+                <h2>Upload Receipt</h2>
+                <label for="file-input" class="upload-area" id="upload-area">
+                    <div class="upload-content">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Drag and drop your receipt image here</p>
+                        <p class="upload-hint">or tap to browse</p>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                </label>
+                <div id="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p id="upload-status">Uploading...</p>
+                </div>
+            </section>
+
+            <section class="status-section">
+                <h2>Processing Status</h2>
+                <div id="status-container">
+                    <p class="status-message" id="status-message">No uploads yet. Upload a receipt to get started!</p>
+                </div>
+            </section>
+
+            <section class="history-section">
+                <h2>Upload History</h2>
+                <div id="history-container">
+                    <p class="empty-state">No upload history yet.</p>
+                </div>
+            </section>
+        </main>
+
+        <div id="login-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <input type="email" id="email-input" placeholder="Email" required>
+                    <input type="password" id="password-input" placeholder="Password" required>
+                    <button type="submit" class="btn-primary">Login</button>
+                    <div class="divider">
+                        <span>or</span>
+                    </div>
+                    <button type="button" id="google-login-btn" class="btn-google">
+                        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.712s.102-1.172.282-1.712V4.956H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.044l3.007-2.332z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+                    <button type="button" id="signup-toggle" class="btn-link">Don't have an account? Sign up</button>
+                </form>
+                <form id="signup-form" style="display: none;">
+                    <input type="email" id="signup-email" placeholder="Email" required>
+                    <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required>
+                    <button type="submit" class="btn-primary">Sign Up</button>
+                    <div class="divider">
+                        <span>or</span>
+                    </div>
+                    <button type="button" id="google-signup-btn" class="btn-google">
+                        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.712s.102-1.172.282-1.712V4.956H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.044l3.007-2.332z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+                    <button type="button" id="login-toggle" class="btn-link">Already have an account? Login</button>
+                </form>
+                <button id="close-modal" class="btn-close">×</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
