@@ -34,7 +34,7 @@ Then update `firebase.json` to use secrets.
 3. Click **Edit**
 4. Go to **Runtime, build, connections and security settings**
 5. Add environment variables:
-   - `GOOGLE_SHEET_ID` = `1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos`
+   - `GOOGLE_SHEET_ID` = `your-google-sheet-id-here`
    - `GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY` = (paste the JSON string)
    - `GEMINI_API_KEY` = (your API key)
 

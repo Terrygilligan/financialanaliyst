@@ -23,7 +23,7 @@ The Google Sheet isn't updating because **environment variables are not availabl
 
    **Variable 1:**
    - Name: `GOOGLE_SHEET_ID`
-   - Value: `1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos`
+   - Value: `your-google-sheet-id-here`
 
    **Variable 2:**
    - Name: `GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY`

@@ -17,7 +17,7 @@ Your `.env` file should contain:
 
 ```env
 # Gemini API Configuration
-GEMINI_API_KEY=AIzaSyAm26HDnJPOwcwSJE8TTn7zEObQE7yr-PY
+GEMINI_API_KEY=your-gemini-api-key-here
 GEMINI_MODEL=gemini-1.5-flash
 
 # Google Sheets Configuration
@@ -58,7 +58,7 @@ $json = Get-Content "path\to\sheets-writer-key.json" -Raw | ConvertFrom-Json | C
 
 ```env
 # Gemini API Configuration
-GEMINI_API_KEY=AIzaSyAm26HDnJPOwcwSJE8TTn7zEObQE7yr-PY
+GEMINI_API_KEY=your-gemini-api-key-here
 GEMINI_MODEL=gemini-1.5-flash
 
 # Google Sheets Configuration
