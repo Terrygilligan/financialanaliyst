@@ -60,10 +60,11 @@ export const archiveData = onCall(
         try {
             // Archive old batches
             const batchesSnapshot = await db.collection('batches').get();
-            const batch = db.batch();
+            let currentBatch = db.batch();
             let batchCount = 0;
 
-            batchesSnapshot.forEach((doc) => {
+            // Use for...of instead of forEach to properly handle async operations
+            for (const doc of batchesSnapshot.docs) {
                 const data = doc.data();
                 const timestamp = data.timestamp ? new Date(data.timestamp) : null;
 
@@ -71,14 +72,14 @@ export const archiveData = onCall(
                     if (!dryRun) {
                         // Move to archive collection
                         const archiveRef = db.collection('archive_batches').doc(doc.id);
-                        batch.set(archiveRef, {
+                        currentBatch.set(archiveRef, {
                             ...data,
                             archivedAt: new Date().toISOString(),
                             archivedBy: callerUid
                         });
 
                         // Delete from active collection
-                        batch.delete(doc.ref);
+                        currentBatch.delete(doc.ref);
                     }
                     archiveSummary.archivedBatches++;
                     batchCount++;
@@ -86,25 +87,28 @@ export const archiveData = onCall(
                     // Commit in batches of 500 (Firestore limit)
                     if (batchCount >= 500) {
                         if (!dryRun) {
-                            batch.commit();
+                            await currentBatch.commit();
+                            // Create a new batch for the next set of operations
+                            currentBatch = db.batch();
                         }
                         batchCount = 0;
                     }
                 }
-            });
+            }
 
             // Commit remaining batches
             if (batchCount > 0 && !dryRun) {
-                await batch.commit();
+                await currentBatch.commit();
             }
 
             // Archive old receipts (if /receipts collection exists)
             try {
                 const receiptsSnapshot = await db.collection('receipts').get();
-                const receiptBatch = db.batch();
+                let currentReceiptBatch = db.batch();
                 let receiptCount = 0;
 
-                receiptsSnapshot.forEach((doc) => {
+                // Use for...of instead of forEach to properly handle async operations
+                for (const doc of receiptsSnapshot.docs) {
                     const data = doc.data();
                     const createdAt = data.createdAt ? new Date(data.createdAt) : null;
 
@@ -112,14 +116,14 @@ export const archiveData = onCall(
                         if (!dryRun) {
                             // Move to archive collection
                             const archiveRef = db.collection('archive_receipts').doc(doc.id);
-                            receiptBatch.set(archiveRef, {
+                            currentReceiptBatch.set(archiveRef, {
                                 ...data,
                                 archivedAt: new Date().toISOString(),
                                 archivedBy: callerUid
                             });
 
                             // Delete from active collection
-                            receiptBatch.delete(doc.ref);
+                            currentReceiptBatch.delete(doc.ref);
                         }
                         archiveSummary.archivedReceipts++;
                         receiptCount++;
@@ -127,16 +131,18 @@ export const archiveData = onCall(
                         // Commit in batches of 500
                         if (receiptCount >= 500) {
                             if (!dryRun) {
-                                receiptBatch.commit();
+                                await currentReceiptBatch.commit();
+                                // Create a new batch for the next set of operations
+                                currentReceiptBatch = db.batch();
                             }
                             receiptCount = 0;
                         }
                     }
-                });
+                }
 
                 // Commit remaining receipts
                 if (receiptCount > 0 && !dryRun) {
-                    await receiptBatch.commit();
+                    await currentReceiptBatch.commit();
                 }
             } catch (error) {
                 // /receipts collection might not exist yet, that's okay
