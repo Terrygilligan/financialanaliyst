@@ -305,5 +305,8 @@ export { archiveData } from "./archive";
 // Phase 2.1: Finalize receipt function
 export { finalizeReceipt } from "./finalize";
 
+// Phase 2.2: Category management functions
+export { getCategories, createCategory, updateCategory, deleteCategory } from "./categories";
+
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.

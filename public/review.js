@@ -40,6 +40,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cancelReviewBtn = document.getElementById('cancel-review-btn');
     const reviewForm = document.getElementById('review-form');
     const finalizeBtn = document.getElementById('finalize-btn');
+    const reviewCategorySelect = document.getElementById('review-category');
+
+    // Load categories
+    let categories = [];
+    async function loadCategories() {
+        try {
+            const getCategories = httpsCallable(functions, 'getCategories');
+            const result = await getCategories();
+            if (result.data.success) {
+                categories = result.data.categories || [];
+                populateCategoryDropdown();
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            // Fall back to default categories
+            categories = [
+                { name: 'Maintenance' },
+                { name: 'Cleaning Supplies' },
+                { name: 'Utilities' },
+                { name: 'Supplies' },
+                { name: 'Other' }
+            ];
+            populateCategoryDropdown();
+        }
+    }
+
+    function populateCategoryDropdown() {
+        if (!reviewCategorySelect) return;
+        
+        // Clear existing options except the first one
+        reviewCategorySelect.innerHTML = '<option value="">Select a category...</option>';
+        
+        // Add categories
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = category.name;
+            reviewCategorySelect.appendChild(option);
+        });
+    }
+
+    // Load categories on page load
+    loadCategories();
 
     // Check if user is admin via custom claims
     let isAdmin = false;
