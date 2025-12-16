@@ -248,10 +248,14 @@ To test the application:
 
 ## 📚 Documentation
 
+- **📖 [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** ⭐ **Master Index** - Complete guide to all documentation
+- **👤 [USER_GUIDE.md](USER_GUIDE.md)** - Complete user guide for end users
+- **👨‍💼 [ADMIN_GUIDE.md](ADMIN_GUIDE.md)** - Complete admin guide for administrators
 - **SETUP.md** - Complete backend setup instructions
 - **ENV_SETUP.md** - Environment variables configuration
 - **NEXT_STEPS.md** - Google Sheet setup guide
 - **BACKEND_SETUP_CHECKLIST.md** - Quick setup checklist
+- **ADMIN_AND_PROFILE_PLAN.md** - Admin Dashboard & User Profile plan (consolidated)
 
 ## 🛠️ Development
 
@@ -291,13 +295,37 @@ firebase functions:log --project financialanaliyst
 **Region**: `us-central1`  
 **Storage Bucket**: `financialanaliyst.firebasestorage.app`
 
+## 🌿 Branch Workflow (SME Automation Upgrade)
+
+For safe development of new features without breaking production:
+
+- **Quick Start**: See `QUICK_START_BRANCHES.md`
+- **Full Workflow**: See `BRANCH_WORKFLOW.md`
+- **Helper Script**: Use `.\scripts\git-workflow.ps1` for automated branch operations
+
+### Quick Commands
+
+```powershell
+# Setup feature branch (first time)
+.\scripts\git-workflow.ps1 -Action setup
+
+# Create a phase branch
+.\scripts\git-workflow.ps1 -Action create-phase -Phase "0-security" -Description "Security hardening"
+
+# Merge phase branch back
+.\scripts\git-workflow.ps1 -Action merge-phase -Phase "0-security" -CommitMessage "Phase 0: Security checks"
+```
+
 ## 📞 Support
 
 For issues or questions, refer to:
+- **📖 [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Master documentation index
+- **🚀 [BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** - Master development plan (SME Automation Upgrade)
 - Setup documentation in `SETUP.md`
 - Environment configuration in `ENV_SETUP.md`
 - Next steps in `TODO.md`
+- Branch workflow in `BRANCH_WORKFLOW.md`
 
 ---
 
-**Last Updated**: Full-stack application deployed and operational. Vertex AI integration complete.
+**Last Updated**: Full-stack application deployed and operational. Vertex AI integration complete. Branch workflow documentation added.
