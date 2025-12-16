@@ -21,7 +21,8 @@ const auth = getAuth();
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets"; 
+import { appendReceiptToSheet } from "./sheets";
+import { lookupEntityForUser } from "./entities"; 
 
 /**
  * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
@@ -75,6 +76,10 @@ export const analyzeReceiptUpload = onObjectFinalized(
 
         // 4. Call the core processor function (defined in processor.ts)
         const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+
+        // 4.5. Look up entity for user (Phase 1.1: Entity Tracking)
+        const entityName = await lookupEntityForUser(userId);
+        receiptData.entity = entityName;
 
         // 5. Append data to Google Sheets (Steps 8-9)
         const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -260,6 +265,9 @@ export const removeAdminClaim = onCall(
         }
     }
 );
+
+// Phase 1.3: Archive function
+export { archiveData } from "./archive";
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.

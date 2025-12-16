@@ -20,6 +20,7 @@ export interface ReceiptData {
     totalAmount: number;
     category: Category;
     timestamp: string; // ISO 8601 timestamp of when the function ran
+    entity?: string; // Optional: Entity name (e.g., "Entity A", "Unassigned")
 }
 
 /**
