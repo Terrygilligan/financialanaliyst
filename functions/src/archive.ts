@@ -61,7 +61,8 @@ export const archiveData = onCall(
             // Archive old batches
             const batchesSnapshot = await db.collection('batches').get();
             let currentBatch = db.batch();
-            let batchCount = 0;
+            let operationCount = 0; // Track operations, not documents (each doc = 2 ops: set + delete)
+            const MAX_BATCH_OPERATIONS = 500; // Firestore batch limit
 
             // Use for...of instead of forEach to properly handle async operations
             for (const doc of batchesSnapshot.docs) {
@@ -70,7 +71,7 @@ export const archiveData = onCall(
 
                 if (timestamp && timestamp < archiveDate) {
                     if (!dryRun) {
-                        // Move to archive collection
+                        // Move to archive collection (operation 1)
                         const archiveRef = db.collection('archive_batches').doc(doc.id);
                         currentBatch.set(archiveRef, {
                             ...data,
@@ -78,26 +79,27 @@ export const archiveData = onCall(
                             archivedBy: callerUid
                         });
 
-                        // Delete from active collection
+                        // Delete from active collection (operation 2)
                         currentBatch.delete(doc.ref);
+                        operationCount += 2; // Each document = 2 operations
                     }
                     archiveSummary.archivedBatches++;
-                    batchCount++;
 
-                    // Commit in batches of 500 (Firestore limit)
-                    if (batchCount >= 500) {
+                    // Commit when approaching Firestore's 500-operation limit
+                    // We commit at 500 to stay within limit (each doc = 2 ops, so 250 docs max)
+                    if (operationCount >= MAX_BATCH_OPERATIONS) {
                         if (!dryRun) {
                             await currentBatch.commit();
                             // Create a new batch for the next set of operations
                             currentBatch = db.batch();
                         }
-                        batchCount = 0;
+                        operationCount = 0;
                     }
                 }
             }
 
             // Commit remaining batches
-            if (batchCount > 0 && !dryRun) {
+            if (operationCount > 0 && !dryRun) {
                 await currentBatch.commit();
             }
 
@@ -105,7 +107,8 @@ export const archiveData = onCall(
             try {
                 const receiptsSnapshot = await db.collection('receipts').get();
                 let currentReceiptBatch = db.batch();
-                let receiptCount = 0;
+                let receiptOperationCount = 0; // Track operations, not documents (each doc = 2 ops: set + delete)
+                const MAX_BATCH_OPERATIONS = 500; // Firestore batch limit
 
                 // Use for...of instead of forEach to properly handle async operations
                 for (const doc of receiptsSnapshot.docs) {
@@ -114,7 +117,7 @@ export const archiveData = onCall(
 
                     if (createdAt && createdAt < archiveDate) {
                         if (!dryRun) {
-                            // Move to archive collection
+                            // Move to archive collection (operation 1)
                             const archiveRef = db.collection('archive_receipts').doc(doc.id);
                             currentReceiptBatch.set(archiveRef, {
                                 ...data,
@@ -122,26 +125,27 @@ export const archiveData = onCall(
                                 archivedBy: callerUid
                             });
 
-                            // Delete from active collection
+                            // Delete from active collection (operation 2)
                             currentReceiptBatch.delete(doc.ref);
+                            receiptOperationCount += 2; // Each document = 2 operations
                         }
                         archiveSummary.archivedReceipts++;
-                        receiptCount++;
 
-                        // Commit in batches of 500
-                        if (receiptCount >= 500) {
+                        // Commit when approaching Firestore's 500-operation limit
+                        // We commit at 500 to stay within limit (each doc = 2 ops, so 250 docs max)
+                        if (receiptOperationCount >= MAX_BATCH_OPERATIONS) {
                             if (!dryRun) {
                                 await currentReceiptBatch.commit();
                                 // Create a new batch for the next set of operations
                                 currentReceiptBatch = db.batch();
                             }
-                            receiptCount = 0;
+                            receiptOperationCount = 0;
                         }
                     }
                 }
 
                 // Commit remaining receipts
-                if (receiptCount > 0 && !dryRun) {
+                if (receiptOperationCount > 0 && !dryRun) {
                     await currentReceiptBatch.commit();
                 }
             } catch (error) {
