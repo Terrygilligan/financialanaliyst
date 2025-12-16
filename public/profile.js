@@ -32,8 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const avatarInitial = document.getElementById('avatar-initial');
     const logoutBtn = document.getElementById('logout-btn');
     const backBtn = document.getElementById('back-btn');
-    const userInfo = document.getElementById('user-info');
-    const loginSection = document.getElementById('login-section');
     const totalReceipts = document.getElementById('total-receipts');
     const totalAmount = document.getElementById('total-amount');
     const successRate = document.getElementById('success-rate');
@@ -72,21 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             // User is signed in and verified
-            userInfo.style.display = 'flex';
-            loginSection.style.display = 'none';
             await loadProfileData(user);
             const isAdmin = await checkAdminStatus(user);
             if (isAdmin) {
                 adminLinkContainer.style.display = 'inline';
             }
         } else {
-            // User is signed out - show login section
-            userInfo.style.display = 'none';
-            loginSection.style.display = 'block';
-            // Redirect to login after a moment
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1000);
+            // User is signed out - redirect to login
+            window.location.href = 'login.html';
         }
     });
 
@@ -230,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${item.receipt.category ? `<span>Category: ${item.receipt.category}</span>` : ''}
                         </div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
-                            ${timestamp.toLocaleString()}
+                            ${item.timestamp.toLocaleString()}
                         </div>
                     </div>
                     <span class="file-status ${item.status}">${item.status}</span>

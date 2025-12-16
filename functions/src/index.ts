@@ -189,8 +189,12 @@ export const setAdminClaim = onCall(
                     }
                 }
             } catch (error) {
+                // Re-throw authorization errors instead of silently suppressing them
+                if (error instanceof Error && error.message.includes("Only existing admins")) {
+                    throw error;
+                }
                 console.error("Error checking caller admin status:", error);
-                // For initial setup, allow the call
+                // For initial setup, allow the call only for non-authorization errors
             }
         }
 
@@ -227,17 +231,19 @@ export const removeAdminClaim = onCall(
             throw new Error("User UID is required");
         }
 
-        // Verify caller is admin
+        // Verify caller is authenticated and is admin
         const callerUid = request.auth?.uid;
-        if (callerUid) {
-            try {
-                const caller = await auth.getUser(callerUid);
-                if (!caller.customClaims?.admin) {
-                    throw new Error("Only admins can remove admin privileges");
-                }
-            } catch (error) {
-                throw new Error("Unauthorized: Admin privileges required");
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+        
+        try {
+            const caller = await auth.getUser(callerUid);
+            if (!caller.customClaims?.admin) {
+                throw new Error("Only admins can remove admin privileges");
             }
+        } catch (error) {
+            throw new Error("Unauthorized: Admin privileges required");
         }
 
         try {
