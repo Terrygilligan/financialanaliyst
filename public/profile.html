@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="User Profile - AI Financial Analyst">
+    <title>My Profile - AI Financial Analyst</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+
+        // Make available globally
+        window.firebase = { app, auth, storage, db };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                <button id="back-btn" class="btn-back" title="Go back to home" style="display: flex;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    <span style="margin-left: 8px;">Back</span>
+                </button>
+                <h1 style="margin: 0;">👤 My Profile</h1>
+            </div>
+            <div id="auth-section">
+                <div id="user-info" style="display: none;">
+                    <nav class="nav-links">
+                        <a href="/index.html" class="nav-link" id="home-link">Home</a>
+                        <a href="/profile.html" class="nav-link active">Profile</a>
+                        <span id="admin-link-container" style="display: none;">
+                            <a href="/admin.html" class="nav-link admin-link">Admin</a>
+                        </span>
+                    </nav>
+                    <button id="logout-btn" class="btn-secondary">Logout</button>
+                </div>
+                <div id="login-section" style="display: none;">
+                    <a href="/login.html" class="btn-primary" style="text-decoration: none; display: inline-block;">Login</a>
+                </div>
+            </div>
+        </header>
+
+        <main id="main-content" style="display: none;">
+            <!-- User Information Section -->
+            <section class="profile-section">
+                <h2>Account Information</h2>
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="profile-avatar">
+                            <span id="avatar-initial">U</span>
+                        </div>
+                        <div class="profile-details">
+                            <h3 id="user-email-display">Loading...</h3>
+                            <p class="profile-meta" id="account-created">Account created: Loading...</p>
+                            <div class="verification-badge" id="verification-badge">
+                                <span id="verification-status">Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section class="profile-section">
+                <h2>Your Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-value" id="total-receipts">0</div>
+                        <div class="stat-label">Total Receipts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value" id="total-amount">$0.00</div>
+                        <div class="stat-label">Total Amount</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="success-rate">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="recent-activity">0</div>
+                        <div class="stat-label">Recent Uploads</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Receipt History Section -->
+            <section class="profile-section">
+                <h2>Receipt History</h2>
+                <div id="receipt-history-container">
+                    <p class="empty-state">Loading receipt history...</p>
+                </div>
+            </section>
+
+            <!-- Account Actions Section -->
+            <section class="profile-section">
+                <h2>Account Actions</h2>
+                <div class="action-buttons">
+                    <button id="change-password-btn" class="btn-secondary" style="display: none;">
+                        Change Password
+                    </button>
+                    <button id="resend-verification-btn" class="btn-secondary" style="display: none;">
+                        Resend Verification Email
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Change Password Modal -->
+        <div id="change-password-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Change Password</h2>
+                <form id="change-password-form">
+                    <input type="password" id="current-password" placeholder="Current Password" required>
+                    <input type="password" id="new-password" placeholder="New Password (min 6 characters)" required>
+                    <input type="password" id="confirm-password" placeholder="Confirm New Password" required>
+                    <div id="password-error" class="error-message" style="display: none;"></div>
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn-primary">Change Password</button>
+                        <button type="button" id="cancel-password-btn" class="btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="profile.js"></script>
+</body>
+</html>

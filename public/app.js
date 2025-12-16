@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         onAuthStateChanged 
     } = authModule;
     const { ref, uploadBytesResumable } = storageModule;
-    const { doc, setDoc, getDoc, onSnapshot } = firestoreModule;
+    const { doc, setDoc, getDoc, onSnapshot, collection, getDocs } = firestoreModule;
 
     const { auth, storage, db } = window.firebase;
     const googleProvider = new GoogleAuthProvider();
@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loginToggle = document.getElementById('login-toggle');
     const signupToggle = document.getElementById('signup-toggle');
     const mainContent = document.getElementById('main-content');
-    const userEmail = document.getElementById('user-email');
     const userInfo = document.getElementById('user-info');
     const loginSection = document.getElementById('login-section');
     const uploadArea = document.getElementById('upload-area');
@@ -48,8 +47,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusContainer = document.getElementById('status-container');
     const historyContainer = document.getElementById('history-container');
 
+    // Check if user is admin via custom claims
+    async function checkAdminStatus(user) {
+        if (!user) return false;
+        
+        // Get the ID token to check custom claims
+        try {
+            const idTokenResult = await user.getIdTokenResult();
+            return idTokenResult.claims.admin === true;
+        } catch (error) {
+            console.error('Error checking admin status:', error);
+            return false;
+        }
+    }
+
     // Authentication State
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             // Check if email is verified
             if (!user.emailVerified) {
@@ -60,11 +73,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             // User is signed in and verified
-            userEmail.textContent = user.email;
             userInfo.style.display = 'flex';
             loginSection.style.display = 'none';
             mainContent.style.display = 'grid';
             loginModal.style.display = 'none';
+            
+            // Check admin status and show admin link
+            const isAdmin = await checkAdminStatus(user);
+            const adminLinkContainer = document.getElementById('admin-link-container');
+            if (isAdmin && adminLinkContainer) {
+                adminLinkContainer.style.display = 'inline';
+            }
         } else {
             // User is signed out - redirect to login page only if not already there
             if (!window.location.pathname.includes('login.html')) {
@@ -277,22 +296,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         uploadStatus.textContent = 'Uploading...';
 
         try {
+            // Ensure we send a contentType so some mobile browsers (camera captures) don't stall
+            const metadata = { contentType: file.type || 'image/jpeg' };
+
             // Upload file
-            const uploadTask = uploadBytesResumable(storageRef, file);
+            const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+            // Detect stalled uploads (common on aggressive blockers)
+            let lastProgress = 0;
+            let stallTimer = setTimeout(() => {
+                if (lastProgress === 0) {
+                    uploadStatus.textContent = 'Still waiting to start... If this stays at 0%, disable tracking protection or try Chrome.';
+                    uploadStatus.style.color = 'var(--warning-color)' || '#d97706';
+                }
+            }, 12000);
 
             // Monitor upload progress
             uploadTask.on('state_changed',
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    lastProgress = progress;
                     progressFill.style.width = progress + '%';
                     uploadStatus.textContent = `Uploading... ${Math.round(progress)}%`;
                 },
                 (error) => {
+                    clearTimeout(stallTimer);
                     console.error('Upload error:', error);
                     uploadStatus.textContent = 'Upload failed: ' + error.message;
                     uploadStatus.style.color = 'var(--error-color)';
                 },
                 async () => {
+                    clearTimeout(stallTimer);
                     // Upload complete
                     uploadStatus.textContent = 'Upload complete! Processing...';
                     uploadStatus.style.color = 'var(--secondary-color)';

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Admin Dashboard - AI Financial Analyst">
+    <title>Admin Dashboard - AI Financial Analyst</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+
+        // Make available globally
+        window.firebase = { app, auth, storage, db };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 Admin Dashboard</h1>
+            <div id="auth-section">
+                <div id="user-info" style="display: none;">
+                    <nav class="nav-links">
+                        <a href="index.html" class="nav-link">Home</a>
+                        <a href="profile.html" class="nav-link">Profile</a>
+                        <a href="admin.html" class="nav-link active admin-link">Admin</a>
+                    </nav>
+                    <button id="logout-btn" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Access Denied -->
+        <div id="access-denied" style="display: none;">
+            <section class="error-section">
+                <h2>Access Denied</h2>
+                <p>You do not have admin privileges to access this page.</p>
+                <a href="index.html" class="btn-primary">Go to Home</a>
+            </section>
+        </div>
+
+        <!-- Admin Content -->
+        <main id="admin-content" style="display: none;">
+            <!-- Statistics Overview -->
+            <section class="admin-section">
+                <h2>System Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-value" id="total-receipts-admin">0</div>
+                        <div class="stat-label">Total Receipts</div>
+                    </div>
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="successful-receipts">0</div>
+                        <div class="stat-label">Successful</div>
+                    </div>
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">❌</div>
+                        <div class="stat-value" id="failed-receipts">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="active-users">0</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value" id="total-amount-admin">$0.00</div>
+                        <div class="stat-label">Total Amount</div>
+                    </div>
+                    <div class="stat-card admin-stat">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-value" id="success-rate-admin">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="admin-section">
+                <h2>Analytics</h2>
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>Receipts by Category</h3>
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Status Distribution</h3>
+                        <canvas id="status-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- All Receipts Viewer -->
+            <section class="admin-section">
+                <h2>All Receipts</h2>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" data-tab="errors">Errors & Unprocessed</button>
+                    <button class="tab-btn" data-tab="all">All Receipts</button>
+                </div>
+                <div class="admin-controls">
+                    <input type="text" id="search-receipts" placeholder="Search by vendor, user, or file..." class="admin-input">
+                    <select id="filter-status" class="admin-select">
+                        <option value="all">All Status</option>
+                        <option value="complete">Complete</option>
+                        <option value="processing">Processing</option>
+                        <option value="error" selected>Error</option>
+                    </select>
+                    <button id="refresh-receipts" class="btn-primary">Refresh</button>
+                </div>
+                <div id="receipts-table-container">
+                    <div class="loading-state">Loading receipts...</div>
+                </div>
+            </section>
+
+            <!-- Error Logs -->
+            <section class="admin-section">
+                <h2>Error Logs</h2>
+                <div id="error-logs-container">
+                    <div class="loading-state">Loading error logs...</div>
+                </div>
+            </section>
+
+            <!-- User Management -->
+            <section class="admin-section">
+                <h2>User Management</h2>
+                <div class="admin-controls">
+                    <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
+                    <button id="refresh-users" class="btn-primary">Refresh</button>
+                </div>
+                <div id="users-container">
+                    <div class="loading-state">Loading users...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

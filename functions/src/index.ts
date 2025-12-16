@@ -6,14 +6,17 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
+import { onCall } from "firebase-functions/v2/https";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
 // Initialize the Firebase Admin SDK once for all functions
 initializeApp();
 const storage = getStorage();
 const db = getFirestore();
+const auth = getAuth();
 
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
@@ -116,6 +119,19 @@ export const analyzeReceiptUpload = onObjectFinalized(
             timestamp: new Date().toISOString()
         }, { merge: true });
 
+        // 7. Update user statistics in /users collection
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+        
+        await userRef.set({
+            totalReceipts: (currentStats.totalReceipts || 0) + 1,
+            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+            lastUpdated: new Date().toISOString(),
+            lastReceiptProcessed: fileName,
+            lastReceiptTimestamp: new Date().toISOString()
+        }, { merge: true });
+
         console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
 
     } catch (error) {
@@ -132,6 +148,112 @@ export const analyzeReceiptUpload = onObjectFinalized(
         }, { merge: true });
     }
 });
+
+/**
+ * Cloud Function: Set Admin Custom Claim
+ * 
+ * This function allows an existing admin (or super-admin) to grant admin privileges
+ * to a user by setting a custom claim on their auth token.
+ * 
+ * Usage (via Firebase Console or HTTP call):
+ * - Call this function with the target user's UID
+ * - Only callable by authenticated users (you can add additional checks)
+ * 
+ * Security: In production, you should add additional checks to ensure only
+ * authorized users can call this function (e.g., check if caller is already admin).
+ */
+export const setAdminClaim = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // Get the target user UID from the request
+        const targetUserId = request.data.uid;
+        
+        if (!targetUserId) {
+            throw new Error("User UID is required");
+        }
+
+        // Optional: Verify the caller is already an admin
+        // For initial setup, you might want to skip this check
+        const callerUid = request.auth?.uid;
+        if (callerUid) {
+            try {
+                const caller = await auth.getUser(callerUid);
+                if (!caller.customClaims?.admin) {
+                    // Optional: Allow if no admins exist yet (bootstrap scenario)
+                    const allUsers = await auth.listUsers();
+                    const hasAdmin = allUsers.users.some(u => u.customClaims?.admin);
+                    if (hasAdmin) {
+                        throw new Error("Only existing admins can grant admin privileges");
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking caller admin status:", error);
+                // For initial setup, allow the call
+            }
+        }
+
+        try {
+            // Set the custom claim
+            await auth.setCustomUserClaims(targetUserId, { admin: true });
+            
+            console.log(`Admin claim set for user: ${targetUserId}`);
+            
+            return {
+                success: true,
+                message: `Admin privileges granted to user ${targetUserId}`,
+            };
+        } catch (error) {
+            console.error(`Error setting admin claim for ${targetUserId}:`, error);
+            throw new Error(`Failed to set admin claim: ${(error as Error).message}`);
+        }
+    }
+);
+
+/**
+ * Cloud Function: Remove Admin Custom Claim
+ * 
+ * Removes admin privileges from a user.
+ */
+export const removeAdminClaim = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        const targetUserId = request.data.uid;
+        
+        if (!targetUserId) {
+            throw new Error("User UID is required");
+        }
+
+        // Verify caller is admin
+        const callerUid = request.auth?.uid;
+        if (callerUid) {
+            try {
+                const caller = await auth.getUser(callerUid);
+                if (!caller.customClaims?.admin) {
+                    throw new Error("Only admins can remove admin privileges");
+                }
+            } catch (error) {
+                throw new Error("Unauthorized: Admin privileges required");
+            }
+        }
+
+        try {
+            await auth.setCustomUserClaims(targetUserId, { admin: false });
+            console.log(`Admin claim removed for user: ${targetUserId}`);
+            
+            return {
+                success: true,
+                message: `Admin privileges removed from user ${targetUserId}`,
+            };
+        } catch (error) {
+            console.error(`Error removing admin claim for ${targetUserId}:`, error);
+            throw new Error(`Failed to remove admin claim: ${(error as Error).message}`);
+        }
+    }
+);
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.

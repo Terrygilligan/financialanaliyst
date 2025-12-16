@@ -1,6 +1,6 @@
 // Firebase Configuration
 export const firebaseConfig = {
-    apiKey: "AIzaSyByYX0MNyDpIueGboEnO5nk6xQdYQg3GcY",
+    apiKey: "AIzaSyDlGMS8HRrA7lqulewzRi0hMvMH2WMrW-U",
     authDomain: "financialanaliyst.firebaseapp.com",
     projectId: "financialanaliyst",
     storageBucket: "financialanaliyst.firebasestorage.app",

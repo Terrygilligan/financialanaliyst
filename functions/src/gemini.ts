@@ -1,27 +1,39 @@
 // functions/src/gemini.ts
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { VertexAI } from "@google-cloud/vertexai";
 import { ReceiptData, Category } from "./schema";
 
-// Initialize Gemini client
-// Uses API key from environment variable or service account credentials
-let genAI: GoogleGenerativeAI | null = null;
+// Initialize Vertex AI client using service account (ADC). No API key required.
+const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+// Use us-central1 - standard region for Gemini models
+const LOCATION = process.env.VERTEX_LOCATION || "us-central1";
+// Vertex public model identifier - using Gemini 2.5 Flash (1.5 Flash was retired)
+const MODEL_NAME = "gemini-2.5-flash";
 
-function getGenAIClient(): GoogleGenerativeAI {
-    if (!genAI) {
-        // Try API key first (for @google/generative-ai SDK)
-        const apiKey = process.env.GEMINI_API_KEY;
-        
-        if (apiKey) {
-            genAI = new GoogleGenerativeAI(apiKey);
-        } else {
-            // Fallback: try to use Application Default Credentials
-            // Note: @google/generative-ai may not support ADC directly
-            // In that case, you'll need to set GEMINI_API_KEY in environment
-            throw new Error("GEMINI_API_KEY environment variable is required. Please set it in your .env file or Firebase Functions config.");
-        }
+let cachedModel: ReturnType<VertexAI["getGenerativeModel"]> | null = null;
+
+function getGenerativeModel() {
+    if (!PROJECT_ID) {
+        throw new Error("GOOGLE_CLOUD_PROJECT is not set; required for Vertex AI.");
     }
-    return genAI;
+
+    // Log configuration for debugging
+    console.log("Vertex AI Config:", {
+        project: PROJECT_ID,
+        location: LOCATION,
+        model: MODEL_NAME
+    });
+
+    if (!cachedModel) {
+        const vertex = new VertexAI({
+            project: PROJECT_ID,
+            location: LOCATION,
+        });
+
+        cachedModel = vertex.getGenerativeModel({ model: MODEL_NAME });
+    }
+
+    return cachedModel;
 }
 
 /**
@@ -60,11 +72,7 @@ export async function extractReceiptData(
     imageBuffer: Buffer,
     filePath: string
 ): Promise<ReceiptData> {
-    const genAI = getGenAIClient();
-    
-    // Use simple model name - the SDK handles path resolution automatically
-    const model = "gemini-2.5-flash";
-    const generativeModel = genAI.getGenerativeModel({ model });
+    const generativeModel = getGenerativeModel();
 
     // Convert image to base64
     const base64Image = bufferToBase64(imageBuffer);
@@ -90,24 +98,33 @@ Be precise and extract only information that is clearly visible on the receipt.
 Return ONLY valid JSON, no other text.`;
 
     try {
-        // Prepare the multimodal request for @google/generative-ai SDK
-        const result = await generativeModel.generateContent([
-            {
-                inlineData: {
-                    mimeType: mimeType,
-                    data: base64Image
+        // Prepare the multimodal request for Vertex AI (service account auth)
+        const result = await generativeModel.generateContent({
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        {
+                            inlineData: {
+                                mimeType,
+                                data: base64Image
+                            }
+                        },
+                        { text: prompt }
+                    ]
                 }
-            },
-            {
-                text: prompt
+            ],
+            generationConfig: {
+                temperature: 0.2
             }
-        ]);
-        
-        const response = result.response;
-        
-        // Extract text from response
-        const textResponse = response.text();
-        
+        });
+
+        const candidate = result.response?.candidates?.[0];
+        const textResponse = candidate?.content?.parts
+            ?.map((part: any) => part.text || "")
+            .join("")
+            .trim();
+
         if (!textResponse) {
             throw new Error("No text response from Gemini API");
         }
