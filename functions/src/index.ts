@@ -302,5 +302,8 @@ export const removeAdminClaim = onCall(
 // Phase 1.3: Archive function
 export { archiveData } from "./archive";
 
+// Phase 2.1: Finalize receipt function
+export { finalizeReceipt } from "./finalize";
+
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.
