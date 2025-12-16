@@ -81,63 +81,96 @@ export const analyzeReceiptUpload = onObjectFinalized(
         const entityName = await lookupEntityForUser(userId);
         receiptData.entity = entityName;
 
-        // 5. Append data to Google Sheets (Steps 8-9)
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-        let sheetsWriteSuccess = false;
-        let googleSheetLink = null;
+        // Phase 2: Feature Flag - Check if review workflow is enabled
+        const enableReviewWorkflow = process.env.ENABLE_REVIEW_WORKFLOW === 'true';
         
-        // Debug logging for environment variables
-        console.log("Environment check:", {
-            hasSheetId: !!sheetId,
-            sheetIdLength: sheetId?.length || 0,
-            hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
-            hasGeminiKey: !!process.env.GEMINI_API_KEY
-        });
-        
-        if (sheetId) {
-            try {
-                await appendReceiptToSheet(receiptData, sheetId);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
-                sheetsWriteSuccess = true;
-                googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-            } catch (sheetsError) {
-                // Log Sheets error but don't fail the entire operation
-                // The receipt was processed successfully, Sheets write is secondary
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                console.error("Full error:", sheetsError);
-            }
+        if (enableReviewWorkflow) {
+            // New workflow: Store as pending for user review
+            // This will be implemented in Phase 2.2: Pending Receipts System
+            console.log(`Review workflow enabled. Storing receipt as pending for user review.`);
+            
+            // Store receipt in pending_receipts collection for user review
+            const receiptId = `${userId}_${Date.now()}_${fileName}`;
+            await db.collection('pending_receipts').doc(receiptId).set({
+                userId: userId,
+                fileName: fileName,
+                filePath: filePath,
+                receiptData: receiptData,
+                status: 'pending_review',
+                createdAt: new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            });
+
+            // Update batches collection with pending status
+            await db.collection('batches').doc(userId).set({
+                status: 'pending_review',
+                lastFileProcessed: fileName,
+                receiptData: receiptData,
+                pendingReceiptId: receiptId,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+
+            console.log(`Receipt stored as pending for review. Receipt ID: ${receiptId}`);
         } else {
-            console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
-            console.error("This means environment variables are not configured for the deployed function.");
-            console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
-            console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
-            console.error("2. OR Firebase Functions Secrets");
+            // Existing workflow: Direct processing and Sheets write
+            // 5. Append data to Google Sheets (Steps 8-9)
+            const sheetId = process.env.GOOGLE_SHEET_ID;
+            let sheetsWriteSuccess = false;
+            let googleSheetLink = null;
+            
+            // Debug logging for environment variables
+            console.log("Environment check:", {
+                hasSheetId: !!sheetId,
+                sheetIdLength: sheetId?.length || 0,
+                hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
+                hasGeminiKey: !!process.env.GEMINI_API_KEY
+            });
+            
+            if (sheetId) {
+                try {
+                    await appendReceiptToSheet(receiptData, sheetId);
+                    console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
+                    sheetsWriteSuccess = true;
+                    googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+                } catch (sheetsError) {
+                    // Log Sheets error but don't fail the entire operation
+                    // The receipt was processed successfully, Sheets write is secondary
+                    console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
+                    console.error("Full error:", sheetsError);
+                }
+            } else {
+                console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
+                console.error("This means environment variables are not configured for the deployed function.");
+                console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
+                console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
+                console.error("2. OR Firebase Functions Secrets");
+            }
+
+            // 6. Update Firestore Status (Step 10)
+            await db.collection('batches').doc(userId).set({
+                status: 'complete',
+                lastFileProcessed: fileName,
+                receiptData: receiptData, // Store the extracted data for reference
+                sheetsWriteSuccess: sheetsWriteSuccess,
+                googleSheetLink: googleSheetLink,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+
+            // 7. Update user statistics in /users collection
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+            
+            await userRef.set({
+                totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+                lastUpdated: new Date().toISOString(),
+                lastReceiptProcessed: fileName,
+                lastReceiptTimestamp: new Date().toISOString()
+            }, { merge: true });
+
+            console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
         }
-
-        // 6. Update Firestore Status (Step 10)
-        await db.collection('batches').doc(userId).set({
-            status: 'complete',
-            lastFileProcessed: fileName,
-            receiptData: receiptData, // Store the extracted data for reference
-            sheetsWriteSuccess: sheetsWriteSuccess,
-            googleSheetLink: googleSheetLink,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
-
-        // 7. Update user statistics in /users collection
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await userRef.get();
-        const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
-        
-        await userRef.set({
-            totalReceipts: (currentStats.totalReceipts || 0) + 1,
-            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-            lastUpdated: new Date().toISOString(),
-            lastReceiptProcessed: fileName,
-            lastReceiptTimestamp: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
 
     } catch (error) {
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
