@@ -436,4 +436,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateHistory(user.uid);
         }
     });
+
+    // Phase 1.2: Initialize translations
+    if (typeof translateUI === 'function') {
+        translateUI();
+    }
 });

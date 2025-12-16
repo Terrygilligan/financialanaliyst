@@ -1,6 +1,11 @@
 // Admin Dashboard Logic
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Phase 1.2: Initialize translations first
+    if (typeof translateUI === 'function') {
+        translateUI();
+    }
+
     // Check if Firebase is initialized
     if (!window.firebase) {
         console.error('Firebase not initialized. Please check your Firebase configuration.');
