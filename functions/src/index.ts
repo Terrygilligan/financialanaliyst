@@ -110,6 +110,19 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
+            // Update user statistics - track pending receipts separately
+            // Note: totalAmount is not updated here; it will be updated when receipt is finalized
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+            
+            await userRef.set({
+                pendingReceipts: (currentStats.pendingReceipts || 0) + 1,
+                lastUpdated: new Date().toISOString(),
+                lastReceiptProcessed: fileName,
+                lastReceiptTimestamp: new Date().toISOString()
+            }, { merge: true });
+
             console.log(`Receipt stored as pending for review. Receipt ID: ${receiptId}`);
         } else {
             // Existing workflow: Direct processing and Sheets write

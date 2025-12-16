@@ -120,9 +120,20 @@ export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
     const expectedHeaders = ['Vendor Name', 'Date', 'Total Amount', 'Category', 'Timestamp', 'Entity'];
 
     try {
+        // Get the actual sheet name from the spreadsheet (same logic as appendReceiptToSheet)
+        // This handles different languages (e.g., "Blad1" in Dutch, "Sheet1" in English)
+        const spreadsheet = await sheets.spreadsheets.get({
+            spreadsheetId: sheetId,
+        });
+        
+        const firstSheet = spreadsheet.data.sheets?.[0];
+        const sheetName = firstSheet?.properties?.title || 'Sheet1';
+        
+        console.log(`Validating headers in sheet: "${sheetName}"`);
+        
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'Sheet1!A1:F1', // Get first row (headers) - Updated to include Entity column
+            range: `${sheetName}!A1:F1`, // Use dynamic sheet name instead of hard-coded 'Sheet1'
         });
 
         const headers = response.data.values?.[0] || [];

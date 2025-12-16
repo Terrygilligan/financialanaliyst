@@ -61,10 +61,16 @@ export const finalizeReceipt = onCall(
                 ...(updatedReceiptData || {})
             };
 
+            // Ensure timestamp is set (preserve original or set new one if missing)
+            if (!finalReceiptData.timestamp) {
+                finalReceiptData.timestamp = new Date().toISOString();
+            }
+
             // Ensure required fields are present
             if (!finalReceiptData.vendorName || !finalReceiptData.transactionDate || 
-                !finalReceiptData.totalAmount || !finalReceiptData.category) {
-                throw new Error("Missing required receipt data fields");
+                !finalReceiptData.totalAmount || !finalReceiptData.category || 
+                !finalReceiptData.timestamp) {
+                throw new Error("Missing required receipt data fields: vendorName, transactionDate, totalAmount, category, and timestamp are required");
             }
 
             // 4. Write to Google Sheets
@@ -98,11 +104,12 @@ export const finalizeReceipt = onCall(
             // 6. Update user statistics
             const userRef = db.collection('users').doc(callerUid);
             const userDoc = await userRef.get();
-            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
             
             await userRef.set({
                 totalReceipts: (currentStats.totalReceipts || 0) + 1,
                 totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1), // Decrement pending count
                 lastUpdated: new Date().toISOString(),
                 lastReceiptProcessed: pendingReceipt.fileName,
                 lastReceiptTimestamp: new Date().toISOString()
