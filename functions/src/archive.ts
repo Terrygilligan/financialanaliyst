@@ -10,10 +10,13 @@ const auth = getAuth();
 /**
  * Archive old receipt data to reduce Firestore storage costs.
  * 
- * This function moves old receipt data from the active collections to an archive collection.
+ * This function moves old batch data (which contains receipt data) from the active
+ * /batches collection to the /archive_batches collection. Receipt data is embedded
+ * in batches, so archiving batches also archives the receipt information.
+ * 
  * Only admins can call this function.
  * 
- * @param request.data.archiveBefore - ISO date string. Archive receipts older than this date.
+ * @param request.data.archiveBefore - ISO date string. Archive batches older than this date.
  * @param request.data.dryRun - If true, only show what would be archived without actually archiving.
  * @returns Summary of archived data
  */
@@ -58,7 +61,6 @@ export const archiveData = onCall(
 
         const archiveSummary = {
             archivedBatches: 0,
-            archivedReceipts: 0,
             errors: [] as string[],
             dryRun
         };
@@ -109,55 +111,11 @@ export const archiveData = onCall(
                 await currentBatch.commit();
             }
 
-            // Archive old receipts (if /receipts collection exists)
-            try {
-                const receiptsSnapshot = await db.collection('receipts').get();
-                let currentReceiptBatch = db.batch();
-                let receiptOperationCount = 0; // Track operations, not documents (each doc = 2 ops: set + delete)
-                const MAX_BATCH_OPERATIONS = 500; // Firestore batch limit
-
-                // Use for...of instead of forEach to properly handle async operations
-                for (const doc of receiptsSnapshot.docs) {
-                    const data = doc.data();
-                    const createdAt = data.createdAt ? new Date(data.createdAt) : null;
-
-                    if (createdAt && createdAt < archiveDate) {
-                        if (!dryRun) {
-                            // Move to archive collection (operation 1)
-                            const archiveRef = db.collection('archive_receipts').doc(doc.id);
-                            currentReceiptBatch.set(archiveRef, {
-                                ...data,
-                                archivedAt: new Date().toISOString(),
-                                archivedBy: callerUid
-                            });
-
-                            // Delete from active collection (operation 2)
-                            currentReceiptBatch.delete(doc.ref);
-                            receiptOperationCount += 2; // Each document = 2 operations
-                        }
-                        archiveSummary.archivedReceipts++;
-
-                        // Commit when approaching Firestore's 500-operation limit
-                        // We commit at 500 to stay within limit (each doc = 2 ops, so 250 docs max)
-                        if (receiptOperationCount >= MAX_BATCH_OPERATIONS) {
-                            if (!dryRun) {
-                                await currentReceiptBatch.commit();
-                                // Create a new batch for the next set of operations
-                                currentReceiptBatch = db.batch();
-                            }
-                            receiptOperationCount = 0;
-                        }
-                    }
-                }
-
-                // Commit remaining receipts
-                if (receiptOperationCount > 0 && !dryRun) {
-                    await currentReceiptBatch.commit();
-                }
-            } catch (error) {
-                // /receipts collection might not exist yet, that's okay
-                console.log('Receipts collection not found or empty, skipping receipt archiving');
-            }
+            // Note: Receipts are stored in /batches/{userId} with receiptData embedded,
+            // so archiving batches also archives the receipt data. A separate /receipts
+            // collection does not exist in the current implementation. If individual
+            // receipt archiving is needed in the future, receipts should first be stored
+            // in a dedicated /receipts collection.
 
             console.log(`Archive process complete. Summary:`, archiveSummary);
 
@@ -165,8 +123,8 @@ export const archiveData = onCall(
                 success: true,
                 summary: archiveSummary,
                 message: dryRun 
-                    ? `Dry run complete. Would archive ${archiveSummary.archivedBatches} batches and ${archiveSummary.archivedReceipts} receipts.`
-                    : `Archived ${archiveSummary.archivedBatches} batches and ${archiveSummary.archivedReceipts} receipts.`
+                    ? `Dry run complete. Would archive ${archiveSummary.archivedBatches} batches (receipt data is embedded in batches).`
+                    : `Archived ${archiveSummary.archivedBatches} batches (receipt data is embedded in batches).`
             };
         } catch (error) {
             console.error('Error during archive process:', error);
