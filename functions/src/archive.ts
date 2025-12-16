@@ -34,7 +34,13 @@ export const archiveData = onCall(
                 throw new Error("Unauthorized: Admin privileges required");
             }
         } catch (error) {
-            throw new Error("Unauthorized: Admin privileges required");
+            // Re-throw authorization errors as-is
+            if (error instanceof Error && error.message === "Unauthorized: Admin privileges required") {
+                throw error;
+            }
+            // For other errors (network, auth service issues, etc.), preserve the original error
+            console.error("Error verifying admin status:", error);
+            throw new Error(`Failed to verify admin status: ${(error as Error).message}`);
         }
 
         const { archiveBefore, dryRun = false } = request.data || {};
