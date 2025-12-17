@@ -114,14 +114,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tabButtons = document.querySelectorAll('.tab-btn');
     let currentTab = 'errors'; // Default to errors tab
 
-    // Check if user is admin via custom claims
+    // Check if user is admin via custom claims OR Firestore admins collection
     async function checkAdminStatus(user) {
         if (!user) return false;
         
-        // Get the ID token to check custom claims
         try {
+            // Method 1: Check custom claims (preferred, faster)
             const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
-            return idTokenResult.claims.admin === true;
+            if (idTokenResult.claims.admin === true) {
+                console.log('Admin status confirmed via custom claims');
+                return true;
+            }
+            
+            // Method 2: Check Firestore admins collection (fallback)
+            const adminDoc = await getDoc(doc(db, 'admins', user.email));
+            if (adminDoc.exists()) {
+                console.log('Admin status confirmed via Firestore admins collection');
+                return true;
+            }
+            
+            console.warn('User is not an admin:', user.email);
+            return false;
         } catch (error) {
             console.error('Error checking admin status:', error);
             return false;
