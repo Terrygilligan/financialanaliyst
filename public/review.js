@@ -249,7 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('review-receipt-id').value = receipt.id;
         document.getElementById('review-vendor').value = receiptData.vendorName || '';
         document.getElementById('review-date').value = receiptData.transactionDate || '';
-        document.getElementById('review-amount').value = receiptData.totalAmount || '';
+        // Use ?? instead of || to allow 0 as a valid amount
+        document.getElementById('review-amount').value = receiptData.totalAmount ?? '';
         document.getElementById('review-category').value = receiptData.category || '';
 
         reviewModal.style.display = 'flex';
@@ -267,9 +268,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             category: document.getElementById('review-category').value
         };
 
-        // Validate
+        // Validate (use == null to allow 0 as valid amount, but reject NaN)
         if (!receiptData.vendorName || !receiptData.transactionDate || 
-            !receiptData.totalAmount || !receiptData.category) {
+            receiptData.totalAmount == null || isNaN(receiptData.totalAmount) || !receiptData.category) {
             alert('Please fill in all required fields.');
             return;
         }
