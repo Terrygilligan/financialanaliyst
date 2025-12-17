@@ -67,9 +67,10 @@ export const finalizeReceipt = onCall(
             }
 
             // Ensure required fields are present
+            // Note: Use == null to check for null/undefined (allows 0 for totalAmount)
             if (!finalReceiptData.vendorName || !finalReceiptData.transactionDate || 
-                !finalReceiptData.totalAmount || !finalReceiptData.category || 
-                !finalReceiptData.timestamp) {
+                finalReceiptData.totalAmount == null || typeof finalReceiptData.totalAmount !== 'number' ||
+                !finalReceiptData.category || !finalReceiptData.timestamp) {
                 throw new Error("Missing required receipt data fields: vendorName, transactionDate, totalAmount, category, and timestamp are required");
             }
 
