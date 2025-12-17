@@ -21,7 +21,7 @@ const auth = getAuth();
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets";
+import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
 import { lookupEntityForUser } from "./entities";
 import { convertReceiptToBaseCurrency } from "./currency"; 
 
@@ -175,6 +175,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
             // 5. Append data to Google Sheets (Steps 8-9)
             const sheetId = process.env.GOOGLE_SHEET_ID;
             let sheetsWriteSuccess = false;
+            let accountantSheetsWriteSuccess = false; // Track accountant sheet separately
             let googleSheetLink = null;
             
             // Debug logging for environment variables
@@ -186,15 +187,26 @@ export const analyzeReceiptUpload = onObjectFinalized(
             });
             
             if (sheetId) {
+                // Write to main Google Sheet
                 try {
                     await appendReceiptToSheet(receiptData, sheetId);
-                    console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
+                    console.log(`Receipt data successfully written to main Google Sheet: ${sheetId}`);
                     sheetsWriteSuccess = true;
                     googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
                 } catch (sheetsError) {
                     // Log Sheets error but don't fail the entire operation
                     // The receipt was processed successfully, Sheets write is secondary
-                    console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
+                    console.error(`Failed to write to main Google Sheet: ${(sheetsError as Error).message}`);
+                    console.error("Full error:", sheetsError);
+                }
+
+                // Write to Accountant CSV Sheet (Phase 3.2)
+                try {
+                    await appendToAccountantSheet(receiptData, sheetId);
+                    console.log(`Receipt data successfully written to Accountant Google Sheet: ${sheetId}`);
+                    accountantSheetsWriteSuccess = true;
+                } catch (sheetsError) {
+                    console.error(`Failed to write to Accountant Google Sheet: ${(sheetsError as Error).message}`);
                     console.error("Full error:", sheetsError);
                 }
             } else {
@@ -211,6 +223,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 lastFileProcessed: fileName,
                 receiptData: receiptData, // Store the extracted data for reference
                 sheetsWriteSuccess: sheetsWriteSuccess,
+                accountantSheetsWriteSuccess: accountantSheetsWriteSuccess, // Track accountant sheet status
                 googleSheetLink: googleSheetLink,
                 timestamp: new Date().toISOString()
             }, { merge: true });

@@ -938,3 +938,166 @@ section h2 {
         grid-template-columns: 1fr;
     }
 }
+
+/* Testing Helper / User Guide Styles */
+.testing-helper {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow-lg);
+    animation: slideDown 0.3s ease-out;
+}
+
+.testing-helper h3 {
+    margin: 0 0 15px 0;
+    font-size: 24px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+/* Guide Tabs */
+.guide-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.guide-tab {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.guide-tab:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.guide-tab.active {
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-bottom: 3px solid #ffd700;
+}
+
+.guide-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.guide-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.testing-helper h4 {
+    margin: 20px 0 10px 0;
+    font-size: 18px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.testing-helper h4:first-child {
+    margin-top: 0;
+}
+
+.guide-content {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.guide-content p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.guide-content ul,
+.guide-content ol {
+    margin: 10px 0 20px 20px;
+    line-height: 1.8;
+}
+
+.guide-content li {
+    margin: 8px 0;
+}
+
+.guide-content li strong {
+    color: #ffd700;
+}
+
+.guide-content a {
+    color: #ffd700;
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+.guide-content a:hover {
+    color: #ffed4e;
+}
+
+.guide-content code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #ffd700;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile adjustments for testing helper */
+@media (max-width: 768px) {
+    .testing-helper {
+        padding: 20px 15px;
+    }
+    
+    .testing-helper h3 {
+        font-size: 20px;
+    }
+    
+    .testing-helper h4 {
+        font-size: 16px;
+    }
+    
+    .guide-content {
+        padding: 15px;
+    }
+    
+    .guide-content ul,
+    .guide-content ol {
+        margin-left: 15px;
+    }
+}

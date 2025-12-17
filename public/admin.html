@@ -56,6 +56,122 @@
 
         <!-- Admin Content -->
         <main id="admin-content" style="display: none;">
+            <!-- Testing/Admin Guide (visible when running locally) -->
+            <div id="testingHelper" class="testing-helper" style="display: none;">
+                <h3>📚 Admin Documentation & Guides</h3>
+                
+                <!-- Tab Navigation -->
+                <div class="guide-tabs">
+                    <button class="guide-tab active" data-tab="dashboard">📊 Dashboard</button>
+                    <button class="guide-tab" data-tab="roles">👥 Roles & Setup</button>
+                    <button class="guide-tab" data-tab="testing">🔧 Testing</button>
+                </div>
+                
+                <!-- Dashboard Guide Tab -->
+                <div class="guide-content guide-tab-content active" id="dashboard-tab">
+                    <h4>🎯 Admin Responsibilities</h4>
+                    <p>As an admin, you have access to system-wide data and management features.</p>
+                    
+                    <h4>📊 Dashboard Features</h4>
+                    <ul>
+                        <li><strong>System Statistics:</strong> View total receipts, success rates, active users, and amounts processed</li>
+                        <li><strong>Analytics Charts:</strong> Visual breakdown of receipts by category and status</li>
+                        <li><strong>All Receipts Viewer:</strong> Search and filter all receipts from all users</li>
+                        <li><strong>Error Logs:</strong> Monitor processing errors and troubleshoot issues</li>
+                        <li><strong>User Management:</strong> View all users and their activity</li>
+                    </ul>
+                    
+                    <h4>🔍 Key Admin Tasks</h4>
+                    <ol>
+                        <li><strong>Monitor Errors:</strong> Check the "Errors & Unprocessed" tab regularly</li>
+                        <li><strong>Review Flagged Receipts:</strong> Visit <a href="admin-review.html">Admin Review</a> for validation warnings</li>
+                        <li><strong>User Support:</strong> Check user activity and troubleshoot issues</li>
+                        <li><strong>Data Quality:</strong> Review analytics for data accuracy</li>
+                    </ol>
+                    
+                    <h4>📝 Admin Review Workflow</h4>
+                    <ul>
+                        <li>Navigate to <a href="admin-review.html">Admin Review</a> page</li>
+                        <li>Review flagged receipts and validation warnings</li>
+                        <li>Approve or reject receipts after verification</li>
+                        <li>Add notes for audit trail purposes</li>
+                    </ul>
+                </div>
+                
+                <!-- Roles & Setup Tab -->
+                <div class="guide-content guide-tab-content" id="roles-tab">
+                    <h4>🔐 Admin Access Setup</h4>
+                    <p>Two methods available for granting admin access:</p>
+                    
+                    <h4>Method 1: Firestore Collection (Easiest)</h4>
+                    <ol>
+                        <li>Go to Firebase Console → Firestore</li>
+                        <li>Create collection: <code>admins</code></li>
+                        <li>Add document with email as ID: <code>terrythemeat@duck.com</code></li>
+                        <li>Add field: <code>email</code> (string) with the email value</li>
+                        <li>User must sign out and sign back in</li>
+                    </ol>
+                    
+                    <h4>Method 2: Custom Claims (More Secure)</h4>
+                    <ol>
+                        <li>Deploy Cloud Functions: <code>firebase deploy --only functions</code></li>
+                        <li>Get user UID from Firebase Console → Authentication</li>
+                        <li>Call function: <code>firebase functions:call setAdminClaim --data '{"uid":"USER_UID"}'</code></li>
+                        <li>User must sign out and sign back in</li>
+                    </ol>
+                    
+                    <h4>👥 Admin Roles Explained</h4>
+                    <ul>
+                        <li><strong>System Admin:</strong> Full access to all features, user management, system configuration</li>
+                        <li><strong>Current Admin:</strong> <code>terrythemeat@duck.com</code></li>
+                        <li><strong>Permissions:</strong> View all data, approve/reject receipts, manage users</li>
+                    </ul>
+                    
+                    <h4>📖 Documentation</h4>
+                    <ul>
+                        <li><code>ADMIN_SETUP.md</code> - Firestore method setup</li>
+                        <li><code>CUSTOM_CLAIMS_SETUP.md</code> - Custom claims method</li>
+                        <li><code>ADMIN_SETUP_QUICK.md</code> - Quick setup for terrythemeat@duck.com</li>
+                    </ul>
+                </div>
+                
+                <!-- Testing Info Tab -->
+                <div class="guide-content guide-tab-content" id="testing-tab">
+                    <h4>🔧 Local Testing Environment</h4>
+                    <p>You're running on localhost. Testing features:</p>
+                    
+                    <h4>✅ Testing Checklist</h4>
+                    <ul>
+                        <li>Verify admin access (check if Admin link appears)</li>
+                        <li>Check browser console (F12) for errors</li>
+                        <li>Test admin dashboard features (stats, charts, logs)</li>
+                        <li>Test admin review workflow (approve/reject receipts)</li>
+                        <li>Verify user management features work</li>
+                    </ul>
+                    
+                    <h4>⚙️ Configuration</h4>
+                    <ul>
+                        <li><strong>Feature Flag:</strong> <code>ENABLE_REVIEW_WORKFLOW</code> env variable</li>
+                        <li><strong>Base Currency:</strong> <code>BASE_CURRENCY</code> (default: GBP)</li>
+                        <li><strong>Categories:</strong> <code>/categories</code> Firestore collection</li>
+                    </ul>
+                    
+                    <h4>📖 Testing Documentation</h4>
+                    <ul>
+                        <li><code>LOCAL_TESTING_GUIDE.md</code> - Complete testing setup</li>
+                        <li><code>ADMIN_GUIDE.md</code> - Full admin documentation</li>
+                        <li><code>PHASE3_COMPLETE_TESTING.md</code> - Testing checklist</li>
+                    </ul>
+                    
+                    <h4>🐛 Common Issues</h4>
+                    <ul>
+                        <li><strong>Admin link not showing:</strong> Check Firestore <code>admins</code> collection</li>
+                        <li><strong>Access denied:</strong> Verify email matches exactly, re-login</li>
+                        <li><strong>Features not loading:</strong> Check Firebase config and auth state</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- Statistics Overview -->
             <section class="admin-section">
                 <h2>System Statistics</h2>

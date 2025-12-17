@@ -44,6 +44,35 @@
   - ✅ Users can read/write only their own `/batches/{userId}` documents
   - ✅ Prevents unauthorized access
 
+### Phase 6: SME Automation Upgrade ✅
+**Status**: All phases complete (Dec 17, 2025)  
+**Reference**: See [BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md) for detailed implementation plan
+
+- ✅ **Phase 1: Foundation Features** (Entity Tracking, Multi-Language, Archive)
+  - ✅ 1.1: Entity tracking for multi-business support (`entities.ts`)
+  - ✅ 1.2: Multi-language frontend support (`translations.js`)
+  - ✅ 1.3: Archive function for old data management (`archive.ts`)
+
+- ✅ **Phase 2: Review Workflow & Validation**
+  - ✅ 2.1: Feature flag infrastructure (`ENABLE_REVIEW_WORKFLOW`)
+  - ✅ 2.2: Dynamic category management in Firestore (`categories.ts`)
+  - ✅ 2.3: Pending receipts workflow for user review (`finalize.ts`, `review.html`)
+  - ✅ 2.4: Currency conversion with Frankfurter API + caching (`currency.ts`)
+  - ✅ 2.5: Validation system (VAT ID, amounts, categories, dates) (`validation.ts`)
+  - ✅ 2.6: Admin review interface for flagged receipts (`admin-review.ts`, `admin-review.html`)
+
+- ✅ **Phase 3: Advanced Features**
+  - ✅ 3.1: Enhanced VAT extraction (supplier VAT number, VAT breakdown) - updated `gemini.ts`, `schema.ts`
+  - ✅ 3.2: Accountant CSV Tab (simplified, CSV-ready format) - `appendToAccountantSheet()` in `sheets.ts`
+  - ✅ 3.3: Audit trail & error logging system (`error-logging.ts`)
+
+- ✅ **Bug Fixes & Testing** (Dec 17, 2025)
+  - ✅ Fixed missing currency defaults when Gemini extraction fails (ensures all receipts have complete currency data)
+  - ✅ Fixed validation failure race condition (wrapped user stats update in transaction for atomic operations)
+  - ✅ Fixed accountant sheet not populating in legacy workflow (added `appendToAccountantSheet` call to direct processing path)
+  - ✅ Created [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md) with emulator setup instructions
+  - ✅ Added testing helper UI to profile and admin pages (shows guide when running in emulator mode)
+
 ## 🎯 Priority Tasks (Remaining)
 
 ### Phase 6: Testing & Quality Assurance - **MEDIUM PRIORITY**
@@ -155,11 +184,14 @@
 7. ✅ Deployed frontend to Firebase Hosting
 
 ### Immediate Next Steps (This Week)
-1. [ ] Test end-to-end workflow with real receipts
-2. [ ] Verify Vertex AI processing accuracy
-3. [ ] Test on mobile devices
-4. [ ] Monitor for any errors or issues
-5. [ ] Gather user feedback
+1. ✅ **SME Automation Upgrade complete** - All Phase 1-3 features implemented
+2. ✅ **Local testing environment ready** - Emulator setup guide and helper UI added
+3. [ ] Test end-to-end workflow with real receipts (use [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md))
+4. [ ] Verify currency conversion and VAT extraction accuracy
+5. [ ] Test admin review workflow with flagged receipts
+6. [ ] Verify accountant CSV sheet population
+7. [ ] Test on mobile devices
+8. [ ] Monitor error logs in Firestore (`/error_logs` collection)
 
 ### Short Term (Next 2 Weeks)
 1. [ ] Complete comprehensive testing
@@ -198,17 +230,28 @@
 
 ## 🎉 Current Status
 
-**The application is fully functional and ready for use!**
+**The application is fully functional with SME Automation Upgrade complete!**
 
-Users can:
+**December 17, 2025 - Phase 3 Complete**:
+- ✅ All Phase 1-3 features implemented (Entity tracking, Review workflow, Currency conversion, VAT extraction, Accountant CSV, Audit trail)
+- ✅ Bug fixes: Currency defaults, validation race conditions, accountant sheet in legacy workflow
+- ✅ Local testing environment ready with emulator support and testing guides
+- ✅ User and Admin guides updated to v1.3
+
+**Core Features Available**:
 - ✅ Sign up/login with email or Google
 - ✅ Upload receipt images
-- ✅ See real-time processing status
-- ✅ View upload history
-- ✅ Have data automatically extracted and saved to Google Sheets
+- ✅ Review and correct extracted data before finalizing
+- ✅ Automatic currency conversion to base currency (GBP)
+- ✅ VAT extraction (supplier VAT number, VAT breakdown)
+- ✅ Multi-entity support for businesses with multiple locations
+- ✅ Admin review interface for flagged receipts
+- ✅ Dual Google Sheets output (main sheet + accountant CSV sheet)
+- ✅ Comprehensive audit trail and error logging
+- ✅ Multi-language frontend support
 
-**Next focus**: Testing, optimization, and feature enhancements.
+**Next focus**: Production testing, performance monitoring, and user feedback collection.
 
 ---
 
-**Last Updated**: After Vertex AI migration and full-stack deployment
+**Last Updated**: December 17, 2025 - Phase 3 complete with all bug fixes applied

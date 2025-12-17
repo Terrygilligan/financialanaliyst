@@ -57,6 +57,74 @@
         </header>
 
         <main id="main-content" style="display: none;">
+            <!-- Testing/User Guide (visible when running locally) -->
+            <div id="testingHelper" class="testing-helper" style="display: none;">
+                <h3>📚 Documentation & Guides</h3>
+                
+                <!-- Tab Navigation -->
+                <div class="guide-tabs">
+                    <button class="guide-tab active" data-tab="user">👤 User Guide</button>
+                    <button class="guide-tab" data-tab="testing">🔧 Testing Info</button>
+                </div>
+                
+                <!-- User Guide Tab -->
+                <div class="guide-content guide-tab-content active" id="user-tab">
+                    <h4>🚀 Quick Start Guide</h4>
+                    <ol>
+                        <li><strong>Upload Receipts:</strong> Go to the <a href="index.html">Home page</a> and upload receipt images (JPG, PNG, etc.)</li>
+                        <li><strong>Review Extracted Data:</strong> Check the automatically extracted data for accuracy</li>
+                        <li><strong>Finalize or Edit:</strong> Confirm the data or make corrections before saving</li>
+                        <li><strong>View in Google Sheets:</strong> All finalized receipts appear in your Google Sheet</li>
+                    </ol>
+                    
+                    <h4>📊 Features Available to You</h4>
+                    <ul>
+                        <li><strong>Upload History:</strong> View all your uploaded receipts on the Home page</li>
+                        <li><strong>Profile Statistics:</strong> See your total receipts, amounts, and success rate below</li>
+                        <li><strong>Receipt History:</strong> Review past receipts and their processing status</li>
+                        <li><strong>Multi-Currency Support:</strong> Upload receipts in any currency (auto-converts to GBP)</li>
+                        <li><strong>VAT Extraction:</strong> Automatically extracts VAT numbers and amounts</li>
+                    </ul>
+                    
+                    <h4>💡 Tips for Best Results</h4>
+                    <ul>
+                        <li>Take clear, well-lit photos of receipts</li>
+                        <li>Ensure all text is readable in the image</li>
+                        <li>Review extracted data before finalizing</li>
+                        <li>Check the Google Sheet to verify data was saved correctly</li>
+                    </ul>
+                </div>
+                
+                <!-- Testing Info Tab -->
+                <div class="guide-content guide-tab-content" id="testing-tab">
+                    <h4>🔧 Running Locally</h4>
+                    <p>You're currently running the app locally. Here's what you need to know:</p>
+                    
+                    <h4>📋 Local Testing Checklist</h4>
+                    <ul>
+                        <li>Check the browser console (F12) for errors</li>
+                        <li>Verify Firebase emulators are running (if using emulators)</li>
+                        <li>Check that Firebase config is loaded correctly</li>
+                        <li>Test authentication flows (signup, login, logout)</li>
+                        <li>Upload test receipts to verify end-to-end flow</li>
+                    </ul>
+                    
+                    <h4>📖 Documentation References</h4>
+                    <ul>
+                        <li><code>LOCAL_TESTING_GUIDE.md</code> - Complete local testing setup</li>
+                        <li><code>USER_GUIDE.md</code> - Full user documentation</li>
+                        <li><code>README.md</code> - Project overview and setup</li>
+                    </ul>
+                    
+                    <h4>🐛 Common Issues</h4>
+                    <ul>
+                        <li><strong>Firebase not initialized:</strong> Check firebase-config.js</li>
+                        <li><strong>Auth errors:</strong> Verify email verification settings</li>
+                        <li><strong>Upload fails:</strong> Check Storage rules and authentication</li>
+                    </ul>
+                </div>
+            </div>
+
             <!-- User Information Section -->
             <section class="profile-section">
                 <h2>Account Information</h2>

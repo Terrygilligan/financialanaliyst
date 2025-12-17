@@ -17,6 +17,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const testingHelper = document.getElementById('testingHelper');
         if (testingHelper) {
             testingHelper.style.display = 'block';
+            
+            // Setup tab switching
+            const guideTabs = document.querySelectorAll('.guide-tab');
+            guideTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and contents
+                    guideTabs.forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.guide-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab') + '-tab';
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                    }
+                });
+            });
         }
     }
 

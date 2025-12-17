@@ -107,6 +107,29 @@ This application uses **Firebase Cloud Functions (2nd Gen)** to automatically:
 - ✅ **Function deployed to Firebase** ✅
 - ✅ **Frontend deployed to Firebase Hosting** ✅
 
+### Phase 7: SME Automation Upgrade (Feature Branch Development)
+- ✅ **Phase 1: Foundation Features** (Entity Tracking, Multi-Language, Archive)
+  - ✅ 1.1: Entity tracking for multi-business support
+  - ✅ 1.2: Multi-language frontend support (translations.js)
+  - ✅ 1.3: Archive function for old data management
+- ✅ **Phase 2: Review Workflow & Validation** (Pending Receipts, Categories, Currency, Validation, Admin Review)
+  - ✅ 2.1: Feature flag infrastructure (`ENABLE_REVIEW_WORKFLOW`)
+  - ✅ 2.2: Dynamic category management in Firestore
+  - ✅ 2.3: Pending receipts workflow for user review
+  - ✅ 2.4: Currency conversion with Frankfurter API + caching
+  - ✅ 2.5: Validation system (VAT ID, amounts, categories, dates)
+  - ✅ 2.6: Admin review interface for flagged receipts
+- ✅ **Phase 3: Advanced Features** (VAT Extraction, Accountant CSV, Audit Trail)
+  - ✅ 3.1: Enhanced VAT extraction (supplier VAT, breakdown)
+  - ✅ 3.2: Accountant CSV Tab (simplified, CSV-ready format)
+  - ✅ 3.3: Audit trail & error logging system
+- ✅ **Bug Fixes & Testing** (Dec 17, 2025)
+  - ✅ Fixed missing currency defaults when Gemini extraction fails
+  - ✅ Fixed validation failure race condition (transaction safety)
+  - ✅ Fixed accountant sheet not populating in legacy workflow
+  - ✅ Created local testing guide with emulator support
+  - ✅ Added testing helper UI to profile/admin pages
+
 ## 📁 Project Structure
 
 ```
@@ -328,4 +351,4 @@ For issues or questions, refer to:
 
 ---
 
-**Last Updated**: Full-stack application deployed and operational. Vertex AI integration complete. Branch workflow documentation added.
+**Last Updated**: December 17, 2025 - Phase 3 complete. All SME Automation Upgrade features implemented and tested. Local testing guide added. Bug fixes for currency defaults, validation race conditions, and accountant sheet population in legacy workflow.
