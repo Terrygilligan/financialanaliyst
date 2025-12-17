@@ -60,8 +60,10 @@ export async function getSheetConfigForUser(userId: string): Promise<SheetConfig
     
     // 1. Check if user has a direct sheet assignment
     const userDoc = await db.collection('users').doc(userId).get();
-    if (userDoc.exists && userDoc.data()?.sheetConfigId) {
-      const sheetConfigId = userDoc.data()!.sheetConfigId;
+    const userData = userDoc.exists ? userDoc.data() : null;
+    
+    if (userData?.sheetConfigId) {
+      const sheetConfigId = userData.sheetConfigId;
       console.log(`[Sheet Config] User has direct sheet assignment: ${sheetConfigId}`);
       
       const configDoc = await db.collection('sheet_configs').doc(sheetConfigId).get();
@@ -73,10 +75,13 @@ export async function getSheetConfigForUser(userId: string): Promise<SheetConfig
       }
     }
     
-    // 2. Check if user's entity has a sheet assignment
-    if (userDoc.exists && userDoc.data()?.entity) {
-      const entityId = userDoc.data()!.entity;
-      console.log(`[Sheet Config] User belongs to entity: ${entityId}`);
+    // 2. Check if user's entity has a sheet assignment (only if useEntitySheet is true)
+    // Bug fix: Respect the useEntitySheet flag to allow users to opt out of entity-level sheets
+    const useEntitySheet = userData?.useEntitySheet !== false; // Default to true for backward compatibility
+    
+    if (useEntitySheet && userData?.entity) {
+      const entityId = userData.entity;
+      console.log(`[Sheet Config] User belongs to entity: ${entityId} (useEntitySheet: ${useEntitySheet})`);
       
       const entityDoc = await db.collection('entities').doc(entityId).get();
       if (entityDoc.exists && entityDoc.data()?.sheetConfigId) {
@@ -91,6 +96,8 @@ export async function getSheetConfigForUser(userId: string): Promise<SheetConfig
           console.warn(`[Sheet Config] Entity's assigned config not found or inactive: ${sheetConfigId}`);
         }
       }
+    } else if (!useEntitySheet && userData?.entity) {
+      console.log(`[Sheet Config] User has entity but useEntitySheet=false, skipping entity sheet lookup`);
     }
     
     // 3. Fall back to default sheet config

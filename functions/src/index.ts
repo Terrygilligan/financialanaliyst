@@ -26,6 +26,31 @@ import { lookupEntityForUser } from "./entities";
 import { convertReceiptToBaseCurrency } from "./currency"; 
 
 /**
+ * Helper function to remove undefined values from an object
+ * Firestore doesn't accept undefined values, so we need to clean them
+ * 
+ * @param obj - Object to clean
+ * @returns Cleaned object without undefined values
+ */
+function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T> {
+    const cleaned: any = {};
+    for (const key in obj) {
+        if (obj[key] !== undefined) {
+            if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+                // Recursively clean nested objects
+                const nestedCleaned = removeUndefinedFields(obj[key]);
+                if (Object.keys(nestedCleaned).length > 0) {
+                    cleaned[key] = nestedCleaned;
+                }
+            } else {
+                cleaned[key] = obj[key];
+            }
+        }
+    }
+    return cleaned;
+}
+
+/**
  * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
  * This is the starting point of the AI Financial Analyst workflow.
  */
@@ -135,11 +160,13 @@ export const analyzeReceiptUpload = onObjectFinalized(
             
             // Store receipt in pending_receipts collection for user review
             const receiptId = `${userId}_${Date.now()}_${fileName}`;
+            // Clean undefined values before writing to Firestore
+            const cleanedReceiptData = removeUndefinedFields(receiptData);
             await db.collection('pending_receipts').doc(receiptId).set({
                 userId: userId,
                 fileName: fileName,
                 filePath: filePath,
-                receiptData: receiptData,
+                receiptData: cleanedReceiptData,
                 status: 'pending_review',
                 createdAt: new Date().toISOString(),
                 timestamp: new Date().toISOString()
@@ -149,7 +176,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
             await db.collection('batches').doc(userId).set({
                 status: 'pending_review',
                 lastFileProcessed: fileName,
-                receiptData: receiptData,
+                receiptData: cleanedReceiptData,
                 pendingReceiptId: receiptId,
                 timestamp: new Date().toISOString()
             }, { merge: true });
@@ -201,10 +228,12 @@ export const analyzeReceiptUpload = onObjectFinalized(
             }
 
             // 6. Update Firestore Status (Step 10)
+            // Clean undefined values before writing to Firestore
+            const cleanedReceiptData = removeUndefinedFields(receiptData);
             await db.collection('batches').doc(userId).set({
                 status: 'complete',
                 lastFileProcessed: fileName,
-                receiptData: receiptData, // Store the extracted data for reference
+                receiptData: cleanedReceiptData, // Store the extracted data for reference
                 sheetsWriteSuccess: sheetsWriteSuccess,
                 accountantSheetsWriteSuccess: accountantSheetsWriteSuccess, // Track accountant sheet status
                 googleSheetLink: googleSheetLink,
