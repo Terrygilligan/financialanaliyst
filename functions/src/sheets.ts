@@ -116,6 +116,151 @@ export async function appendReceiptToSheet(
 }
 
 /**
+ * Appends receipt data to the Accountant CSV-ready sheet tab.
+ * This tab has a simplified format optimized for accountant workflows and CSV export.
+ * 
+ * Phase 3.2: Accountant CSV Tab
+ * 
+ * @param receiptData - The structured receipt data to append
+ * @param sheetId - The Google Sheet ID
+ * @returns Promise<void>
+ * @throws Error if the append operation fails
+ */
+export async function appendToAccountantSheet(
+    receiptData: ReceiptData,
+    sheetId: string
+): Promise<void> {
+    if (!sheetId) {
+        throw new Error("Google Sheet ID is required");
+    }
+
+    const sheets = getSheetsClient();
+    const accountantSheetName = 'Accountant_CSV_Ready';
+
+    // Accountant-optimized format: Date, Vendor, Entity, Amount, Currency, VAT Number, VAT Amount, Category, Notes
+    const rowData = [
+        receiptData.transactionDate, // Date (YYYY-MM-DD for easy sorting)
+        receiptData.vendorName, // Vendor
+        receiptData.entity || 'Unassigned', // Entity
+        receiptData.totalAmount, // Amount (final total)
+        receiptData.originalCurrency || receiptData.currency || 'GBP', // Currency
+        receiptData.supplierVatNumber || '', // VAT Number
+        receiptData.vatBreakdown?.vatAmount || '', // VAT Amount
+        receiptData.category, // Category
+        // Notes field: combine any relevant info
+        [
+            receiptData.originalAmount && receiptData.exchangeRate 
+                ? `Converted from ${receiptData.originalAmount} ${receiptData.originalCurrency} @ ${receiptData.exchangeRate}` 
+                : '',
+            receiptData.vatBreakdown?.subtotal 
+                ? `Subtotal: ${receiptData.vatBreakdown.subtotal}` 
+                : '',
+            receiptData.vatBreakdown?.vatRate 
+                ? `VAT Rate: ${receiptData.vatBreakdown.vatRate}%` 
+                : ''
+        ].filter(Boolean).join(' | ') || ''
+    ];
+
+    try {
+        // Check if Accountant_CSV_Ready sheet exists, create if not
+        const spreadsheet = await sheets.spreadsheets.get({
+            spreadsheetId: sheetId,
+        });
+        
+        const accountantSheet = spreadsheet.data.sheets?.find(
+            sheet => sheet.properties?.title === accountantSheetName
+        );
+
+        if (!accountantSheet) {
+            console.log(`Creating ${accountantSheetName} sheet...`);
+            
+            // Create the sheet
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: sheetId,
+                requestBody: {
+                    requests: [{
+                        addSheet: {
+                            properties: {
+                                title: accountantSheetName,
+                                gridProperties: {
+                                    frozenRowCount: 1 // Freeze header row
+                                }
+                            }
+                        }
+                    }]
+                }
+            });
+
+            // Add headers
+            const headers = [
+                'Date', 'Vendor', 'Entity', 'Amount', 'Currency', 
+                'VAT Number', 'VAT Amount', 'Category', 'Notes'
+            ];
+            
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: sheetId,
+                range: `${accountantSheetName}!A1:I1`,
+                valueInputOption: 'RAW',
+                requestBody: {
+                    values: [headers]
+                }
+            });
+
+            // Format headers (bold, background color)
+            await sheets.spreadsheets.batchUpdate({
+                spreadsheetId: sheetId,
+                requestBody: {
+                    requests: [{
+                        repeatCell: {
+                            range: {
+                                sheetId: (await sheets.spreadsheets.get({ spreadsheetId: sheetId }))
+                                    .data.sheets?.find(s => s.properties?.title === accountantSheetName)
+                                    ?.properties?.sheetId,
+                                startRowIndex: 0,
+                                endRowIndex: 1
+                            },
+                            cell: {
+                                userEnteredFormat: {
+                                    backgroundColor: { red: 0.85, green: 0.85, blue: 0.85 },
+                                    textFormat: { bold: true }
+                                }
+                            },
+                            fields: 'userEnteredFormat(backgroundColor,textFormat)'
+                        }
+                    }]
+                }
+            });
+
+            console.log(`${accountantSheetName} sheet created successfully.`);
+        }
+
+        // Append the row
+        const range = `${accountantSheetName}!A:I`;
+        const response = await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId,
+            range: range,
+            valueInputOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
+            requestBody: {
+                values: [rowData],
+            },
+        });
+
+        console.log(`Successfully appended receipt to ${accountantSheetName}. Updated ${response.data.updates?.updatedCells || 0} cells.`);
+        
+        return;
+    } catch (error) {
+        console.error(`Error appending to ${accountantSheetName}:`, error);
+        
+        // Don't throw - this is a secondary write, main sheet is more important
+        // Log the error but allow the function to continue
+        if (error instanceof Error) {
+            console.warn(`Failed to append to ${accountantSheetName}: ${error.message}`);
+        }
+    }
+}
+
+/**
  * Verifies that the Sheet exists and has the correct headers.
  * This is useful for initial setup validation.
  * 

@@ -4,7 +4,8 @@ import { onCall } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets";
+import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
+import { validateReceiptData } from "./validation";
 
 const db = getFirestore();
 const auth = getAuth();
@@ -77,6 +78,32 @@ export const adminApproveReceipt = onCall(
                 finalReceiptData.timestamp = new Date().toISOString();
             }
 
+            // 2.5. Validate merged receipt data (admin corrections + original data)
+            // Ensure required fields are present
+            if (!finalReceiptData.vendorName || !finalReceiptData.transactionDate || 
+                finalReceiptData.totalAmount == null || typeof finalReceiptData.totalAmount !== 'number' ||
+                !finalReceiptData.category || !finalReceiptData.timestamp) {
+                throw new Error("Invalid receipt data after admin corrections: Missing required fields (vendorName, transactionDate, totalAmount, category, timestamp)");
+            }
+
+            // Validate receipt data quality (same validation as finalizeReceipt)
+            const validation = validateReceiptData({
+                vendorName: finalReceiptData.vendorName,
+                transactionDate: finalReceiptData.transactionDate,
+                totalAmount: finalReceiptData.totalAmount,
+                category: String(finalReceiptData.category), // Convert enum to string
+                vatNumber: finalReceiptData.supplierVatNumber
+            });
+
+            // Log validation issues (but allow admin override)
+            if (!validation.isValid) {
+                console.warn(`Admin override: Receipt ${receiptId} has validation errors:`, validation.errors);
+                console.warn(`Admin ${callerUid} is approving despite validation failures.`);
+            }
+            if (validation.warnings.length > 0) {
+                console.log(`Admin approval: Receipt ${receiptId} has validation warnings:`, validation.warnings);
+            }
+
             // 3. Write to Google Sheets
             const sheetId = process.env.GOOGLE_SHEET_ID;
             let sheetsWriteSuccess = false;
@@ -84,10 +111,20 @@ export const adminApproveReceipt = onCall(
 
             if (sheetId) {
                 try {
+                    // Write to main sheet
                     await appendReceiptToSheet(finalReceiptData, sheetId);
                     console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
                     sheetsWriteSuccess = true;
                     googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+                    
+                    // Phase 3.2: Also write to accountant CSV tab (non-blocking)
+                    try {
+                        await appendToAccountantSheet(finalReceiptData, sheetId);
+                        console.log(`Receipt data also written to Accountant_CSV_Ready tab`);
+                    } catch (accountantError) {
+                        console.warn(`Failed to write to Accountant_CSV_Ready tab (non-critical): ${(accountantError as Error).message}`);
+                        // Don't fail the whole operation if accountant tab fails
+                    }
                 } catch (sheetsError) {
                     console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
                     // Don't fail the entire operation if Sheets write fails
