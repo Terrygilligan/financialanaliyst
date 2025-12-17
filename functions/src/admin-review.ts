@@ -69,6 +69,13 @@ export const adminApproveReceipt = onCall(
             }
 
             // 2. Merge admin corrections with original Gemini data
+            // Bug Fix: Validate that receiptData exists before attempting to merge
+            if (!pendingReceipt.receiptData) {
+                throw new Error(
+                    `Receipt ${receiptId} is missing receiptData field. The pending receipt document may be corrupt.`
+                );
+            }
+            
             const originalReceiptData = pendingReceipt.receiptData as ReceiptData;
             
             const finalReceiptData: ReceiptData = {
@@ -92,12 +99,17 @@ export const adminApproveReceipt = onCall(
                 finalReceiptData.conversionDate = new Date().toISOString();
             }
 
-            // Bug Fix: Maintain semantic invariant whenever exchangeRate=1.0 (no conversion)
+            // Bug Fix: Maintain semantic invariant whenever exchangeRate=1.0 OR undefined (no conversion)
             // Invariant: originalAmount * exchangeRate ≈ totalAmount
-            // When exchangeRate=1.0 and user/admin corrected totalAmount, update originalAmount to match
-            if (finalReceiptData.exchangeRate === 1.0) {
-                console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0`);
+            // When exchangeRate=1.0 (or missing/undefined) and user/admin corrected totalAmount, update originalAmount to match
+            // Treat undefined/missing exchangeRate as 1.0 (no conversion scenario)
+            if (finalReceiptData.exchangeRate === 1.0 || finalReceiptData.exchangeRate === undefined) {
+                console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0 or undefined`);
                 finalReceiptData.originalAmount = finalReceiptData.totalAmount;
+                // If exchangeRate was undefined, set it to 1.0 for consistency
+                if (finalReceiptData.exchangeRate === undefined) {
+                    finalReceiptData.exchangeRate = 1.0;
+                }
             }
 
             // 2.5. Validate merged receipt data (admin corrections + original data)

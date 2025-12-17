@@ -81,12 +81,17 @@ export const finalizeReceipt = onCall(
                 finalReceiptData.conversionDate = new Date().toISOString();
             }
 
-            // Bug Fix: Maintain semantic invariant whenever exchangeRate=1.0 (no conversion)
+            // Bug Fix: Maintain semantic invariant whenever exchangeRate=1.0 OR undefined (no conversion)
             // Invariant: originalAmount * exchangeRate ≈ totalAmount
-            // When exchangeRate=1.0 and user/admin corrected totalAmount, update originalAmount to match
-            if (finalReceiptData.exchangeRate === 1.0) {
-                console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0`);
+            // When exchangeRate=1.0 (or missing/undefined) and user/admin corrected totalAmount, update originalAmount to match
+            // Treat undefined/missing exchangeRate as 1.0 (no conversion scenario)
+            if (finalReceiptData.exchangeRate === 1.0 || finalReceiptData.exchangeRate === undefined) {
+                console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0 or undefined`);
                 finalReceiptData.originalAmount = finalReceiptData.totalAmount;
+                // If exchangeRate was undefined, set it to 1.0 for consistency
+                if (finalReceiptData.exchangeRate === undefined) {
+                    finalReceiptData.exchangeRate = 1.0;
+                }
             }
 
             // Ensure required fields are present
