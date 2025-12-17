@@ -49,26 +49,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Check if user is admin via custom claims OR Firestore admins collection
     async function checkAdminStatus(user) {
-        if (!user) return false;
+        if (!user) {
+            console.log('❌ checkAdminStatus: No user provided');
+            return false;
+        }
+        
+        console.log('🔍 Checking admin status for:', user.email);
         
         try {
             // Method 1: Check custom claims (preferred, faster)
-            const idTokenResult = await user.getIdTokenResult();
+            const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+            console.log('📋 Token claims:', idTokenResult.claims);
+            
             if (idTokenResult.claims.admin === true) {
-                console.log('Admin status confirmed via custom claims');
+                console.log('✅ Admin status confirmed via custom claims');
                 return true;
             }
             
             // Method 2: Check Firestore admins collection (fallback)
+            console.log('🔍 Custom claims not found, checking Firestore admins collection...');
             const adminDoc = await getDoc(doc(db, 'admins', user.email));
+            console.log('📄 Admin doc exists:', adminDoc.exists());
+            
             if (adminDoc.exists()) {
-                console.log('Admin status confirmed via Firestore admins collection');
+                console.log('✅ Admin status confirmed via Firestore admins collection');
                 return true;
             }
             
+            console.log('❌ User is not an admin');
             return false;
         } catch (error) {
-            console.error('Error checking admin status:', error);
+            console.error('❌ Error checking admin status:', error);
             return false;
         }
     }
@@ -91,10 +102,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginModal.style.display = 'none';
             
             // Check admin status and show admin link
+            console.log('🔑 User authenticated, checking admin status...');
             const isAdmin = await checkAdminStatus(user);
+            console.log('👤 Is admin?', isAdmin);
+            
             const adminLinkContainer = document.getElementById('admin-link-container');
+            console.log('📦 Admin link container:', adminLinkContainer);
+            
             if (isAdmin && adminLinkContainer) {
+                console.log('✅ Showing admin link');
                 adminLinkContainer.style.display = 'inline';
+            } else if (!isAdmin) {
+                console.log('ℹ️ User is not admin, hiding admin link');
+                if (adminLinkContainer) {
+                    adminLinkContainer.style.display = 'none';
+                }
             }
         } else {
             // User is signed out - redirect to login page only if not already there
