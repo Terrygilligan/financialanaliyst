@@ -1,4 +1,4 @@
-# Quick Admin Setup for terrythemeat@duck.com
+# Quick Admin Setup Guide
 
 ## 🚀 Fastest Method: Firebase Console (Recommended)
 
@@ -16,10 +16,10 @@
 
 ### Step 3: Create Admin Document
 
-1. Document ID: `terrythemeat@duck.com` (use your email as the ID)
+1. Document ID: `YOUR_EMAIL@EXAMPLE.COM` (use your admin email as the ID)
 2. Add fields:
    ```
-   Field: email       Type: string     Value: terrythemeat@duck.com
+   Field: email       Type: string     Value: YOUR_EMAIL@EXAMPLE.COM
    Field: createdAt   Type: timestamp  Value: (click "Set to current time")
    Field: role        Type: string     Value: admin
    ```
@@ -28,7 +28,7 @@
 ### Step 4: Test Admin Access
 
 1. Go to your local app: `http://localhost:5000` (or whatever port you're using)
-2. **Log in** with `terrythemeat@duck.com`
+2. **Log in** with your admin email
    - If you haven't signed up yet, create an account first
    - If already logged in, **sign out and sign back in**
 3. You should see an **Admin** link in the navigation
@@ -50,7 +50,7 @@ npm install firebase-admin --save-dev
 ### Run the Script
 
 ```bash
-node setup-admin.js terrythemeat@duck.com
+node setup-admin.js YOUR_EMAIL@EXAMPLE.COM
 ```
 
 The script will:
@@ -75,12 +75,12 @@ If you're using Firebase emulators:
 
 3. **Add admin document manually:**
    - Collection: `admins`
-   - Document ID: `terrythemeat@duck.com`
+   - Document ID: `YOUR_EMAIL@EXAMPLE.COM`
    - Fields: Same as above
 
 4. **Test in emulator:**
    - Your local app should connect to the emulator
-   - Sign up/login with `terrythemeat@duck.com`
+   - Sign up/login with your admin email
    - Admin access should work
 
 ---
@@ -89,7 +89,7 @@ If you're using Firebase emulators:
 
 After setup:
 - [ ] Firestore has `admins` collection
-- [ ] Document exists with ID: `terrythemeat@duck.com`
+- [ ] Document exists with ID matching your admin email
 - [ ] You've signed up/logged in with that email
 - [ ] You see the Admin link in navigation (may need to refresh or re-login)
 - [ ] You can access `/admin.html` without "Access Denied"
@@ -104,7 +104,7 @@ After setup:
 1. **Check Firestore:** Verify the document exists in the `admins` collection
 2. **Refresh page:** Try refreshing after logging in
 3. **Re-login:** Sign out and sign back in
-4. **Check email:** Make sure login email matches exactly: `terrythemeat@duck.com`
+4. **Check email:** Make sure login email matches the document ID exactly
 5. **Browser console:** Open DevTools (F12) and check for errors
 
 ### "Access Denied" on Admin Page?
@@ -138,8 +138,8 @@ Once you're set up as admin:
 **Quick Summary:**
 1. Go to Firebase Console → Firestore
 2. Create `admins` collection
-3. Add document with ID: `terrythemeat@duck.com`
-4. Add field: `email` (string) = `terrythemeat@duck.com`
+3. Add document with ID: YOUR_EMAIL@EXAMPLE.COM (your actual admin email)
+4. Add field: `email` (string) = YOUR_EMAIL@EXAMPLE.COM (same email)
 5. Save
 6. Log in to your app with that email
 7. Enjoy admin powers! 🎉

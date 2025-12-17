@@ -2,12 +2,14 @@
 // This script adds admin access for a user in Firebase/Firestore
 
 const admin = require('firebase-admin');
-const serviceAccount = require('./functions/.env'); // We'll use existing credentials
 
 // If using emulator, uncomment this:
 // process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
 
 // Initialize Firebase Admin
+// This uses Application Default Credentials (ADC)
+// Run: gcloud auth application-default login
+// Or set GOOGLE_APPLICATION_CREDENTIALS environment variable
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
   projectId: 'financialanaliyst'
@@ -61,6 +63,14 @@ async function setupAdmin(email) {
 }
 
 // Run the setup
-const adminEmail = process.argv[2] || 'terrythemeat@duck.com';
+const adminEmail = process.argv[2];
+
+if (!adminEmail) {
+  console.error('\n❌ Please provide an email address:');
+  console.error('Usage: node setup-admin.js <admin-email>\n');
+  console.error('Example: node setup-admin.js admin@example.com\n');
+  process.exit(1);
+}
+
 setupAdmin(adminEmail);
 
