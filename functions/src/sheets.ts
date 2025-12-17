@@ -57,7 +57,7 @@ export async function appendReceiptToSheet(
     const sheets = getSheetsClient();
 
     // Map ReceiptData to the row format matching the Sheet headers
-    // Headers: Vendor Name, Date, Total Amount, Category, Timestamp, Entity, Original Currency, Original Amount, Exchange Rate, Supplier VAT Number, VAT Subtotal, VAT Amount, VAT Rate
+    // Headers: Vendor Name, Date, Total Amount, Category, Timestamp, Entity, Original Currency, Original Amount, Exchange Rate, Supplier VAT Number, VAT Subtotal, VAT Amount, VAT Rate, Processed By, Validation Status, Has Errors
     const rowData = [
         receiptData.vendorName,
         receiptData.transactionDate,
@@ -71,7 +71,10 @@ export async function appendReceiptToSheet(
         receiptData.supplierVatNumber || '', // Phase 3.1: VAT Extraction
         receiptData.vatBreakdown?.subtotal || '', // Phase 3.1: VAT Extraction
         receiptData.vatBreakdown?.vatAmount || '', // Phase 3.1: VAT Extraction
-        receiptData.vatBreakdown?.vatRate || '' // Phase 3.1: VAT Extraction
+        receiptData.vatBreakdown?.vatRate || '', // Phase 3.1: VAT Extraction
+        receiptData.processedBy || 'system', // Phase 3.3: Audit Trail
+        receiptData.validationStatus || '', // Phase 3.3: Audit Trail
+        receiptData.hasErrors ? 'YES' : 'NO' // Phase 3.3: Audit Trail
     ];
 
     try {
@@ -88,8 +91,8 @@ export async function appendReceiptToSheet(
         
         // Append the row to the Sheet
         // Using 'USER_ENTERED' valueInputOption to preserve number formatting
-        // Range updated to A:M to include Entity, Currency, and VAT columns (Phase 1.1, 2.4, 3.1)
-        const range = `${sheetName}!A:M`;
+        // Range updated to A:P to include Entity, Currency, VAT, and Audit columns (Phase 1.1, 2.4, 3.1, 3.3)
+        const range = `${sheetName}!A:P`;
         console.log(`Appending to range: ${range}`);
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
@@ -269,7 +272,7 @@ export async function appendToAccountantSheet(
  */
 export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
     const sheets = getSheetsClient();
-    const expectedHeaders = ['Vendor Name', 'Date', 'Total Amount', 'Category', 'Timestamp', 'Entity', 'Original Currency', 'Original Amount', 'Exchange Rate', 'Supplier VAT Number', 'VAT Subtotal', 'VAT Amount', 'VAT Rate'];
+    const expectedHeaders = ['Vendor Name', 'Date', 'Total Amount', 'Category', 'Timestamp', 'Entity', 'Original Currency', 'Original Amount', 'Exchange Rate', 'Supplier VAT Number', 'VAT Subtotal', 'VAT Amount', 'VAT Rate', 'Processed By', 'Validation Status', 'Has Errors'];
 
     try {
         // Get the actual sheet name from the spreadsheet (same logic as appendReceiptToSheet)
@@ -285,7 +288,7 @@ export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
         
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: `${sheetName}!A1:M1`, // Use dynamic sheet name instead of hard-coded 'Sheet1', updated for currency and VAT fields
+            range: `${sheetName}!A1:P1`, // Use dynamic sheet name instead of hard-coded 'Sheet1', updated for currency, VAT, and audit fields
         });
 
         const headers = response.data.values?.[0] || [];

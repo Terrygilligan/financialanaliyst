@@ -6,6 +6,7 @@ import { getAuth } from "firebase-admin/auth";
 import { ReceiptData } from "./schema";
 import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
 import { validateReceiptData } from "./validation";
+import { logInfo, logWarning, logErrorWithDetails } from "./error-logging";
 
 const db = getFirestore();
 const auth = getAuth();
@@ -99,10 +100,23 @@ export const adminApproveReceipt = onCall(
             if (!validation.isValid) {
                 console.warn(`Admin override: Receipt ${receiptId} has validation errors:`, validation.errors);
                 console.warn(`Admin ${callerUid} is approving despite validation failures.`);
+                
+                // Phase 3.3: Log admin override
+                await logWarning('adminApproveReceipt', `Admin override: Approving receipt with validation errors`, {
+                    receiptId,
+                    adminId: callerUid,
+                    userId,
+                    errors: validation.errors
+                });
             }
             if (validation.warnings.length > 0) {
                 console.log(`Admin approval: Receipt ${receiptId} has validation warnings:`, validation.warnings);
             }
+
+            // Phase 3.3: Set audit trail fields
+            finalReceiptData.processedBy = 'admin';
+            finalReceiptData.validationStatus = !validation.isValid ? 'admin_override' : validation.warnings.length > 0 ? 'warning' : 'passed';
+            finalReceiptData.hasErrors = false;
 
             // 3. Write to Google Sheets
             const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -166,6 +180,16 @@ export const adminApproveReceipt = onCall(
 
             console.log(`Receipt approved by admin ${callerUid}. Receipt ID: ${receiptId}`);
 
+            // Phase 3.3: Log admin approval
+            await logInfo('adminApproveReceipt', `Receipt approved by admin: ${receiptId}`, {
+                receiptId,
+                adminId: callerUid,
+                userId,
+                fileName: pendingReceipt.fileName,
+                validationStatus: finalReceiptData.validationStatus,
+                adminNotes: adminNotes || ''
+            });
+
             return {
                 success: true,
                 message: "Receipt approved and finalized",
@@ -175,6 +199,13 @@ export const adminApproveReceipt = onCall(
             };
         } catch (error) {
             console.error(`Error approving receipt ${receiptId}:`, error);
+            
+            // Phase 3.3: Log error
+            await logErrorWithDetails('adminApproveReceipt', error as Error, {
+                receiptId,
+                adminId: callerUid
+            });
+            
             throw new Error(`Failed to approve receipt: ${(error as Error).message}`);
         }
     }
@@ -276,6 +307,15 @@ export const adminRejectReceipt = onCall(
 
             console.log(`Receipt rejected by admin ${callerUid}. Receipt ID: ${receiptId}. Reason: ${adminNotes}`);
 
+            // Phase 3.3: Log admin rejection
+            await logInfo('adminRejectReceipt', `Receipt rejected by admin: ${receiptId}`, {
+                receiptId,
+                adminId: callerUid,
+                userId,
+                fileName: pendingReceipt.fileName,
+                reason: adminNotes
+            });
+
             return {
                 success: true,
                 message: "Receipt rejected",
@@ -283,6 +323,13 @@ export const adminRejectReceipt = onCall(
             };
         } catch (error) {
             console.error(`Error rejecting receipt ${receiptId}:`, error);
+            
+            // Phase 3.3: Log error
+            await logErrorWithDetails('adminRejectReceipt', error as Error, {
+                receiptId,
+                adminId: callerUid
+            });
+            
             throw new Error(`Failed to reject receipt: ${(error as Error).message}`);
         }
     }

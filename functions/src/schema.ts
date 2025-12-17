@@ -34,6 +34,10 @@ export interface ReceiptData {
         vatAmount?: number; // VAT amount charged
         vatRate?: number; // VAT rate as percentage (e.g., 20 for 20%)
     };
+    // Phase 3.3: Audit trail fields (all optional)
+    processedBy?: string; // 'user' or 'admin' or 'system'
+    validationStatus?: string; // 'passed', 'warning', 'failed', 'admin_override'
+    hasErrors?: boolean; // Flag for receipts that had processing errors
 }
 
 /**

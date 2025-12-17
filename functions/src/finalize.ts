@@ -5,6 +5,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { ReceiptData } from "./schema";
 import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
 import { validateReceiptData } from "./validation";
+import { logInfo, logWarning, logErrorWithDetails } from "./error-logging";
 
 const db = getFirestore();
 
@@ -89,6 +90,14 @@ export const finalizeReceipt = onCall(
             if (!validation.isValid) {
                 console.warn(`Receipt validation failed for ${receiptId}:`, validation.errors);
                 
+                // Phase 3.3: Log validation failure
+                await logWarning('finalizeReceipt', `Receipt validation failed for ${receiptId}`, {
+                    receiptId,
+                    userId: callerUid,
+                    errors: validation.errors,
+                    warnings: validation.warnings
+                });
+                
                 // Store receipt in needs_admin_review status (keep in pending_receipts collection)
                 await db.collection('pending_receipts').doc(receiptId).update({
                     status: 'needs_admin_review',
@@ -127,7 +136,18 @@ export const finalizeReceipt = onCall(
             // Log warnings if any (but continue processing)
             if (validation.warnings.length > 0) {
                 console.log(`Receipt validation warnings for ${receiptId}:`, validation.warnings);
+                // Phase 3.3: Log validation warnings
+                await logWarning('finalizeReceipt', `Receipt has validation warnings for ${receiptId}`, {
+                    receiptId,
+                    userId: callerUid,
+                    warnings: validation.warnings
+                });
             }
+
+            // Phase 3.3: Set audit trail fields
+            finalReceiptData.processedBy = 'user';
+            finalReceiptData.validationStatus = validation.warnings.length > 0 ? 'warning' : 'passed';
+            finalReceiptData.hasErrors = false;
 
             // 4. Write to Google Sheets
             const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -186,6 +206,14 @@ export const finalizeReceipt = onCall(
 
             console.log(`Receipt finalized successfully. Receipt ID: ${receiptId}`);
 
+            // Phase 3.3: Log successful finalization
+            await logInfo('finalizeReceipt', `Receipt finalized successfully: ${receiptId}`, {
+                receiptId,
+                userId: callerUid,
+                fileName: pendingReceipt.fileName,
+                validationStatus: finalReceiptData.validationStatus
+            });
+
             return {
                 success: true,
                 message: "Receipt finalized and written to Google Sheets",
@@ -195,6 +223,13 @@ export const finalizeReceipt = onCall(
             };
         } catch (error) {
             console.error(`Error finalizing receipt ${receiptId}:`, error);
+            
+            // Phase 3.3: Log error
+            await logErrorWithDetails('finalizeReceipt', error as Error, {
+                receiptId,
+                userId: callerUid
+            });
+            
             throw new Error(`Failed to finalize receipt: ${(error as Error).message}`);
         }
     }
