@@ -21,7 +21,7 @@ const auth = getAuth();
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
+import { appendReceiptToUserSheet } from "./sheets"; // Phase 4: Multi-sheet routing
 import { lookupEntityForUser } from "./entities";
 import { convertReceiptToBaseCurrency } from "./currency"; 
 
@@ -186,35 +186,18 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 hasGeminiKey: !!process.env.GEMINI_API_KEY
             });
             
-            if (sheetId) {
-                // Write to main Google Sheet
-                try {
-                    await appendReceiptToSheet(receiptData, sheetId);
-                    console.log(`Receipt data successfully written to main Google Sheet: ${sheetId}`);
-                    sheetsWriteSuccess = true;
-                    googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-                } catch (sheetsError) {
-                    // Log Sheets error but don't fail the entire operation
-                    // The receipt was processed successfully, Sheets write is secondary
-                    console.error(`Failed to write to main Google Sheet: ${(sheetsError as Error).message}`);
-                    console.error("Full error:", sheetsError);
-                }
-
-                // Write to Accountant CSV Sheet (Phase 3.2)
-                try {
-                    await appendToAccountantSheet(receiptData, sheetId);
-                    console.log(`Receipt data successfully written to Accountant Google Sheet: ${sheetId}`);
-                    accountantSheetsWriteSuccess = true;
-                } catch (sheetsError) {
-                    console.error(`Failed to write to Accountant Google Sheet: ${(sheetsError as Error).message}`);
-                    console.error("Full error:", sheetsError);
-                }
-            } else {
-                console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
-                console.error("This means environment variables are not configured for the deployed function.");
-                console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
-                console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
-                console.error("2. OR Firebase Functions Secrets");
+            // Phase 4: Use multi-sheet routing for user-specific sheets
+            try {
+                const sheetResult = await appendReceiptToUserSheet(receiptData, userId);
+                console.log(`Receipt data successfully written to Google Sheet: ${sheetResult.sheetId}`);
+                sheetsWriteSuccess = true;
+                accountantSheetsWriteSuccess = true; // Both sheets handled by appendReceiptToUserSheet
+                googleSheetLink = sheetResult.sheetLink;
+            } catch (sheetsError) {
+                // Log Sheets error but don't fail the entire operation
+                // The receipt was processed successfully, Sheets write is secondary
+                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
+                console.error("Full error:", sheetsError);
             }
 
             // 6. Update Firestore Status (Step 10)
@@ -384,6 +367,20 @@ export { getCategories, createCategory, updateCategory, deleteCategory } from ".
 
 // Phase 2.6: Admin review functions
 export { adminApproveReceipt, adminRejectReceipt } from "./admin-review";
+
+// Phase 4: Multi-Sheet Management - Admin functions
+export { 
+  createSheetConfiguration,
+  updateSheetConfiguration,
+  deleteSheetConfiguration,
+  getSheetConfigurations,
+  checkSheetHealth,
+  assignSheetConfigToUser,
+  assignSheetConfigToEntity,
+  getSheetConfigAssignments,
+  bulkAssignUsersToSheet,
+  removeUserSheetAssignment
+} from "./admin-sheet-management";
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.

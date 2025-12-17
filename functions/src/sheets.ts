@@ -1,13 +1,17 @@
 // functions/src/sheets.ts
+// Phase 4: Multi-Sheet Management - Updated for per-user sheet routing
 
 import { google } from "googleapis";
 import { ReceiptData } from "./schema";
+import { getSheetConfigForUser, incrementSheetStats } from "./sheet-config";
 
 /**
  * Initialize Google Sheets API client using Service Account credentials.
  * The Service Account JSON key should be provided via environment variable.
+ * 
+ * Phase 4: Now exported for use in sheet health checks
  */
-function getSheetsClient() {
+export function getSheetsClient() {
     const serviceAccountKey = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY;
     
     if (!serviceAccountKey) {
@@ -41,14 +45,18 @@ function getSheetsClient() {
 /**
  * Appends receipt data to the specified Google Sheet.
  * 
+ * Phase 4: Updated to accept optional tab name for multi-sheet support
+ * 
  * @param receiptData - The structured receipt data to append
  * @param sheetId - The Google Sheet ID (from the Sheet URL)
+ * @param tabName - Optional tab name (defaults to auto-detected first sheet)
  * @returns Promise<void>
  * @throws Error if the append operation fails
  */
 export async function appendReceiptToSheet(
     receiptData: ReceiptData,
-    sheetId: string
+    sheetId: string,
+    tabName?: string
 ): Promise<void> {
     if (!sheetId) {
         throw new Error("Google Sheet ID is required");
@@ -78,14 +86,19 @@ export async function appendReceiptToSheet(
     ];
 
     try {
-        // Get the actual sheet name from the spreadsheet
-        // This handles different languages (e.g., "Blad1" in Dutch, "Sheet1" in English)
-        const spreadsheet = await sheets.spreadsheets.get({
-            spreadsheetId: sheetId,
-        });
+        // Phase 4: Use provided tab name or auto-detect
+        let sheetName = tabName;
         
-        const firstSheet = spreadsheet.data.sheets?.[0];
-        const sheetName = firstSheet?.properties?.title || 'Sheet1';
+        if (!sheetName) {
+            // Get the actual sheet name from the spreadsheet
+            // This handles different languages (e.g., "Blad1" in Dutch, "Sheet1" in English)
+            const spreadsheet = await sheets.spreadsheets.get({
+                spreadsheetId: sheetId,
+            });
+            
+            const firstSheet = spreadsheet.data.sheets?.[0];
+            sheetName = firstSheet?.properties?.title || 'Sheet1';
+        }
         
         console.log(`Using sheet name: "${sheetName}"`);
         
@@ -123,22 +136,26 @@ export async function appendReceiptToSheet(
  * This tab has a simplified format optimized for accountant workflows and CSV export.
  * 
  * Phase 3.2: Accountant CSV Tab
+ * Phase 4: Updated to accept optional tab name for multi-sheet support
  * 
  * @param receiptData - The structured receipt data to append
  * @param sheetId - The Google Sheet ID
+ * @param tabName - Optional accountant tab name (defaults to 'Accountant_CSV_Ready')
  * @returns Promise<void>
  * @throws Error if the append operation fails
  */
 export async function appendToAccountantSheet(
     receiptData: ReceiptData,
-    sheetId: string
+    sheetId: string,
+    tabName?: string
 ): Promise<void> {
     if (!sheetId) {
         throw new Error("Google Sheet ID is required");
     }
 
     const sheets = getSheetsClient();
-    const accountantSheetName = 'Accountant_CSV_Ready';
+    // Phase 4: Use provided tab name or default
+    const accountantSheetName = tabName || 'Accountant_CSV_Ready';
 
     // Accountant-optimized format: Date, Vendor, Entity, Amount, Currency, VAT Number, VAT Amount, Category, Notes
     const rowData = [
@@ -317,3 +334,73 @@ export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
         return false;
     }
 }
+
+/**
+ * Phase 4: Append receipt to the correct sheet for a user
+ * 
+ * This function handles the complete multi-sheet workflow:
+ * 1. Looks up the correct sheet config for the user
+ * 2. Determines the sheet ID and tab names
+ * 3. Writes to both main and accountant tabs
+ * 4. Updates sheet statistics
+ * 
+ * @param receiptData - The structured receipt data
+ * @param userId - The user's Firebase Auth UID
+ * @returns Object with success status, sheet ID, and sheet link
+ */
+export async function appendReceiptToUserSheet(
+  receiptData: ReceiptData,
+  userId: string
+): Promise<{ success: boolean; sheetId: string; sheetLink: string; configId?: string }> {
+  try {
+    console.log(`[Multi-Sheet] Processing receipt for user: ${userId}`);
+    
+    // 1. Get the correct sheet config for this user
+    const sheetConfig = await getSheetConfigForUser(userId);
+    
+    // 2. Determine sheet ID (fall back to env variable if no config)
+    const sheetId = sheetConfig?.sheetId || process.env.GOOGLE_SHEET_ID;
+    
+    if (!sheetId) {
+      throw new Error('No sheet ID found for user and no GOOGLE_SHEET_ID environment variable set');
+    }
+    
+    console.log(`[Multi-Sheet] Using sheet: ${sheetId}${sheetConfig ? ` (config: ${sheetConfig.id})` : ' (env default)'}`);
+    
+    // 3. Get tab names from config (or use defaults)
+    const mainTabName = sheetConfig?.config?.mainTabName;
+    const accountantTabName = sheetConfig?.config?.accountantTabName;
+    
+    console.log(`[Multi-Sheet] Main tab: ${mainTabName || 'auto'}, Accountant tab: ${accountantTabName || 'default'}`);
+    
+    // 4. Write to main sheet
+    await appendReceiptToSheet(receiptData, sheetId, mainTabName);
+    console.log(`[Multi-Sheet] ✅ Receipt written to main sheet`);
+    
+    // 5. Write to accountant sheet (non-blocking)
+    try {
+      await appendToAccountantSheet(receiptData, sheetId, accountantTabName);
+      console.log(`[Multi-Sheet] ✅ Receipt written to accountant sheet`);
+    } catch (error) {
+      console.warn('[Multi-Sheet] ⚠️ Failed to write to accountant sheet (non-critical):', error);
+      // Don't fail the whole operation if accountant tab fails
+    }
+    
+    // 6. Update sheet statistics
+    if (sheetConfig) {
+      await incrementSheetStats(sheetConfig.id);
+      console.log(`[Multi-Sheet] ✅ Sheet stats updated`);
+    }
+    
+    return {
+      success: true,
+      sheetId: sheetId,
+      sheetLink: `https://docs.google.com/spreadsheets/d/${sheetId}/edit`,
+      configId: sheetConfig?.id
+    };
+  } catch (error) {
+    console.error('[Multi-Sheet] ❌ Error appending receipt to user sheet:', error);
+    throw error;
+  }
+}
+

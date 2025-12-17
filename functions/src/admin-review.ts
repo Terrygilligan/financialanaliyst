@@ -4,7 +4,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet, appendToAccountantSheet } from "./sheets";
+import { appendReceiptToUserSheet } from "./sheets"; // Phase 4: Multi-sheet routing
 import { validateReceiptData } from "./validation";
 import { logInfo, logWarning, logErrorWithDetails } from "./error-logging";
 
@@ -160,26 +160,16 @@ export const adminApproveReceipt = onCall(
             let sheetsWriteSuccess = false;
             let googleSheetLink = null;
 
-            if (sheetId) {
-                try {
-                    // Write to main sheet
-                    await appendReceiptToSheet(finalReceiptData, sheetId);
-                    console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
-                    sheetsWriteSuccess = true;
-                    googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-                    
-                    // Phase 3.2: Also write to accountant CSV tab (non-blocking)
-                    try {
-                        await appendToAccountantSheet(finalReceiptData, sheetId);
-                        console.log(`Receipt data also written to Accountant_CSV_Ready tab`);
-                    } catch (accountantError) {
-                        console.warn(`Failed to write to Accountant_CSV_Ready tab (non-critical): ${(accountantError as Error).message}`);
-                        // Don't fail the whole operation if accountant tab fails
-                    }
-                } catch (sheetsError) {
-                    console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                    // Don't fail the entire operation if Sheets write fails
-                }
+            // Phase 4: Use multi-sheet routing for user-specific sheets
+            // Use the receipt owner's userId (not admin's) for sheet routing
+            try {
+                const sheetResult = await appendReceiptToUserSheet(finalReceiptData, pendingReceipt.userId);
+                console.log(`Receipt data successfully written to Google Sheet: ${sheetResult.sheetId}`);
+                sheetsWriteSuccess = true;
+                googleSheetLink = sheetResult.sheetLink;
+            } catch (sheetsError) {
+                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
+                // Don't fail the entire operation if Sheets write fails
             }
 
             // 4. Update batches collection with final status
