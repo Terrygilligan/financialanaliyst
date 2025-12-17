@@ -58,6 +58,13 @@ export const finalizeReceipt = onCall(
             }
 
             // 3. Merge user corrections with original Gemini data
+            // Bug Fix: Validate that receiptData exists before attempting to merge
+            if (!pendingReceipt.receiptData) {
+                throw new Error(
+                    `Receipt ${receiptId} is missing receiptData field. The pending receipt document may be corrupt.`
+                );
+            }
+            
             const originalReceiptData = pendingReceipt.receiptData as ReceiptData;
             
             const finalReceiptData: ReceiptData = {
@@ -88,9 +95,13 @@ export const finalizeReceipt = onCall(
             if (finalReceiptData.exchangeRate === 1.0 || finalReceiptData.exchangeRate === undefined) {
                 console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0 or undefined`);
                 finalReceiptData.originalAmount = finalReceiptData.totalAmount;
-                // If exchangeRate was undefined, set it to 1.0 for consistency
+                // If exchangeRate was undefined, set it to 1.0 and initialize originalCurrency for data integrity
                 if (finalReceiptData.exchangeRate === undefined) {
                     finalReceiptData.exchangeRate = 1.0;
+                    // Bug Fix: Set originalCurrency to maintain complete currency metadata
+                    if (!finalReceiptData.originalCurrency) {
+                        finalReceiptData.originalCurrency = finalReceiptData.currency || baseCurrency;
+                    }
                 }
             }
 

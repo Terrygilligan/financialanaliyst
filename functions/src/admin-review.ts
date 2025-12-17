@@ -106,9 +106,13 @@ export const adminApproveReceipt = onCall(
             if (finalReceiptData.exchangeRate === 1.0 || finalReceiptData.exchangeRate === undefined) {
                 console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0 or undefined`);
                 finalReceiptData.originalAmount = finalReceiptData.totalAmount;
-                // If exchangeRate was undefined, set it to 1.0 for consistency
+                // If exchangeRate was undefined, set it to 1.0 and initialize originalCurrency for data integrity
                 if (finalReceiptData.exchangeRate === undefined) {
                     finalReceiptData.exchangeRate = 1.0;
+                    // Bug Fix: Set originalCurrency to maintain complete currency metadata
+                    if (!finalReceiptData.originalCurrency) {
+                        finalReceiptData.originalCurrency = finalReceiptData.currency || baseCurrency;
+                    }
                 }
             }
 
