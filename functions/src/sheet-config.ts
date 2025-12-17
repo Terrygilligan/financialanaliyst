@@ -458,6 +458,9 @@ export async function getEntitiesForSheetConfig(configId: string): Promise<any[]
 /**
  * Update sheet statistics after successful write
  * 
+ * Bug fix: Initialize complete stats structure and use transaction.set() with merge
+ * to avoid Firestore errors when stats field doesn't exist yet
+ * 
  * @param configId - Sheet config ID
  */
 export async function incrementSheetStats(configId: string): Promise<void> {
@@ -467,11 +470,21 @@ export async function incrementSheetStats(configId: string): Promise<void> {
     await db.runTransaction(async (transaction) => {
       const configDoc = await transaction.get(configRef);
       if (configDoc.exists) {
-        const currentStats = configDoc.data()?.stats || { totalReceipts: 0 };
-        transaction.update(configRef, {
-          'stats.totalReceipts': (currentStats.totalReceipts || 0) + 1,
-          'stats.lastReceiptAt': new Date().toISOString()
-        });
+        // Initialize with complete structure including all expected fields
+        const currentStats = configDoc.data()?.stats || { 
+          totalReceipts: 0, 
+          lastReceiptAt: null 
+        };
+        
+        // Use set() with merge instead of update() for safer partial updates
+        // This ensures the parent 'stats' field is created if it doesn't exist
+        transaction.set(configRef, {
+          stats: {
+            totalReceipts: (currentStats.totalReceipts || 0) + 1,
+            lastReceiptAt: new Date().toISOString()
+          },
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
       }
     });
     
