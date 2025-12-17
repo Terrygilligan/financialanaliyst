@@ -1,4 +1,4 @@
-kek# Phase 3.2: Accountant CSV-Ready Tab
+# Phase 3.2: Accountant CSV-Ready Tab
 
 ## 📋 Overview
 

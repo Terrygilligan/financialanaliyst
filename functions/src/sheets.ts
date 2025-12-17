@@ -145,8 +145,8 @@ export async function appendToAccountantSheet(
         receiptData.transactionDate, // Date (YYYY-MM-DD for easy sorting)
         receiptData.vendorName, // Vendor
         receiptData.entity || 'Unassigned', // Entity
-        receiptData.totalAmount, // Amount (final total)
-        receiptData.originalCurrency || receiptData.currency || 'GBP', // Currency
+        receiptData.totalAmount, // Amount (final total - after conversion if applicable)
+        process.env.BASE_CURRENCY || 'GBP', // Currency (always base currency after conversion)
         receiptData.supplierVatNumber || '', // VAT Number
         receiptData.vatBreakdown?.vatAmount || '', // VAT Amount
         receiptData.category, // Category
@@ -177,8 +177,8 @@ export async function appendToAccountantSheet(
         if (!accountantSheet) {
             console.log(`Creating ${accountantSheetName} sheet...`);
             
-            // Create the sheet
-            await sheets.spreadsheets.batchUpdate({
+            // Create the sheet and get its ID
+            const createResponse = await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: sheetId,
                 requestBody: {
                     requests: [{
@@ -193,6 +193,13 @@ export async function appendToAccountantSheet(
                     }]
                 }
             });
+
+            // Get the newly created sheet ID from the response
+            const newSheetId = createResponse.data.replies?.[0]?.addSheet?.properties?.sheetId;
+            if (newSheetId === undefined) {
+                console.error('Failed to get sheet ID after creation');
+                throw new Error('Failed to create accountant sheet');
+            }
 
             // Add headers
             const headers = [
@@ -209,16 +216,14 @@ export async function appendToAccountantSheet(
                 }
             });
 
-            // Format headers (bold, background color)
+            // Format headers (bold, background color) using the sheet ID we just got
             await sheets.spreadsheets.batchUpdate({
                 spreadsheetId: sheetId,
                 requestBody: {
                     requests: [{
                         repeatCell: {
                             range: {
-                                sheetId: (await sheets.spreadsheets.get({ spreadsheetId: sheetId }))
-                                    .data.sheets?.find(s => s.properties?.title === accountantSheetName)
-                                    ?.properties?.sheetId,
+                                sheetId: newSheetId, // Use the sheet ID from creation response
                                 startRowIndex: 0,
                                 endRowIndex: 1
                             },
@@ -234,7 +239,7 @@ export async function appendToAccountantSheet(
                 }
             });
 
-            console.log(`${accountantSheetName} sheet created successfully.`);
+            console.log(`${accountantSheetName} sheet created successfully with ID: ${newSheetId}`);
         }
 
         // Append the row
