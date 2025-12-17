@@ -1,7 +1,7 @@
 # Admin Guide - AI Financial Analyst
 
 **Last Updated**: 2024-12-19  
-**Version**: 1.0 (Phase 1 Complete)
+**Version**: 1.3 (Phase 3.1 Complete - VAT Extraction)
 
 ---
 

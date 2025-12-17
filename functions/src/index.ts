@@ -84,7 +84,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
 
         // 4.6. Currency conversion (Phase 2.4: Currency Conversion)
         // Extract currency from Gemini response (if available)
-        const extractedCurrency = (receiptData as any).currency;
+        const extractedCurrency = receiptData.currency;
         if (extractedCurrency) {
             console.log(`Receipt currency detected: ${extractedCurrency}`);
             const conversionResult = await convertReceiptToBaseCurrency(

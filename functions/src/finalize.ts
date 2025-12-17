@@ -76,11 +76,12 @@ export const finalizeReceipt = onCall(
             }
 
             // Phase 2.5: Validate receipt data
+            // Convert enum to string for validation function
             const validation = validateReceiptData({
                 vendorName: finalReceiptData.vendorName,
                 transactionDate: finalReceiptData.transactionDate,
                 totalAmount: finalReceiptData.totalAmount,
-                category: finalReceiptData.category,
+                category: String(finalReceiptData.category), // Convert enum to string
                 vatNumber: (updatedReceiptData as any)?.vatNumber
             });
 

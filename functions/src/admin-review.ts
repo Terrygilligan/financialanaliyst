@@ -108,19 +108,21 @@ export const adminApproveReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 5. Update user statistics
+            // 5. Update user statistics using transaction to prevent race conditions
             const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
-            
-            await userRef.set({
-                totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
-                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                lastUpdated: new Date().toISOString(),
-                lastReceiptProcessed: pendingReceipt.fileName,
-                lastReceiptTimestamp: new Date().toISOString()
-            }, { merge: true });
+            await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+                
+                transaction.set(userRef, {
+                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                    totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                    lastUpdated: new Date().toISOString(),
+                    lastReceiptProcessed: pendingReceipt.fileName,
+                    lastReceiptTimestamp: new Date().toISOString()
+                }, { merge: true });
+            });
 
             // 6. Remove from pending_receipts collection
             await pendingReceiptRef.delete();
@@ -220,15 +222,17 @@ export const adminRejectReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 4. Update user statistics (decrement pending count)
+            // 4. Update user statistics using transaction to prevent race conditions
             const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
-            
-            await userRef.set({
-                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                lastUpdated: new Date().toISOString()
-            }, { merge: true });
+            await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
+                
+                transaction.set(userRef, {
+                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                    lastUpdated: new Date().toISOString()
+                }, { merge: true });
+            });
 
             // 5. Remove from pending_receipts collection
             await pendingReceiptRef.delete();

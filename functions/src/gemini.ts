@@ -85,7 +85,13 @@ export async function extractReceiptData(
   "transactionDate": "The purchase date in YYYY-MM-DD format",
   "totalAmount": The final total including tax (as a number, no currency symbols),
   "currency": "The currency code (e.g., USD, GBP, EUR). Default to GBP if not visible.",
-  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other"
+  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other",
+  "supplierVatNumber": "The supplier's VAT registration number (e.g., GB123456789) if visible - OPTIONAL",
+  "vatBreakdown": {
+    "subtotal": Amount before VAT/tax (as a number) - OPTIONAL,
+    "vatAmount": VAT/tax amount (as a number) - OPTIONAL,
+    "vatRate": VAT/tax rate as percentage (e.g., 20 for 20%) - OPTIONAL
+  }
 }
 
 Categories:
@@ -94,6 +100,11 @@ Categories:
 - "Utilities": Electricity, water, gas, internet, phone bills
 - "Supplies": Office supplies, general business supplies
 - "Other": Anything that doesn't fit the above categories
+
+VAT Information (Phase 3.1 - Extract if visible):
+- Look for "VAT Number", "VAT Reg No", "Tax ID", or similar labels for the supplier's VAT number
+- Look for subtotal, VAT amount, and VAT rate (often shown as "VAT @ 20%" or similar)
+- If VAT information is not clearly visible, omit the vatBreakdown field entirely
 
 Be precise and extract only information that is clearly visible on the receipt.
 Return ONLY valid JSON, no other text.`;
