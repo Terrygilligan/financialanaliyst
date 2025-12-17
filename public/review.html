@@ -101,15 +101,22 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="review-category">Category *</label>
+                        <label for="review-category">Category: <span style="color: red;">*</span></label>
                         <select id="review-category" required>
-                            <option value="">Select a category...</option>
+                            <option value="">-- Select category (required) --</option>
                             <option value="Maintenance">Maintenance</option>
                             <option value="Cleaning Supplies">Cleaning Supplies</option>
                             <option value="Utilities">Utilities</option>
                             <option value="Supplies">Supplies</option>
                             <option value="Other">Other</option>
                         </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="review-vat">VAT Number (Optional):</label>
+                        <input type="text" id="review-vat" placeholder="e.g., GB123456789, DE123456789">
+                        <small class="help-text">Enter the supplier's VAT number if available on the receipt</small>
+                        <div id="vat-validation" class="validation-message"></div>
                     </div>
 
                     <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">

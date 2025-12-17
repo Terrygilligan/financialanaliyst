@@ -252,8 +252,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Use ?? instead of || to allow 0 as a valid amount
         document.getElementById('review-amount').value = receiptData.totalAmount ?? '';
         document.getElementById('review-category').value = receiptData.category || '';
+        document.getElementById('review-vat').value = receiptData.vatNumber || '';
 
         reviewModal.style.display = 'flex';
+        
+        // Clear validation messages
+        clearValidationMessages();
+    }
+
+    // Clear validation messages
+    function clearValidationMessages() {
+        const vatValidation = document.getElementById('vat-validation');
+        if (vatValidation) {
+            vatValidation.textContent = '';
+            vatValidation.className = 'validation-message';
+        }
+    }
+
+    // VAT number validation (client-side for immediate feedback)
+    const vatInput = document.getElementById('review-vat');
+    if (vatInput) {
+        vatInput.addEventListener('blur', () => {
+            const vatNumber = vatInput.value.trim();
+            const vatValidation = document.getElementById('vat-validation');
+            
+            if (!vatNumber) {
+                vatValidation.textContent = '';
+                vatValidation.className = 'validation-message';
+                return;
+            }
+
+            // Basic format check (country code + alphanumeric)
+            const vatPattern = /^[A-Z]{2}[A-Z0-9]+$/;
+            if (!vatPattern.test(vatNumber.replace(/\s/g, '').toUpperCase())) {
+                vatValidation.textContent = '⚠️ VAT format should be: Country code (2 letters) + number (e.g., GB123456789)';
+                vatValidation.className = 'validation-message warning';
+            } else {
+                vatValidation.textContent = '✓ Format looks correct (will be validated on submit)';
+                vatValidation.className = 'validation-message success';
+            }
+        });
     }
 
     // Finalize receipt
@@ -261,6 +299,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const receiptId = document.getElementById('review-receipt-id').value;
+        const vatNumber = document.getElementById('review-vat')?.value.trim() || null;
+        
         const receiptData = {
             vendorName: document.getElementById('review-vendor').value.trim(),
             transactionDate: document.getElementById('review-date').value,
@@ -268,10 +308,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             category: document.getElementById('review-category').value
         };
 
-        // Validate (use == null to allow 0 as valid amount, but reject NaN)
+        // Add VAT number if provided
+        if (vatNumber) {
+            receiptData.vatNumber = vatNumber;
+        }
+
+        // Validate required fields (use == null to allow 0 as valid amount, but reject NaN)
         if (!receiptData.vendorName || !receiptData.transactionDate || 
             receiptData.totalAmount == null || isNaN(receiptData.totalAmount) || !receiptData.category) {
-            alert('Please fill in all required fields.');
+            alert('Please fill in all required fields. Category is mandatory.');
+            return;
+        }
+
+        // Category is mandatory - double check
+        if (receiptData.category === '' || receiptData.category === 'Select category...') {
+            alert('Please select a category. This field is required.');
+            document.getElementById('review-category').focus();
             return;
         }
 
@@ -289,6 +341,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Receipt finalized successfully!');
                 reviewModal.style.display = 'none';
                 // Receipt will be removed from list via real-time listener
+            } else if (result.data.needsAdminReview) {
+                // Validation failed - needs admin review
+                const errorMsg = result.data.errors?.join('\n') || 'Validation errors occurred';
+                const warningMsg = result.data.warnings?.length > 0 ? '\n\nWarnings:\n' + result.data.warnings.join('\n') : '';
+                alert(`Receipt marked for admin review:\n\n${errorMsg}${warningMsg}\n\nAn administrator will review and process this receipt.`);
+                reviewModal.style.display = 'none';
+                // Receipt will be moved to needs_admin_review status
             } else {
                 throw new Error(result.data.message || 'Failed to finalize receipt');
             }

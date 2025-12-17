@@ -4,6 +4,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { ReceiptData } from "./schema";
 import { appendReceiptToSheet } from "./sheets";
+import { validateReceiptData } from "./validation";
 
 const db = getFirestore();
 
@@ -72,6 +73,48 @@ export const finalizeReceipt = onCall(
                 finalReceiptData.totalAmount == null || typeof finalReceiptData.totalAmount !== 'number' ||
                 !finalReceiptData.category || !finalReceiptData.timestamp) {
                 throw new Error("Missing required receipt data fields: vendorName, transactionDate, totalAmount, category, and timestamp are required");
+            }
+
+            // Phase 2.5: Validate receipt data
+            const validation = validateReceiptData({
+                vendorName: finalReceiptData.vendorName,
+                transactionDate: finalReceiptData.transactionDate,
+                totalAmount: finalReceiptData.totalAmount,
+                category: finalReceiptData.category,
+                vatNumber: (updatedReceiptData as any)?.vatNumber
+            });
+
+            // If validation fails, mark for admin review instead of rejecting
+            if (!validation.isValid) {
+                console.warn(`Receipt validation failed for ${receiptId}:`, validation.errors);
+                
+                // Store receipt in needs_admin_review status
+                await db.collection('pending_receipts').doc(receiptId).update({
+                    status: 'needs_admin_review',
+                    validationErrors: validation.errors,
+                    validationWarnings: validation.warnings,
+                    reviewRequestedAt: new Date().toISOString()
+                });
+
+                // Update batches collection
+                await db.collection('batches').doc(callerUid).set({
+                    status: 'needs_admin_review',
+                    validationErrors: validation.errors,
+                    timestamp: new Date().toISOString()
+                }, { merge: true });
+
+                return {
+                    success: false,
+                    needsAdminReview: true,
+                    message: "Receipt requires admin review due to validation errors",
+                    errors: validation.errors,
+                    warnings: validation.warnings
+                };
+            }
+
+            // Log warnings if any (but continue processing)
+            if (validation.warnings.length > 0) {
+                console.log(`Receipt validation warnings for ${receiptId}:`, validation.warnings);
             }
 
             // 4. Write to Google Sheets
