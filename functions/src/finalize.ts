@@ -71,17 +71,22 @@ export const finalizeReceipt = onCall(
             }
 
             // Bug Fix: Ensure currency defaults are set if missing (in case Gemini failed to extract)
-            // When exchangeRate=1.0 (no conversion), originalAmount must equal totalAmount
-            // to maintain semantic invariant: originalAmount * exchangeRate ≈ totalAmount
             const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
             if (!finalReceiptData.currency) {
                 console.log(`Currency missing in receipt ${receiptId}, applying defaults: ${baseCurrency}`);
                 finalReceiptData.currency = baseCurrency;
                 finalReceiptData.originalCurrency = baseCurrency;
-                // Use final corrected amount (not Gemini's original) since exchangeRate=1.0 means no conversion
                 finalReceiptData.originalAmount = finalReceiptData.totalAmount;
                 finalReceiptData.exchangeRate = 1.0;
                 finalReceiptData.conversionDate = new Date().toISOString();
+            }
+
+            // Bug Fix: Maintain semantic invariant whenever exchangeRate=1.0 (no conversion)
+            // Invariant: originalAmount * exchangeRate ≈ totalAmount
+            // When exchangeRate=1.0 and user/admin corrected totalAmount, update originalAmount to match
+            if (finalReceiptData.exchangeRate === 1.0) {
+                console.log(`Enforcing semantic invariant for receipt ${receiptId}: originalAmount must equal totalAmount when exchangeRate=1.0`);
+                finalReceiptData.originalAmount = finalReceiptData.totalAmount;
             }
 
             // Ensure required fields are present
