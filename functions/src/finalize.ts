@@ -124,18 +124,9 @@ export const finalizeReceipt = onCall(
                     timestamp: new Date().toISOString()
                 }, { merge: true });
 
-                // Update user statistics using transaction to prevent race conditions
-                // Decrement pendingReceipts to keep stats accurate
-                const userRef = db.collection('users').doc(callerUid);
-                await db.runTransaction(async (transaction) => {
-                    const userDoc = await transaction.get(userRef);
-                    const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
-                    
-                    transaction.set(userRef, {
-                        pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                        lastUpdated: new Date().toISOString()
-                    }, { merge: true });
-                });
+                // Bug Fix: Do NOT decrement pendingReceipts here
+                // The receipt is still pending (just flagged for admin review)
+                // The counter will be decremented when the admin approves/rejects it
 
                 return {
                     success: false,

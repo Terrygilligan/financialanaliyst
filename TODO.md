@@ -72,6 +72,7 @@
   - ✅ Fixed validation failure race condition (wrapped user stats update in transaction for atomic operations)
   - ✅ Fixed race condition in direct processing statistics update (now uses transaction in legacy workflow)
   - ✅ Fixed accountant sheet not populating in legacy workflow (added `appendToAccountantSheet` call to direct processing path)
+  - ✅ Fixed double-decrement of pendingReceipts counter (removed incorrect decrement in validation failure path in `finalize.ts`)
   - ✅ Created [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md) with emulator setup instructions
   - ✅ Added testing helper UI to profile and admin pages (shows guide when running in emulator mode)
 

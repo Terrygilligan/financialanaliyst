@@ -129,6 +129,7 @@ This application uses **Firebase Cloud Functions (2nd Gen)** to automatically:
   - ✅ Fixed accountant sheet not populating in legacy workflow
   - ✅ Fixed currency defaults not applied in review workflow (finalize/admin-approve)
   - ✅ Fixed race condition in direct processing statistics update (now uses transaction)
+  - ✅ Fixed double-decrement of pendingReceipts counter (validation failure path)
   - ✅ Created local testing guide with emulator support
   - ✅ Added testing helper UI to profile/admin pages
 
