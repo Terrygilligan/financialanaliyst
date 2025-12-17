@@ -124,9 +124,11 @@ This application uses **Firebase Cloud Functions (2nd Gen)** to automatically:
   - ✅ 3.2: Accountant CSV Tab (simplified, CSV-ready format)
   - ✅ 3.3: Audit trail & error logging system
 - ✅ **Bug Fixes & Testing** (Dec 17, 2025)
-  - ✅ Fixed missing currency defaults when Gemini extraction fails
+  - ✅ Fixed missing currency defaults when Gemini extraction fails (all workflows)
   - ✅ Fixed validation failure race condition (transaction safety)
   - ✅ Fixed accountant sheet not populating in legacy workflow
+  - ✅ Fixed currency defaults not applied in review workflow (finalize/admin-approve)
+  - ✅ Fixed race condition in direct processing statistics update (now uses transaction)
   - ✅ Created local testing guide with emulator support
   - ✅ Added testing helper UI to profile/admin pages
 
@@ -351,4 +353,4 @@ For issues or questions, refer to:
 
 ---
 
-**Last Updated**: December 17, 2025 - Phase 3 complete. All SME Automation Upgrade features implemented and tested. Local testing guide added. Bug fixes for currency defaults, validation race conditions, and accountant sheet population in legacy workflow.
+**Last Updated**: December 17, 2025 - Phase 3 complete. All SME Automation Upgrade features implemented and tested. Local testing guide added. Bug fixes for currency defaults (all workflows), validation race conditions, accountant sheet population, and concurrent statistics updates.

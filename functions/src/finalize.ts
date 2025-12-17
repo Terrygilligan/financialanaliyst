@@ -68,6 +68,17 @@ export const finalizeReceipt = onCall(
                 finalReceiptData.timestamp = new Date().toISOString();
             }
 
+            // Bug Fix: Ensure currency defaults are set if missing (in case Gemini failed to extract)
+            const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
+            if (!finalReceiptData.currency) {
+                console.log(`Currency missing in receipt ${receiptId}, applying defaults: ${baseCurrency}`);
+                finalReceiptData.currency = baseCurrency;
+                finalReceiptData.originalCurrency = baseCurrency;
+                finalReceiptData.originalAmount = finalReceiptData.totalAmount;
+                finalReceiptData.exchangeRate = 1.0;
+                finalReceiptData.conversionDate = new Date().toISOString();
+            }
+
             // Ensure required fields are present
             // Note: Use == null to check for null/undefined (allows 0 for totalAmount)
             if (!finalReceiptData.vendorName || !finalReceiptData.transactionDate || 

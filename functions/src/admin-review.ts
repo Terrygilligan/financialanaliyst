@@ -79,6 +79,17 @@ export const adminApproveReceipt = onCall(
                 finalReceiptData.timestamp = new Date().toISOString();
             }
 
+            // Bug Fix: Ensure currency defaults are set if missing (in case Gemini failed to extract)
+            const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
+            if (!finalReceiptData.currency) {
+                console.log(`Currency missing in receipt ${receiptId}, applying defaults: ${baseCurrency}`);
+                finalReceiptData.currency = baseCurrency;
+                finalReceiptData.originalCurrency = baseCurrency;
+                finalReceiptData.originalAmount = finalReceiptData.totalAmount;
+                finalReceiptData.exchangeRate = 1.0;
+                finalReceiptData.conversionDate = new Date().toISOString();
+            }
+
             // 2.5. Validate merged receipt data (admin corrections + original data)
             // Ensure required fields are present
             if (!finalReceiptData.vendorName || !finalReceiptData.transactionDate || 

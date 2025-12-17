@@ -228,18 +228,20 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 7. Update user statistics in /users collection
+            // 7. Update user statistics in /users collection (using transaction to prevent race conditions)
             const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
-            
-            await userRef.set({
-                totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-                lastUpdated: new Date().toISOString(),
-                lastReceiptProcessed: fileName,
-                lastReceiptTimestamp: new Date().toISOString()
-            }, { merge: true });
+            await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+                
+                transaction.set(userRef, {
+                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                    totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+                    lastUpdated: new Date().toISOString(),
+                    lastReceiptProcessed: fileName,
+                    lastReceiptTimestamp: new Date().toISOString()
+                }, { merge: true });
+            });
 
             console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
         }

@@ -67,8 +67,10 @@
   - ✅ 3.3: Audit trail & error logging system (`error-logging.ts`)
 
 - ✅ **Bug Fixes & Testing** (Dec 17, 2025)
-  - ✅ Fixed missing currency defaults when Gemini extraction fails (ensures all receipts have complete currency data)
+  - ✅ Fixed missing currency defaults when Gemini extraction fails (initial processing in `index.ts`)
+  - ✅ Fixed currency defaults not applied in review workflow (added defaults in `finalize.ts` and `admin-review.ts`)
   - ✅ Fixed validation failure race condition (wrapped user stats update in transaction for atomic operations)
+  - ✅ Fixed race condition in direct processing statistics update (now uses transaction in legacy workflow)
   - ✅ Fixed accountant sheet not populating in legacy workflow (added `appendToAccountantSheet` call to direct processing path)
   - ✅ Created [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md) with emulator setup instructions
   - ✅ Added testing helper UI to profile and admin pages (shows guide when running in emulator mode)
@@ -254,4 +256,4 @@
 
 ---
 
-**Last Updated**: December 17, 2025 - Phase 3 complete with all bug fixes applied
+**Last Updated**: December 17, 2025 - Phase 3 complete with all bug fixes applied. Additional race condition and currency default fixes completed.
