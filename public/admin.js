@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Show testing helper if in emulator mode
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+        const testingHelper = document.getElementById('testingHelper');
+        if (testingHelper) {
+            testingHelper.style.display = 'block';
+        }
+    }
+
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');

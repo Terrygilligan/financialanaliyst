@@ -85,6 +85,8 @@ export const analyzeReceiptUpload = onObjectFinalized(
         // 4.6. Currency conversion (Phase 2.4: Currency Conversion)
         // Extract currency from Gemini response (if available)
         const extractedCurrency = receiptData.currency;
+        const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
+        
         if (extractedCurrency) {
             console.log(`Receipt currency detected: ${extractedCurrency}`);
             const conversionResult = await convertReceiptToBaseCurrency(
@@ -113,6 +115,14 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 // Conversion failed - log warning but continue with original amount
                 console.warn(`Currency conversion failed for ${extractedCurrency}. Using original amount.`);
             }
+        } else {
+            // No currency extracted - assume base currency and populate defaults for consistency
+            console.log(`No currency extracted by Gemini, assuming base currency: ${baseCurrency}`);
+            receiptData.currency = baseCurrency;
+            receiptData.originalCurrency = baseCurrency;
+            receiptData.originalAmount = receiptData.totalAmount;
+            receiptData.exchangeRate = 1.0;
+            receiptData.conversionDate = new Date().toISOString();
         }
 
         // Phase 2: Feature Flag - Check if review workflow is enabled

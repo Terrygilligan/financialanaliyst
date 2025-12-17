@@ -113,16 +113,18 @@ export const finalizeReceipt = onCall(
                     timestamp: new Date().toISOString()
                 }, { merge: true });
 
-                // Update user statistics - receipt moves from pending to awaiting admin review
+                // Update user statistics using transaction to prevent race conditions
                 // Decrement pendingReceipts to keep stats accurate
                 const userRef = db.collection('users').doc(callerUid);
-                const userDoc = await userRef.get();
-                const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
-                
-                await userRef.set({
-                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
+                await db.runTransaction(async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
+                    
+                    transaction.set(userRef, {
+                        pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                        lastUpdated: new Date().toISOString()
+                    }, { merge: true });
+                });
 
                 return {
                     success: false,
