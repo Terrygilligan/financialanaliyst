@@ -1,12 +1,14 @@
 {
   "name": "AI Financial Analyst",
-  "short_name": "Financial Analyst",
+  "short_name": "FinAnalyst",
   "description": "Automatically extract and organize receipt data using AI",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4285f4",
+  "theme_color": "#667eea",
   "orientation": "portrait-primary",
+  "categories": ["finance", "productivity", "business"],
+  "screenshots": [],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +21,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Upload Receipt",
+      "short_name": "Upload",
+      "description": "Upload a new receipt",
+      "url": "/index.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Profile",
+      "short_name": "Profile",
+      "description": "View your profile and statistics",
+      "url": "/profile.html",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

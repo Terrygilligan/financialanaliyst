@@ -1,14 +1,25 @@
 // Service Worker for AI Financial Analyst PWA
-const CACHE_NAME = 'financial-analyst-v3'; // Updated to force cache refresh after key rotation
+const CACHE_NAME = 'financial-analyst-v5'; // Updated for layout fixes
 const urlsToCache = [
   '/',
   '/index.html',
   '/login.html',
+  '/profile.html',
+  '/admin.html',
+  '/review.html',
+  '/admin-review.html',
   '/styles.css',
   '/app.js',
   '/login.js',
+  '/profile.js',
+  '/admin.js',
+  '/review.js',
+  '/admin-review.js',
+  '/translations.js',
   // '/firebase-config.js', // Always fetch fresh to ensure latest API key
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install event - cache resources
@@ -64,6 +75,16 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Claim clients immediately after activation
+      return self.clients.claim();
     })
   );
+});
+
+// Listen for messages from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
