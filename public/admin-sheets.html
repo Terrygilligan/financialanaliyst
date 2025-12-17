@@ -171,7 +171,7 @@
         import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
         import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         
-        import firebaseConfig from './firebase-config.js';
+        import { firebaseConfig } from './firebase-config.js';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -182,13 +182,14 @@
         window.functions = functions;
         window.db = db;
         window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
         window.httpsCallable = httpsCallable;
         window.getDocs = getDocs;
         window.collection = collection;
         window.query = query;
         window.orderBy = orderBy;
     </script>
-    <script src="admin-sheets.js?v=20251217"></script>
+    <script src="admin-sheets.js?v=20251217-2"></script>
 </body>
 </html>
 
