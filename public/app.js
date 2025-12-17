@@ -47,14 +47,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusContainer = document.getElementById('status-container');
     const historyContainer = document.getElementById('history-container');
 
-    // Check if user is admin via custom claims
+    // Check if user is admin via custom claims OR Firestore admins collection
     async function checkAdminStatus(user) {
         if (!user) return false;
         
-        // Get the ID token to check custom claims
         try {
+            // Method 1: Check custom claims (preferred, faster)
             const idTokenResult = await user.getIdTokenResult();
-            return idTokenResult.claims.admin === true;
+            if (idTokenResult.claims.admin === true) {
+                console.log('Admin status confirmed via custom claims');
+                return true;
+            }
+            
+            // Method 2: Check Firestore admins collection (fallback)
+            const adminDoc = await getDoc(doc(db, 'admins', user.email));
+            if (adminDoc.exists()) {
+                console.log('Admin status confirmed via Firestore admins collection');
+                return true;
+            }
+            
+            return false;
         } catch (error) {
             console.error('Error checking admin status:', error);
             return false;
