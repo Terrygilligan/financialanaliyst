@@ -172,47 +172,181 @@
                 </div>
             </div>
 
-            <!-- Documentation References (Always Visible) -->
+            <!-- Documentation References (Always Visible with Tabs) -->
             <section class="documentation-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
-                <h2 style="margin: 0 0 15px 0; font-size: 24px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px;">📚 Documentation References</h2>
+                <h2 style="margin: 0 0 20px 0; font-size: 24px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px;">📚 Documentation Center</h2>
                 
+                <!-- Documentation Tabs -->
+                <div class="doc-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button class="doc-tab active" data-doc-tab="quickstart" style="background: rgba(255, 255, 255, 0.3); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-bottom: 3px solid #ffd700;">
+                        🚀 Quick Start
+                    </button>
+                    <button class="doc-tab" data-doc-tab="sheets" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
+                        📊 Google Sheets
+                    </button>
+                    <button class="doc-tab" data-doc-tab="signup" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
+                        👥 User Signup
+                    </button>
+                    <button class="doc-tab" data-doc-tab="admin" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
+                        👨‍💼 Admin Setup
+                    </button>
+                    <button class="doc-tab" data-doc-tab="technical" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
+                        ⚙️ Technical
+                    </button>
+                </div>
+
+                <!-- Tab Content Container -->
                 <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; backdrop-filter: blur(10px);">
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
-                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/LOCAL_TESTING_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 20px;">🧪</span>
-                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">LOCAL_TESTING_GUIDE.md</code> - Complete local testing setup</span>
-                            </a>
-                        </li>
-                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
-                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/USER_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 20px;">👤</span>
-                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">USER_GUIDE.md</code> - Full user documentation</span>
-                            </a>
-                        </li>
-                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
-                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/README.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 20px;">📖</span>
-                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">README.md</code> - Project overview and setup</span>
-                            </a>
-                        </li>
-                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
-                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/ADMIN_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 20px;">👨‍💼</span>
-                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">ADMIN_GUIDE.md</code> - Complete admin documentation</span>
-                            </a>
-                        </li>
-                    </ul>
                     
-                    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
-                        <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #fff;">🔧 Common Issues</h3>
-                        <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                            <li><strong style="color: #ffd700;">Admin link not showing:</strong> Check Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection, ensure email matches exactly</li>
-                            <li><strong style="color: #ffd700;">Access denied:</strong> Verify you're logged in with the correct admin email, try signing out and back in</li>
-                            <li><strong style="color: #ffd700;">Features not loading:</strong> Check browser console (F12) for errors, verify Firebase config</li>
-                            <li><strong style="color: #ffd700;">Review workflow not working:</strong> Ensure <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">ENABLE_REVIEW_WORKFLOW=true</code> in Firebase Functions environment</li>
+                    <!-- Quick Start Tab -->
+                    <div id="quickstart-doc-tab" class="doc-tab-content active" style="display: block; animation: fadeIn 0.3s ease-in;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Getting Started</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/README.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">📖</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">README.md</code> - Project overview and features</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/LOCAL_TESTING_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🧪</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">LOCAL_TESTING_GUIDE.md</code> - Local testing setup</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/USER_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">👤</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">USER_GUIDE.md</code> - Complete user documentation</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
+
+                    <!-- Google Sheets Tab -->
+                    <div id="sheets-doc-tab" class="doc-tab-content" style="display: none;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Google Sheets Setup</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/NEXT_STEPS.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">📝</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">NEXT_STEPS.md</code> - Google Sheet setup guide</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/PHASE3_ACCOUNTANT_TAB.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">📊</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE3_ACCOUNTANT_TAB.md</code> - Accountant CSV tab</span>
+                                </a>
+                            </li>
+                        </ul>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; border-left: 4px solid #ffd700;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 16px; color: #ffd700;">Service Account Email</h4>
+                            <p style="margin: 0; font-size: 14px; line-height: 1.6;">Share your Google Sheet with: <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">financial-output@financialanaliyst.iam.gserviceaccount.com</code></p>
+                        </div>
+                    </div>
+
+                    <!-- User Signup Tab -->
+                    <div id="signup-doc-tab" class="doc-tab-content" style="display: none;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">How Stakeholders Sign Up</h3>
+                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 15px 0; font-size: 18px; color: #ffd700;">1. Access the App</h4>
+                            <p style="margin: 0 0 10px 0; line-height: 1.6;">Navigate to the deployed app URL (Firebase Hosting)</p>
+                            
+                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">2. Sign Up</h4>
+                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                                <li>Click <strong>"Sign In"</strong> button</li>
+                                <li>Choose <strong>Email/Password</strong> or <strong>Google Sign-In</strong></li>
+                                <li>Create account with their email</li>
+                                <li>Verify email (if required)</li>
+                            </ul>
+                            
+                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">3. Start Using</h4>
+                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                                <li>Upload receipt images</li>
+                                <li>Review and finalize receipts</li>
+                                <li>View statistics on profile page</li>
+                            </ul>
+                            
+                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">4. Grant Admin Access (Optional)</h4>
+                            <p style="margin: 10px 0 0 0; line-height: 1.6;">Add their email to Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection to grant admin privileges</p>
+                        </div>
+                        <div style="padding: 15px; background: rgba(255, 215, 0, 0.2); border-radius: 8px; border-left: 4px solid #ffd700;">
+                            <strong style="color: #ffd700;">📧 No Pre-Registration Required!</strong>
+                            <p style="margin: 10px 0 0 0; line-height: 1.6;">Users can sign up directly on the app. No admin approval needed for basic user access.</p>
+                        </div>
+                    </div>
+
+                    <!-- Admin Setup Tab -->
+                    <div id="admin-doc-tab" class="doc-tab-content" style="display: none;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Admin Setup & Testing</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/ADMIN_SETUP_QUICK.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">⚡</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_SETUP_QUICK.md</code> - Quick admin setup</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/ADMIN_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">👨‍💼</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_GUIDE.md</code> - Complete admin documentation</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/ADMIN_SETUP.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🔐</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_SETUP.md</code> - Firestore method</span>
+                                </a>
+                            </li>
+                        </ul>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; border-left: 4px solid #ffd700;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 16px; color: #ffd700;">🔧 Common Issues</h4>
+                            <ul style="margin: 10px 0 0 20px; line-height: 1.8; font-size: 14px;">
+                                <li><strong style="color: #ffd700;">Admin link not showing:</strong> Check Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection</li>
+                                <li><strong style="color: #ffd700;">Access denied:</strong> Sign out and back in, verify email matches</li>
+                                <li><strong style="color: #ffd700;">Features not loading:</strong> Check browser console (F12) for errors</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Technical Tab -->
+                    <div id="technical-doc-tab" class="doc-tab-content" style="display: none;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Technical Documentation</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/BUG_FIXES_DEC17_2025.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🐛</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">BUG_FIXES_DEC17_2025.md</code> - Recent bug fixes</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/PHASE3_VAT_EXTRACTION.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">💰</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE3_VAT_EXTRACTION.md</code> - VAT extraction</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/PHASE2_CURRENCY_SETUP.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">💱</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE2_CURRENCY_SETUP.md</code> - Currency conversion</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/BRANCH_WORKFLOW.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🌿</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">BRANCH_WORKFLOW.md</code> - Git workflow</span>
+                                </a>
+                            </li>
+                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
+                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/DOCUMENTATION_INDEX.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">📚</span>
+                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">DOCUMENTATION_INDEX.md</code> - All documentation</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
                 </div>
             </section>
 

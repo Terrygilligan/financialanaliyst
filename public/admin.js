@@ -40,6 +40,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Setup documentation tabs (always visible)
+    const docTabs = document.querySelectorAll('.doc-tab');
+    docTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all doc tabs and contents
+            docTabs.forEach(t => {
+                t.classList.remove('active');
+                t.style.background = 'rgba(255, 255, 255, 0.2)';
+                t.style.boxShadow = 'none';
+                t.style.borderBottom = 'none';
+            });
+            document.querySelectorAll('.doc-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Add active class to clicked tab and show corresponding content
+            tab.classList.add('active');
+            tab.style.background = 'rgba(255, 255, 255, 0.3)';
+            tab.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+            tab.style.borderBottom = '3px solid #ffd700';
+            
+            const tabId = tab.getAttribute('data-doc-tab') + '-doc-tab';
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+                tabContent.style.display = 'block';
+            }
+        });
+    });
+
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
