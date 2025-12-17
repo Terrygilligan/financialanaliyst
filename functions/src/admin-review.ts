@@ -1,0 +1,249 @@
+// functions/src/admin-review.ts
+
+import { onCall } from "firebase-functions/v2/https";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { ReceiptData } from "./schema";
+import { appendReceiptToSheet } from "./sheets";
+
+const db = getFirestore();
+const auth = getAuth();
+
+/**
+ * Admin approve receipt (override validation).
+ * 
+ * Allows admins to manually approve receipts that failed validation.
+ * Writes to Google Sheets and updates user statistics.
+ * 
+ * @param request.data.receiptId - The ID of the pending receipt
+ * @param request.data.receiptData - Corrected receipt data
+ * @param request.data.adminNotes - Admin notes about the approval
+ * @returns Success status
+ */
+export const adminApproveReceipt = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // Verify caller is authenticated and is admin
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        try {
+            const caller = await auth.getUser(callerUid);
+            if (!caller.customClaims?.admin) {
+                throw new Error("Unauthorized: Admin privileges required");
+            }
+        } catch (error) {
+            if (error instanceof Error && error.message === "Unauthorized: Admin privileges required") {
+                throw error;
+            }
+            console.error("Error verifying admin status:", error);
+            throw new Error(`Failed to verify admin status: ${(error as Error).message}`);
+        }
+
+        const { receiptId, receiptData: updatedReceiptData, adminNotes } = request.data || {};
+
+        if (!receiptId) {
+            throw new Error("receiptId is required");
+        }
+
+        try {
+            // 1. Get the pending receipt
+            const pendingReceiptRef = db.collection('pending_receipts').doc(receiptId);
+            const pendingReceiptDoc = await pendingReceiptRef.get();
+
+            if (!pendingReceiptDoc.exists) {
+                throw new Error("Pending receipt not found");
+            }
+
+            const pendingReceipt = pendingReceiptDoc.data();
+            const userId = pendingReceipt?.userId;
+
+            if (!userId) {
+                throw new Error("Receipt does not have an associated user");
+            }
+
+            // 2. Merge admin corrections with original data
+            const finalReceiptData: ReceiptData = {
+                ...(pendingReceipt.receiptData as ReceiptData),
+                ...(updatedReceiptData || {})
+            };
+
+            // Ensure timestamp is set
+            if (!finalReceiptData.timestamp) {
+                finalReceiptData.timestamp = new Date().toISOString();
+            }
+
+            // 3. Write to Google Sheets
+            const sheetId = process.env.GOOGLE_SHEET_ID;
+            let sheetsWriteSuccess = false;
+            let googleSheetLink = null;
+
+            if (sheetId) {
+                try {
+                    await appendReceiptToSheet(finalReceiptData, sheetId);
+                    console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
+                    sheetsWriteSuccess = true;
+                    googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+                } catch (sheetsError) {
+                    console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
+                    // Don't fail the entire operation if Sheets write fails
+                }
+            }
+
+            // 4. Update batches collection with final status
+            await db.collection('batches').doc(userId).set({
+                status: 'complete',
+                lastFileProcessed: pendingReceipt.fileName,
+                receiptData: finalReceiptData,
+                sheetsWriteSuccess: sheetsWriteSuccess,
+                googleSheetLink: googleSheetLink,
+                adminApproved: true,
+                approvedBy: callerUid,
+                approvedAt: new Date().toISOString(),
+                adminNotes: adminNotes || '',
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+
+            // 5. Update user statistics
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+            
+            await userRef.set({
+                totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                lastUpdated: new Date().toISOString(),
+                lastReceiptProcessed: pendingReceipt.fileName,
+                lastReceiptTimestamp: new Date().toISOString()
+            }, { merge: true });
+
+            // 6. Remove from pending_receipts collection
+            await pendingReceiptRef.delete();
+
+            console.log(`Receipt approved by admin ${callerUid}. Receipt ID: ${receiptId}`);
+
+            return {
+                success: true,
+                message: "Receipt approved and finalized",
+                receiptData: finalReceiptData,
+                sheetsWriteSuccess: sheetsWriteSuccess,
+                googleSheetLink: googleSheetLink
+            };
+        } catch (error) {
+            console.error(`Error approving receipt ${receiptId}:`, error);
+            throw new Error(`Failed to approve receipt: ${(error as Error).message}`);
+        }
+    }
+);
+
+/**
+ * Admin reject receipt.
+ * 
+ * Allows admins to reject receipts that cannot be processed.
+ * Moves to rejected collection for record keeping.
+ * 
+ * @param request.data.receiptId - The ID of the pending receipt
+ * @param request.data.adminNotes - Admin notes about the rejection (required)
+ * @returns Success status
+ */
+export const adminRejectReceipt = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // Verify caller is authenticated and is admin
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        try {
+            const caller = await auth.getUser(callerUid);
+            if (!caller.customClaims?.admin) {
+                throw new Error("Unauthorized: Admin privileges required");
+            }
+        } catch (error) {
+            if (error instanceof Error && error.message === "Unauthorized: Admin privileges required") {
+                throw error;
+            }
+            console.error("Error verifying admin status:", error);
+            throw new Error(`Failed to verify admin status: ${(error as Error).message}`);
+        }
+
+        const { receiptId, adminNotes } = request.data || {};
+
+        if (!receiptId) {
+            throw new Error("receiptId is required");
+        }
+
+        if (!adminNotes || adminNotes.trim() === '') {
+            throw new Error("adminNotes is required for rejection");
+        }
+
+        try {
+            // 1. Get the pending receipt
+            const pendingReceiptRef = db.collection('pending_receipts').doc(receiptId);
+            const pendingReceiptDoc = await pendingReceiptRef.get();
+
+            if (!pendingReceiptDoc.exists) {
+                throw new Error("Pending receipt not found");
+            }
+
+            const pendingReceipt = pendingReceiptDoc.data();
+            const userId = pendingReceipt?.userId;
+
+            if (!userId) {
+                throw new Error("Receipt does not have an associated user");
+            }
+
+            // 2. Move to rejected_receipts collection for record keeping
+            await db.collection('rejected_receipts').doc(receiptId).set({
+                ...pendingReceipt,
+                status: 'rejected',
+                rejectedBy: callerUid,
+                rejectedAt: new Date().toISOString(),
+                adminNotes: adminNotes
+            });
+
+            // 3. Update batches collection
+            await db.collection('batches').doc(userId).set({
+                status: 'rejected',
+                lastFileProcessed: pendingReceipt.fileName,
+                rejectedBy: callerUid,
+                rejectedAt: new Date().toISOString(),
+                adminNotes: adminNotes,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+
+            // 4. Update user statistics (decrement pending count)
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
+            
+            await userRef.set({
+                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
+
+            // 5. Remove from pending_receipts collection
+            await pendingReceiptRef.delete();
+
+            console.log(`Receipt rejected by admin ${callerUid}. Receipt ID: ${receiptId}. Reason: ${adminNotes}`);
+
+            return {
+                success: true,
+                message: "Receipt rejected",
+                receiptId: receiptId
+            };
+        } catch (error) {
+            console.error(`Error rejecting receipt ${receiptId}:`, error);
+            throw new Error(`Failed to reject receipt: ${(error as Error).message}`);
+        }
+    }
+);
+

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Review - AI Financial Analyst</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Translations (Phase 1.2: Multi-Language Support) -->
+    <script src="translations.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFunctions } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7D8sK7NqBHHxvZjHN8RQr9xWxH-0K0Y0",
+            authDomain: "financialanaliyst.firebaseapp.com",
+            projectId: "financialanaliyst",
+            storageBucket: "financialanaliyst.firebasestorage.app",
+            messagingSenderId: "427691437515",
+            appId: "1:427691437515:web:7a1a5b0e5c5e5e5e5e5e5e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.auth = getAuth(app);
+        window.db = getFirestore(app);
+        window.functions = getFunctions(app, 'us-central1');
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🔍 Admin Review Queue</h1>
+                <p style="color: #666; margin-top: 5px;">Review receipts that need admin approval</p>
+            </div>
+            <div>
+                <a href="admin.html" class="btn btn-secondary">← Back to Dashboard</a>
+                <button id="logout-btn" class="btn btn-danger">Logout</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Stats Summary -->
+            <div class="stats-grid" style="margin-bottom: 30px;">
+                <div class="stat-card">
+                    <h3>Pending Review</h3>
+                    <div class="stat-value" id="pending-count">0</div>
+                    <div class="stat-label">Receipts</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Today</h3>
+                    <div class="stat-value" id="today-count">0</div>
+                    <div class="stat-label">New items</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Value</h3>
+                    <div class="stat-value" id="total-value">£0.00</div>
+                    <div class="stat-label">Pending receipts</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="search-filter" placeholder="Search vendor, user..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                <select id="sort-filter" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="highest">Highest Amount</option>
+                    <option value="lowest">Lowest Amount</option>
+                </select>
+                <button id="refresh-btn" class="btn btn-secondary">🔄 Refresh</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading receipts for review...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                <h2>All Caught Up!</h2>
+                <p>No receipts need admin review at the moment.</p>
+            </div>
+
+            <!-- Review Queue -->
+            <div id="review-queue" style="display: none;">
+                <!-- Receipt cards will be inserted here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Admin Review</h2>
+                <button id="close-modal" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modal-receipt-id">
+                
+                <!-- Validation Errors/Warnings -->
+                <div id="validation-info" style="margin-bottom: 20px;">
+                    <!-- Will be populated dynamically -->
+                </div>
+
+                <!-- Receipt Details Form -->
+                <form id="admin-review-form">
+                    <div class="form-group">
+                        <label for="modal-vendor">Vendor Name *</label>
+                        <input type="text" id="modal-vendor" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-date">Transaction Date *</label>
+                        <input type="date" id="modal-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-amount">Total Amount *</label>
+                        <input type="number" id="modal-amount" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-category">Category *</label>
+                        <select id="modal-category" required>
+                            <option value="">-- Select category --</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Cleaning Supplies">Cleaning Supplies</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Supplies">Supplies</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-vat">VAT Number (Optional)</label>
+                        <input type="text" id="modal-vat" placeholder="e.g., GB123456789">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modal-notes">Admin Notes (Optional)</label>
+                        <textarea id="modal-notes" rows="3" placeholder="Add any notes about this review..."></textarea>
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="button" id="reject-btn" class="btn btn-danger">❌ Reject</button>
+                        <button type="submit" id="approve-btn" class="btn btn-primary">✅ Approve & Finalize</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin-review.js"></script>
+</body>
+</html>
+

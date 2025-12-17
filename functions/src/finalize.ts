@@ -88,7 +88,7 @@ export const finalizeReceipt = onCall(
             if (!validation.isValid) {
                 console.warn(`Receipt validation failed for ${receiptId}:`, validation.errors);
                 
-                // Store receipt in needs_admin_review status
+                // Store receipt in needs_admin_review status (keep in pending_receipts collection)
                 await db.collection('pending_receipts').doc(receiptId).update({
                     status: 'needs_admin_review',
                     validationErrors: validation.errors,
@@ -101,6 +101,17 @@ export const finalizeReceipt = onCall(
                     status: 'needs_admin_review',
                     validationErrors: validation.errors,
                     timestamp: new Date().toISOString()
+                }, { merge: true });
+
+                // Update user statistics - receipt moves from pending to awaiting admin review
+                // Decrement pendingReceipts to keep stats accurate
+                const userRef = db.collection('users').doc(callerUid);
+                const userDoc = await userRef.get();
+                const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
+                
+                await userRef.set({
+                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
+                    lastUpdated: new Date().toISOString()
                 }, { merge: true });
 
                 return {

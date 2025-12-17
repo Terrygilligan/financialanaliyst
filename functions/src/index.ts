@@ -347,5 +347,8 @@ export { finalizeReceipt } from "./finalize";
 // Phase 2.2: Category management functions
 export { getCategories, createCategory, updateCategory, deleteCategory } from "./categories";
 
+// Phase 2.6: Admin review functions
+export { adminApproveReceipt, adminRejectReceipt } from "./admin-review";
+
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.
