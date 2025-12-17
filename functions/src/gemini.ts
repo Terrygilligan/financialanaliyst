@@ -171,7 +171,16 @@ Return ONLY valid JSON, no other text.`;
             transactionDate: extractedData.transactionDate || extractedData.date || new Date().toISOString().split('T')[0],
             totalAmount: parseFloat(extractedData.totalAmount || extractedData.amount || extractedData.total || "0"),
             category: validateCategory(extractedData.category),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            // Phase 2.4: Currency field (extracted by Gemini)
+            currency: extractedData.currency,
+            // Phase 3.1: VAT fields (extracted by Gemini if visible)
+            supplierVatNumber: extractedData.supplierVatNumber,
+            vatBreakdown: extractedData.vatBreakdown ? {
+                subtotal: extractedData.vatBreakdown.subtotal ? parseFloat(extractedData.vatBreakdown.subtotal) : undefined,
+                vatAmount: extractedData.vatBreakdown.vatAmount ? parseFloat(extractedData.vatBreakdown.vatAmount) : undefined,
+                vatRate: extractedData.vatBreakdown.vatRate ? parseFloat(extractedData.vatBreakdown.vatRate) : undefined
+            } : undefined
         };
 
         // Validate required fields

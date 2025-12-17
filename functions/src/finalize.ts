@@ -187,19 +187,21 @@ export const finalizeReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 6. Update user statistics
+            // 6. Update user statistics using transaction to prevent race conditions
             const userRef = db.collection('users').doc(callerUid);
-            const userDoc = await userRef.get();
-            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
-            
-            await userRef.set({
-                totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
-                pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1), // Decrement pending count
-                lastUpdated: new Date().toISOString(),
-                lastReceiptProcessed: pendingReceipt.fileName,
-                lastReceiptTimestamp: new Date().toISOString()
-            }, { merge: true });
+            await db.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+                
+                transaction.set(userRef, {
+                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                    totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1), // Decrement pending count
+                    lastUpdated: new Date().toISOString(),
+                    lastReceiptProcessed: pendingReceipt.fileName,
+                    lastReceiptTimestamp: new Date().toISOString()
+                }, { merge: true });
+            });
 
             // 7. Remove from pending_receipts collection
             await pendingReceiptRef.delete();
