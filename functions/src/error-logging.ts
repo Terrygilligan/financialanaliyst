@@ -167,36 +167,42 @@ export async function queryErrorLogs(filters: {
     endDate?: Date;
 }): Promise<ErrorLogEntry[]> {
     try {
-        let query = db.collection('error_logs').orderBy('serverTimestamp', 'desc');
+        // Bug Fix: Apply all .where() clauses BEFORE .orderBy() to avoid requiring composite indexes
+        let query = db.collection('error_logs') as any;
 
+        // Apply all filters first
         if (filters.severity) {
-            query = query.where('severity', '==', filters.severity) as any;
+            query = query.where('severity', '==', filters.severity);
         }
 
         if (filters.functionName) {
-            query = query.where('functionName', '==', filters.functionName) as any;
+            query = query.where('functionName', '==', filters.functionName);
         }
 
         if (filters.userId) {
-            query = query.where('userId', '==', filters.userId) as any;
+            query = query.where('userId', '==', filters.userId);
         }
 
         if (filters.startDate) {
-            query = query.where('serverTimestamp', '>=', filters.startDate.toISOString()) as any;
+            query = query.where('serverTimestamp', '>=', filters.startDate.toISOString());
         }
 
         if (filters.endDate) {
-            query = query.where('serverTimestamp', '<=', filters.endDate.toISOString()) as any;
+            query = query.where('serverTimestamp', '<=', filters.endDate.toISOString());
         }
 
+        // Apply ordering AFTER all filters
+        query = query.orderBy('serverTimestamp', 'desc');
+
+        // Apply limit last
         if (filters.limit) {
-            query = query.limit(filters.limit) as any;
+            query = query.limit(filters.limit);
         }
 
         const snapshot = await query.get();
         const logs: ErrorLogEntry[] = [];
 
-        snapshot.forEach(doc => {
+        snapshot.forEach((doc: any) => {
             logs.push(doc.data() as ErrorLogEntry);
         });
 

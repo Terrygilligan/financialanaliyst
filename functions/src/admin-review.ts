@@ -68,9 +68,13 @@ export const adminApproveReceipt = onCall(
                 throw new Error("Receipt does not have an associated user");
             }
 
-            // 2. Merge admin corrections with original data
+            // 2. Preserve original Gemini-extracted data BEFORE merging admin corrections
+            const originalReceiptData = pendingReceipt.receiptData as ReceiptData;
+            const originalGeminiAmount = originalReceiptData.totalAmount;
+            
+            // 2.1. Merge admin corrections with original data
             const finalReceiptData: ReceiptData = {
-                ...(pendingReceipt.receiptData as ReceiptData),
+                ...originalReceiptData,
                 ...(updatedReceiptData || {})
             };
 
@@ -80,12 +84,13 @@ export const adminApproveReceipt = onCall(
             }
 
             // Bug Fix: Ensure currency defaults are set if missing (in case Gemini failed to extract)
+            // Use ORIGINAL Gemini amount (before admin corrections) for originalAmount
             const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
             if (!finalReceiptData.currency) {
                 console.log(`Currency missing in receipt ${receiptId}, applying defaults: ${baseCurrency}`);
                 finalReceiptData.currency = baseCurrency;
                 finalReceiptData.originalCurrency = baseCurrency;
-                finalReceiptData.originalAmount = finalReceiptData.totalAmount;
+                finalReceiptData.originalAmount = originalGeminiAmount; // Use original Gemini-extracted amount
                 finalReceiptData.exchangeRate = 1.0;
                 finalReceiptData.conversionDate = new Date().toISOString();
             }
