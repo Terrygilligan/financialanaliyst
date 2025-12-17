@@ -78,6 +78,62 @@
 
 ## 🎯 Priority Tasks (Remaining)
 
+### Phase 4: Multi-Sheet Management - **HIGH PRIORITY** 📍 **CURRENT PHASE**
+
+**Status**: 📝 Ready to Start  
+**Timeline**: 2-3 weeks  
+**Branch**: `feature/phase-4-multi-sheet-management`
+
+**See**: [PHASE4_MULTI_SHEET_MANAGEMENT.md](PHASE4_MULTI_SHEET_MANAGEMENT.md) for full plan  
+**Quick Start**: [PHASE4_QUICK_START.md](PHASE4_QUICK_START.md) for implementation steps
+
+#### Overview
+Enable admin control panel to manage multiple Google Sheets, allowing different users/entities to have receipts routed to different sheets automatically.
+
+#### Key Features
+- [ ] **Backend - Sheet Configuration Service** (`sheet-config.ts`)
+  - [ ] Sheet config lookup by user/entity
+  - [ ] Default sheet fallback logic
+  - [ ] Sheet health verification
+  - [ ] Assignment management (user/entity to sheet)
+
+- [ ] **Backend - Admin Cloud Functions** (`admin-sheet-management.ts`)
+  - [ ] Create/update/delete sheet configs
+  - [ ] Assign sheets to users/entities
+  - [ ] Bulk user assignment
+  - [ ] Get sheet assignments and statistics
+
+- [ ] **Backend - Update Existing Functions**
+  - [ ] Update `sheets.ts` with `appendReceiptToUserSheet()`
+  - [ ] Update `index.ts` to use new routing
+  - [ ] Update `finalize.ts` to use new routing
+  - [ ] Update `admin-review.ts` to use new routing
+
+- [ ] **Frontend - Admin UI**
+  - [ ] Create `admin-sheets.html` page
+  - [ ] Create `admin-sheets.js` logic
+  - [ ] Sheet configuration CRUD interface
+  - [ ] User/entity assignment interface
+  - [ ] Sheet health monitoring UI
+  - [ ] Add navigation to admin dashboard
+
+- [ ] **Testing & Deployment**
+  - [ ] Test multi-sheet routing
+  - [ ] Test user/entity assignments
+  - [ ] Test health checks and verification
+  - [ ] Test backward compatibility
+  - [ ] Deploy to production
+  - [ ] Create default sheet config
+
+#### Benefits
+- ✅ Multi-entity businesses can have separate sheets
+- ✅ Scalable - add sheets without code changes
+- ✅ Flexible user or entity-level assignment
+- ✅ Monitor usage per sheet
+- ✅ Backward compatible with single-sheet setup
+
+---
+
 ### Phase 6: Testing & Quality Assurance - **MEDIUM PRIORITY**
 
 - [ ] **Backend Testing**
@@ -233,13 +289,15 @@
 
 ## 🎉 Current Status
 
-**The application is fully functional with SME Automation Upgrade complete!**
+**The application is fully functional with SME Automation Upgrade (Phase 1-3) complete!**
 
-**December 17, 2025 - Phase 3 Complete**:
+**December 17, 2025 - Phase 3 Complete, Phase 4 Planned**:
 - ✅ All Phase 1-3 features implemented (Entity tracking, Review workflow, Currency conversion, VAT extraction, Accountant CSV, Audit trail)
 - ✅ Bug fixes: Currency defaults, validation race conditions, accountant sheet in legacy workflow
 - ✅ Local testing environment ready with emulator support and testing guides
 - ✅ User and Admin guides updated to v1.3
+- ✅ PWA UX improvements deployed
+- 📝 **Phase 4 Plan Ready**: Multi-Sheet Management (see PHASE4_MULTI_SHEET_MANAGEMENT.md)
 
 **Core Features Available**:
 - ✅ Sign up/login with email or Google
@@ -252,9 +310,15 @@
 - ✅ Dual Google Sheets output (main sheet + accountant CSV sheet)
 - ✅ Comprehensive audit trail and error logging
 - ✅ Multi-language frontend support
+- ✅ Modern PWA with responsive design
 
-**Next focus**: Production testing, performance monitoring, and user feedback collection.
+**Current Focus**: Phase 4 - Admin Control Panel for Multi-Sheet & User Management
+
+**Next Steps**:
+1. Implement Phase 4 multi-sheet management (2-3 weeks)
+2. Production testing and monitoring
+3. User feedback collection
 
 ---
 
-**Last Updated**: December 17, 2025 - Phase 3 complete with all bug fixes applied. Additional race condition and currency default fixes completed.
+**Last Updated**: December 17, 2025 - Phase 3 complete. Phase 4 (Multi-Sheet Management) plan created and ready to implement.
