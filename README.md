@@ -276,6 +276,7 @@ To test the application:
 
 - **📖 [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** ⭐ **Master Index** - Complete guide to all documentation
 - **👤 [USER_GUIDE.md](USER_GUIDE.md)** - Complete user guide for end users
+- **👥 [STAKEHOLDER_SIGNUP_GUIDE.md](STAKEHOLDER_SIGNUP_GUIDE.md)** - How new users and stakeholders sign up
 - **👨‍💼 [ADMIN_GUIDE.md](ADMIN_GUIDE.md)** - Complete admin guide for administrators
 - **SETUP.md** - Complete backend setup instructions
 - **ENV_SETUP.md** - Environment variables configuration
