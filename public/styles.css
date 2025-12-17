@@ -1106,16 +1106,17 @@ section h2 {
 .admin-quick-nav {
     position: fixed;
     right: 20px;
-    top: 100px;
+    top: 80px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    background: white;
-    padding: 15px;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    gap: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
 }
 
 .quick-nav-btn {

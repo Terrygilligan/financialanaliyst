@@ -230,6 +230,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             accessDenied.style.display = 'none';
             mainContent.style.display = 'grid';
             
+            // Show admin link in navigation
+            const adminLinkContainer = document.getElementById('admin-link-container');
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'inline';
+            }
+            
             // Load admin data
             await loadAdminData();
         } else {
