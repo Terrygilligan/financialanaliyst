@@ -137,7 +137,7 @@ After publishing, test the rules:
 
 - `CUSTOM_CLAIMS_SETUP.md` - How to set up admin custom claims
 - `ADMIN_SETUP.md` - Original admin setup (now deprecated in favor of custom claims)
-- `PROFILE_AND_ADMIN_PLAN.md` - Implementation plan
+- `ADMIN_AND_PROFILE_PLAN.md` - Consolidated implementation plan
 
 ---
 

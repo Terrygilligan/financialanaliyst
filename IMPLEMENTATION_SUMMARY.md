@@ -120,7 +120,7 @@
 **Documentation Created:**
 - ✅ `ADMIN_SETUP.md` - Complete guide for setting up admin access
 - ✅ `FIRESTORE_RULES_UPDATED.md` - Updated Firestore security rules
-- ✅ `PROFILE_AND_ADMIN_PLAN.md` - Implementation plan document
+- ✅ `ADMIN_AND_PROFILE_PLAN.md` - Consolidated implementation plan (current)
 
 **Security Features:**
 - Admin access controlled via Firestore `admins` collection
@@ -139,7 +139,7 @@
 4. `public/admin.js` - Admin dashboard logic
 5. `ADMIN_SETUP.md` - Admin setup guide
 6. `FIRESTORE_RULES_UPDATED.md` - Updated security rules
-7. `PROFILE_AND_ADMIN_PLAN.md` - Implementation plan
+7. `ADMIN_AND_PROFILE_PLAN.md` - Consolidated implementation plan
 8. `IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Modified Files

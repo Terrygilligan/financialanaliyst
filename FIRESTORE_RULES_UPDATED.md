@@ -105,7 +105,7 @@ After publishing, test the rules:
 ## 📚 Related Documentation
 
 - `ADMIN_SETUP.md` - How to set up admin users
-- `PROFILE_AND_ADMIN_PLAN.md` - Implementation plan
+- `ADMIN_AND_PROFILE_PLAN.md` - Consolidated implementation plan
 - `FIRESTORE_RULES.md` - Original rules documentation
 
 ---

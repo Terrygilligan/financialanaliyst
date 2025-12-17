@@ -57,14 +57,17 @@ export async function appendReceiptToSheet(
     const sheets = getSheetsClient();
 
     // Map ReceiptData to the row format matching the Sheet headers
-    // Headers: Vendor Name, Date, Total Amount, Category, Timestamp, Entity
+    // Headers: Vendor Name, Date, Total Amount, Category, Timestamp, Entity, Original Currency, Original Amount, Exchange Rate
     const rowData = [
         receiptData.vendorName,
         receiptData.transactionDate,
         receiptData.totalAmount,
         receiptData.category,
         receiptData.timestamp,
-        receiptData.entity || 'Unassigned' // Phase 1.1: Entity Tracking
+        receiptData.entity || 'Unassigned', // Phase 1.1: Entity Tracking
+        receiptData.originalCurrency || '', // Phase 2.4: Currency Conversion
+        receiptData.originalAmount || '', // Phase 2.4: Currency Conversion
+        receiptData.exchangeRate || '' // Phase 2.4: Currency Conversion
     ];
 
     try {
@@ -81,8 +84,8 @@ export async function appendReceiptToSheet(
         
         // Append the row to the Sheet
         // Using 'USER_ENTERED' valueInputOption to preserve number formatting
-        // Range updated to A:F to include Entity column (Phase 1.1)
-        const range = `${sheetName}!A:F`;
+        // Range updated to A:I to include Entity and Currency columns (Phase 1.1 & 2.4)
+        const range = `${sheetName}!A:I`;
         console.log(`Appending to range: ${range}`);
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
@@ -117,7 +120,7 @@ export async function appendReceiptToSheet(
  */
 export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
     const sheets = getSheetsClient();
-    const expectedHeaders = ['Vendor Name', 'Date', 'Total Amount', 'Category', 'Timestamp', 'Entity'];
+    const expectedHeaders = ['Vendor Name', 'Date', 'Total Amount', 'Category', 'Timestamp', 'Entity', 'Original Currency', 'Original Amount', 'Exchange Rate'];
 
     try {
         // Get the actual sheet name from the spreadsheet (same logic as appendReceiptToSheet)
@@ -133,7 +136,7 @@ export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
         
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: `${sheetName}!A1:F1`, // Use dynamic sheet name instead of hard-coded 'Sheet1'
+            range: `${sheetName}!A1:I1`, // Use dynamic sheet name instead of hard-coded 'Sheet1', updated for currency fields
         });
 
         const headers = response.data.values?.[0] || [];

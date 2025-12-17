@@ -22,7 +22,8 @@ const auth = getAuth();
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
 import { appendReceiptToSheet } from "./sheets";
-import { lookupEntityForUser } from "./entities"; 
+import { lookupEntityForUser } from "./entities";
+import { convertReceiptToBaseCurrency } from "./currency"; 
 
 /**
  * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
@@ -80,6 +81,31 @@ export const analyzeReceiptUpload = onObjectFinalized(
         // 4.5. Look up entity for user (Phase 1.1: Entity Tracking)
         const entityName = await lookupEntityForUser(userId);
         receiptData.entity = entityName;
+
+        // 4.6. Currency conversion (Phase 2.4: Currency Conversion)
+        // Extract currency from Gemini response (if available)
+        const extractedCurrency = (receiptData as any).currency;
+        if (extractedCurrency) {
+            console.log(`Receipt currency detected: ${extractedCurrency}`);
+            const conversionResult = await convertReceiptToBaseCurrency(
+                receiptData.totalAmount,
+                extractedCurrency
+            );
+
+            if (conversionResult && conversionResult.exchangeRate !== 1.0) {
+                // Currency conversion was performed
+                receiptData.originalCurrency = conversionResult.originalCurrency;
+                receiptData.originalAmount = conversionResult.originalAmount;
+                receiptData.totalAmount = conversionResult.convertedAmount;
+                receiptData.exchangeRate = conversionResult.exchangeRate;
+                receiptData.conversionDate = conversionResult.conversionDate;
+                console.log(`Converted ${conversionResult.originalAmount} ${conversionResult.originalCurrency} to ${conversionResult.convertedAmount} ${conversionResult.baseCurrency} (rate: ${conversionResult.exchangeRate})`);
+            } else if (!conversionResult) {
+                // Conversion failed - log warning but continue with original amount
+                console.warn(`Currency conversion failed for ${extractedCurrency}. Using original amount.`);
+            }
+            // If exchangeRate === 1.0, no conversion was needed (same currency)
+        }
 
         // Phase 2: Feature Flag - Check if review workflow is enabled
         const enableReviewWorkflow = process.env.ENABLE_REVIEW_WORKFLOW === 'true';

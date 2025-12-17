@@ -84,6 +84,7 @@ export async function extractReceiptData(
   "vendorName": "The name of the store or business",
   "transactionDate": "The purchase date in YYYY-MM-DD format",
   "totalAmount": The final total including tax (as a number, no currency symbols),
+  "currency": "The currency code (e.g., USD, GBP, EUR). Default to GBP if not visible.",
   "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other"
 }
 

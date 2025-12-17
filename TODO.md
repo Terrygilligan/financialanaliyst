@@ -190,9 +190,11 @@
 - ✅ Frontend: PWA with authentication and real-time updates
 - ✅ Security: Storage and Firestore rules configured
 - ✅ Authentication: Email/Password + Google Sign-In with verification
+- ✅ **Admin Dashboard & User Profile: Complete** (see [ADMIN_AND_PROFILE_PLAN.md](ADMIN_AND_PROFILE_PLAN.md))
 - ✅ All environment variables are configured
 - ✅ Google Sheet is set up and shared with Service Account
 - ✅ Vertex AI API enabled and service account permissions configured
+- 📖 **Documentation**: See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for complete guide
 
 ## 🎉 Current Status
 

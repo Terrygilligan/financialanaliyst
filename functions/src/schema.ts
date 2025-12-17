@@ -21,6 +21,11 @@ export interface ReceiptData {
     category: Category;
     timestamp: string; // ISO 8601 timestamp of when the function ran
     entity?: string; // Optional: Entity name (e.g., "Entity A", "Unassigned")
+    // Phase 2.4: Currency conversion fields (all optional)
+    originalCurrency?: string; // Original currency code (e.g., "USD", "EUR")
+    originalAmount?: number; // Original amount before conversion
+    exchangeRate?: number; // Exchange rate used for conversion
+    conversionDate?: string; // ISO 8601 timestamp of when conversion was done
 }
 
 /**
@@ -41,6 +46,10 @@ export const RECEIPT_SCHEMA = {
         totalAmount: {
             type: "number",
             description: "The grand total of the purchase, including tax and fees."
+        },
+        currency: {
+            type: "string",
+            description: "The currency code (e.g., USD, GBP, EUR). Default to GBP if not visible."
         },
         category: {
             type: "string",

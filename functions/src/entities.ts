@@ -31,6 +31,15 @@ export async function lookupEntityForUser(userId: string): Promise<string> {
         if (userDoc.exists) {
             const userData = userDoc.data();
             if (userData?.entity) {
+                // Check if entity is an ID (look it up in /entities collection)
+                // This handles the case where assignEntityToUser stores entityId
+                const entityDoc = await db.collection('entities').doc(userData.entity).get();
+                if (entityDoc.exists) {
+                    const entityData = entityDoc.data() as EntityInfo;
+                    return entityData.name || 'Unassigned';
+                }
+                // If not found in entities collection, assume it's already a name
+                // (for backward compatibility with any existing data)
                 return userData.entity;
             }
         }

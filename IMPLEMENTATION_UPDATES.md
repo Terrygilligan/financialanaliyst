@@ -161,7 +161,7 @@ You can delete the `/admins` collection if you no longer need it.
 - **`CUSTOM_CLAIMS_SETUP.md`** - How to set up admin custom claims
 - **`FIRESTORE_RULES_CUSTOM_CLAIMS.md`** - Updated security rules
 - **`ADMIN_SETUP.md`** - Original setup (now deprecated)
-- **`PROFILE_AND_ADMIN_PLAN.md`** - Original implementation plan
+- **`ADMIN_AND_PROFILE_PLAN.md`** - Consolidated implementation plan (current)
 
 ---
 
