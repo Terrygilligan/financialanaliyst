@@ -172,6 +172,50 @@
                 </div>
             </div>
 
+            <!-- Documentation References (Always Visible) -->
+            <section class="documentation-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 15px 0; font-size: 24px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px;">📚 Documentation References</h2>
+                
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; backdrop-filter: blur(10px);">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
+                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/LOCAL_TESTING_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px;">🧪</span>
+                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">LOCAL_TESTING_GUIDE.md</code> - Complete local testing setup</span>
+                            </a>
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
+                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/USER_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px;">👤</span>
+                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">USER_GUIDE.md</code> - Full user documentation</span>
+                            </a>
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
+                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/README.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px;">📖</span>
+                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">README.md</code> - Project overview and setup</span>
+                            </a>
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; transition: all 0.3s ease;">
+                            <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/ADMIN_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px;">👨‍💼</span>
+                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Courier New', monospace;">ADMIN_GUIDE.md</code> - Complete admin documentation</span>
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                        <h3 style="margin: 0 0 15px 0; font-size: 18px; color: #fff;">🔧 Common Issues</h3>
+                        <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                            <li><strong style="color: #ffd700;">Admin link not showing:</strong> Check Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection, ensure email matches exactly</li>
+                            <li><strong style="color: #ffd700;">Access denied:</strong> Verify you're logged in with the correct admin email, try signing out and back in</li>
+                            <li><strong style="color: #ffd700;">Features not loading:</strong> Check browser console (F12) for errors, verify Firebase config</li>
+                            <li><strong style="color: #ffd700;">Review workflow not working:</strong> Ensure <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">ENABLE_REVIEW_WORKFLOW=true</code> in Firebase Functions environment</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
             <!-- Statistics Overview -->
             <section class="admin-section">
                 <h2>System Statistics</h2>
