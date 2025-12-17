@@ -107,16 +107,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('👤 Is admin?', isAdmin);
             
             const adminLinkContainer = document.getElementById('admin-link-container');
-            console.log('📦 Admin link container:', adminLinkContainer);
+            console.log('📦 Admin link container element:', adminLinkContainer);
+            console.log('📦 Current display style:', adminLinkContainer ? adminLinkContainer.style.display : 'element not found');
+            console.log('📦 Current computed style:', adminLinkContainer ? window.getComputedStyle(adminLinkContainer).display : 'element not found');
             
             if (isAdmin && adminLinkContainer) {
-                console.log('✅ Showing admin link');
+                console.log('✅ Showing admin link - setting display to inline');
                 adminLinkContainer.style.display = 'inline';
+                adminLinkContainer.style.visibility = 'visible';
+                // Force reflow to ensure style is applied
+                adminLinkContainer.offsetHeight;
+                console.log('✅ After setting - display:', adminLinkContainer.style.display);
+                console.log('✅ After setting - computed display:', window.getComputedStyle(adminLinkContainer).display);
             } else if (!isAdmin) {
                 console.log('ℹ️ User is not admin, hiding admin link');
                 if (adminLinkContainer) {
                     adminLinkContainer.style.display = 'none';
                 }
+            } else if (isAdmin && !adminLinkContainer) {
+                console.error('❌ CRITICAL: User is admin but admin-link-container element not found in DOM!');
             }
         } else {
             // User is signed out - redirect to login page only if not already there
