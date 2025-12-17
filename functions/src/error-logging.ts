@@ -183,16 +183,28 @@ export async function queryErrorLogs(filters: {
             query = query.where('userId', '==', filters.userId);
         }
 
+        // Bug Fix: When using range filters on serverTimestamp, orderBy must be on the same field
+        // This avoids composite index requirement by ordering by the range-filtered field
+        let hasTimestampFilter = false;
+        
         if (filters.startDate) {
             query = query.where('serverTimestamp', '>=', filters.startDate.toISOString());
+            hasTimestampFilter = true;
         }
 
         if (filters.endDate) {
             query = query.where('serverTimestamp', '<=', filters.endDate.toISOString());
+            hasTimestampFilter = true;
         }
 
         // Apply ordering AFTER all filters
-        query = query.orderBy('serverTimestamp', 'desc');
+        // When range filters exist on serverTimestamp, Firestore automatically orders by it ascending
+        // We can then reverse the results in memory to get descending order
+        if (hasTimestampFilter) {
+            query = query.orderBy('serverTimestamp', 'asc'); // Ascending to avoid composite index
+        } else {
+            query = query.orderBy('serverTimestamp', 'desc'); // Descending when no range filters
+        }
 
         // Apply limit last
         if (filters.limit) {
@@ -205,6 +217,12 @@ export async function queryErrorLogs(filters: {
         snapshot.forEach((doc: any) => {
             logs.push(doc.data() as ErrorLogEntry);
         });
+
+        // Reverse results if we used ascending order due to range filters
+        // to maintain descending order (newest first) for the caller
+        if (hasTimestampFilter) {
+            logs.reverse();
+        }
 
         return logs;
     } catch (error) {

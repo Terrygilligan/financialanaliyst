@@ -57,11 +57,9 @@ export const finalizeReceipt = onCall(
                 throw new Error("Unauthorized: You can only finalize your own receipts");
             }
 
-            // 3. Preserve original Gemini-extracted data BEFORE merging user corrections
+            // 3. Merge user corrections with original Gemini data
             const originalReceiptData = pendingReceipt.receiptData as ReceiptData;
-            const originalGeminiAmount = originalReceiptData.totalAmount;
             
-            // 3.1. Merge user corrections with original data
             const finalReceiptData: ReceiptData = {
                 ...originalReceiptData,
                 ...(updatedReceiptData || {})
@@ -73,13 +71,15 @@ export const finalizeReceipt = onCall(
             }
 
             // Bug Fix: Ensure currency defaults are set if missing (in case Gemini failed to extract)
-            // Use ORIGINAL Gemini amount (before user corrections) for originalAmount
+            // When exchangeRate=1.0 (no conversion), originalAmount must equal totalAmount
+            // to maintain semantic invariant: originalAmount * exchangeRate ≈ totalAmount
             const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
             if (!finalReceiptData.currency) {
                 console.log(`Currency missing in receipt ${receiptId}, applying defaults: ${baseCurrency}`);
                 finalReceiptData.currency = baseCurrency;
                 finalReceiptData.originalCurrency = baseCurrency;
-                finalReceiptData.originalAmount = originalGeminiAmount; // Use original Gemini-extracted amount
+                // Use final corrected amount (not Gemini's original) since exchangeRate=1.0 means no conversion
+                finalReceiptData.originalAmount = finalReceiptData.totalAmount;
                 finalReceiptData.exchangeRate = 1.0;
                 finalReceiptData.conversionDate = new Date().toISOString();
             }

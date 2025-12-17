@@ -69,6 +69,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Setup quick navigation sidebar
+    const quickNavButtons = document.querySelectorAll('.quick-nav-btn');
+    quickNavButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-target');
+            
+            if (targetId === 'top') {
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                // Scroll to section
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
+            }
+            
+            // Update active state
+            quickNavButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Remove active state after animation
+            setTimeout(() => {
+                btn.classList.remove('active');
+            }, 1000);
+        });
+    });
+
+    // Highlight active section on scroll
+    const sections = [
+        'documentation-section',
+        'statistics-section',
+        'analytics-section',
+        'receipts-section',
+        'errors-section',
+        'users-section'
+    ];
+
+    window.addEventListener('scroll', () => {
+        let currentSection = '';
+        
+        sections.forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 100 && rect.bottom >= 100) {
+                    currentSection = sectionId;
+                }
+            }
+        });
+        
+        // Update active button based on current section
+        quickNavButtons.forEach(btn => {
+            const targetId = btn.getAttribute('data-target');
+            if (targetId === currentSection) {
+                btn.style.opacity = '1';
+                btn.style.transform = 'translateX(-5px) scale(1.05)';
+            } else {
+                btn.style.opacity = '0.7';
+                btn.style.transform = 'translateX(0) scale(1)';
+            }
+        });
+    });
+
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');

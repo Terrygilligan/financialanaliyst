@@ -56,6 +56,38 @@
 
         <!-- Admin Content -->
         <main id="admin-content" style="display: none;">
+            <!-- Quick Navigation Sidebar -->
+            <nav class="admin-quick-nav">
+                <button class="quick-nav-btn" data-target="documentation-section" title="Documentation">
+                    <span class="icon">📚</span>
+                    <span class="label">Docs</span>
+                </button>
+                <button class="quick-nav-btn" data-target="statistics-section" title="System Statistics">
+                    <span class="icon">📊</span>
+                    <span class="label">Stats</span>
+                </button>
+                <button class="quick-nav-btn" data-target="analytics-section" title="Analytics">
+                    <span class="icon">📈</span>
+                    <span class="label">Charts</span>
+                </button>
+                <button class="quick-nav-btn" data-target="receipts-section" title="All Receipts">
+                    <span class="icon">📋</span>
+                    <span class="label">Receipts</span>
+                </button>
+                <button class="quick-nav-btn" data-target="errors-section" title="Error Logs">
+                    <span class="icon">⚠️</span>
+                    <span class="label">Errors</span>
+                </button>
+                <button class="quick-nav-btn" data-target="users-section" title="User Management">
+                    <span class="icon">👥</span>
+                    <span class="label">Users</span>
+                </button>
+                <button class="quick-nav-btn scroll-to-top" data-target="top" title="Back to Top">
+                    <span class="icon">⬆️</span>
+                    <span class="label">Top</span>
+                </button>
+            </nav>
+
             <!-- Testing/Admin Guide (visible when running locally) -->
             <div id="testingHelper" class="testing-helper" style="display: none;">
                 <h3>📚 Admin Documentation & Guides</h3>
@@ -173,7 +205,7 @@
             </div>
 
             <!-- Documentation References (Always Visible with Tabs) -->
-            <section class="documentation-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px;">
+            <section id="documentation-section" class="documentation-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; scroll-margin-top: 20px;">
                 <h2 style="margin: 0 0 20px 0; font-size: 24px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px;">📚 Documentation Center</h2>
                 
                 <!-- Documentation Tabs -->
@@ -351,7 +383,7 @@
             </section>
 
             <!-- Statistics Overview -->
-            <section class="admin-section">
+            <section id="statistics-section" class="admin-section" style="scroll-margin-top: 20px;">
                 <h2>System Statistics</h2>
                 <div class="stats-grid">
                     <div class="stat-card admin-stat">
@@ -388,7 +420,7 @@
             </section>
 
             <!-- Charts Section -->
-            <section class="admin-section">
+            <section id="analytics-section" class="admin-section" style="scroll-margin-top: 20px;">
                 <h2>Analytics</h2>
                 <div class="charts-container">
                     <div class="chart-wrapper">
@@ -403,7 +435,7 @@
             </section>
 
             <!-- All Receipts Viewer -->
-            <section class="admin-section">
+            <section id="receipts-section" class="admin-section" style="scroll-margin-top: 20px;">
                 <h2>All Receipts</h2>
                 <div class="admin-tabs">
                     <button class="tab-btn active" data-tab="errors">Errors & Unprocessed</button>
@@ -425,7 +457,7 @@
             </section>
 
             <!-- Error Logs -->
-            <section class="admin-section">
+            <section id="errors-section" class="admin-section" style="scroll-margin-top: 20px;">
                 <h2>Error Logs</h2>
                 <div id="error-logs-container">
                     <div class="loading-state">Loading error logs...</div>
@@ -433,7 +465,7 @@
             </section>
 
             <!-- User Management -->
-            <section class="admin-section">
+            <section id="users-section" class="admin-section" style="scroll-margin-top: 20px;">
                 <h2>User Management</h2>
                 <div class="admin-controls">
                     <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
