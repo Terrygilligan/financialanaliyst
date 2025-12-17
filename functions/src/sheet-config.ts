@@ -277,7 +277,7 @@ export async function deleteSheetConfig(configId: string): Promise<void> {
 export async function verifySheetHealth(
   sheetId: string,
   sheetsClient: sheets_v4.Sheets
-): Promise<SheetConfig['healthStatus']> {
+): Promise<NonNullable<SheetConfig['healthStatus']>> {
   try {
     console.log(`[Sheet Config] Verifying health for sheet: ${sheetId}`);
     
@@ -352,6 +352,48 @@ export async function assignSheetToEntity(
     console.log(`[Sheet Config] Assigned sheet ${sheetConfigId} to entity ${entityId}`);
   } catch (error) {
     console.error(`[Sheet Config] Error assigning sheet to entity:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Remove sheet config assignment from user
+ * 
+ * @param userId - User's Firebase Auth UID
+ */
+export async function removeSheetAssignmentFromUser(
+  userId: string
+): Promise<void> {
+  try {
+    await db.collection('users').doc(userId).update({
+      sheetConfigId: null,
+      lastModified: new Date().toISOString()
+    });
+    
+    console.log(`[Sheet Config] Removed sheet assignment from user ${userId}`);
+  } catch (error) {
+    console.error(`[Sheet Config] Error removing sheet assignment from user:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Remove sheet config assignment from entity
+ * 
+ * @param entityId - Entity ID
+ */
+export async function removeSheetAssignmentFromEntity(
+  entityId: string
+): Promise<void> {
+  try {
+    await db.collection('entities').doc(entityId).update({
+      sheetConfigId: null,
+      lastModified: new Date().toISOString()
+    });
+    
+    console.log(`[Sheet Config] Removed sheet assignment from entity ${entityId}`);
+  } catch (error) {
+    console.error(`[Sheet Config] Error removing sheet assignment from entity:`, error);
     throw error;
   }
 }

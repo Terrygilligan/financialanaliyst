@@ -11,6 +11,8 @@ import {
   verifySheetHealth,
   assignSheetToUser,
   assignSheetToEntity,
+  removeSheetAssignmentFromUser,
+  removeSheetAssignmentFromEntity,
   getUsersForSheetConfig,
   getEntitiesForSheetConfig,
   SheetConfig
@@ -532,13 +534,7 @@ export const removeUserSheetAssignment = onCall(
     console.log(`[Admin Sheet] Removing sheet assignment from user ${userId}`);
     
     try {
-      const { getFirestore } = await import("firebase-admin/firestore");
-      const db = getFirestore();
-      
-      await db.collection('users').doc(userId).update({
-        sheetConfigId: null,
-        lastModified: new Date().toISOString()
-      });
+      await removeSheetAssignmentFromUser(userId);
       
       console.log(`[Admin Sheet] ✅ Sheet assignment removed from user`);
       
@@ -549,6 +545,39 @@ export const removeUserSheetAssignment = onCall(
     } catch (error: any) {
       console.error('[Admin Sheet] ❌ Error removing assignment:', error);
       throw new HttpsError('internal', `Failed to remove assignment: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * Remove sheet assignment from entity
+ * Admin-only endpoint
+ */
+export const removeEntitySheetAssignment = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    verifyAdmin(request);
+    
+    const { entityId } = request.data;
+    
+    if (!entityId) {
+      throw new HttpsError('invalid-argument', 'entityId is required');
+    }
+    
+    console.log(`[Admin Sheet] Removing sheet assignment from entity ${entityId}`);
+    
+    try {
+      await removeSheetAssignmentFromEntity(entityId);
+      
+      console.log(`[Admin Sheet] ✅ Sheet assignment removed from entity`);
+      
+      return { 
+        success: true, 
+        message: 'Entity sheet assignment removed successfully' 
+      };
+    } catch (error: any) {
+      console.error('[Admin Sheet] ❌ Error removing entity assignment:', error);
+      throw new HttpsError('internal', `Failed to remove entity assignment: ${error.message}`);
     }
   }
 );

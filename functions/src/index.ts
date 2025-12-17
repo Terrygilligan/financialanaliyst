@@ -379,7 +379,8 @@ export {
   assignSheetConfigToEntity,
   getSheetConfigAssignments,
   bulkAssignUsersToSheet,
-  removeUserSheetAssignment
+  removeUserSheetAssignment,
+  removeEntitySheetAssignment
 } from "./admin-sheet-management";
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY

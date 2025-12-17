@@ -156,7 +156,6 @@ export const adminApproveReceipt = onCall(
             finalReceiptData.hasErrors = false;
 
             // 3. Write to Google Sheets
-            const sheetId = process.env.GOOGLE_SHEET_ID;
             let sheetsWriteSuccess = false;
             let googleSheetLink = null;
 
