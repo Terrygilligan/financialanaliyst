@@ -83,7 +83,7 @@ export const finalizeReceipt = onCall(
                 transactionDate: finalReceiptData.transactionDate,
                 totalAmount: finalReceiptData.totalAmount,
                 category: String(finalReceiptData.category), // Convert enum to string
-                vatNumber: (updatedReceiptData as any)?.vatNumber
+                vatNumber: finalReceiptData.supplierVatNumber // Use merged VAT number from final data
             });
 
             // If validation fails, mark for admin review instead of rejecting

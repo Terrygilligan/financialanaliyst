@@ -92,19 +92,27 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 extractedCurrency
             );
 
-            if (conversionResult && conversionResult.exchangeRate !== 1.0) {
-                // Currency conversion was performed
-                receiptData.originalCurrency = conversionResult.originalCurrency;
-                receiptData.originalAmount = conversionResult.originalAmount;
-                receiptData.totalAmount = conversionResult.convertedAmount;
-                receiptData.exchangeRate = conversionResult.exchangeRate;
-                receiptData.conversionDate = conversionResult.conversionDate;
-                console.log(`Converted ${conversionResult.originalAmount} ${conversionResult.originalCurrency} to ${conversionResult.convertedAmount} ${conversionResult.baseCurrency} (rate: ${conversionResult.exchangeRate})`);
-            } else if (!conversionResult) {
+            if (conversionResult) {
+                if (conversionResult.exchangeRate !== 1.0) {
+                    // Currency conversion was performed (different currency)
+                    receiptData.originalCurrency = conversionResult.originalCurrency;
+                    receiptData.originalAmount = conversionResult.originalAmount;
+                    receiptData.totalAmount = conversionResult.convertedAmount;
+                    receiptData.exchangeRate = conversionResult.exchangeRate;
+                    receiptData.conversionDate = conversionResult.conversionDate;
+                    console.log(`Converted ${conversionResult.originalAmount} ${conversionResult.originalCurrency} to ${conversionResult.convertedAmount} ${conversionResult.baseCurrency} (rate: ${conversionResult.exchangeRate})`);
+                } else {
+                    // Same currency (exchangeRate === 1.0) - still record currency info for consistency
+                    receiptData.originalCurrency = conversionResult.originalCurrency;
+                    receiptData.originalAmount = conversionResult.originalAmount;
+                    receiptData.exchangeRate = conversionResult.exchangeRate;
+                    receiptData.conversionDate = conversionResult.conversionDate;
+                    console.log(`Receipt already in base currency ${conversionResult.baseCurrency}, no conversion needed`);
+                }
+            } else {
                 // Conversion failed - log warning but continue with original amount
                 console.warn(`Currency conversion failed for ${extractedCurrency}. Using original amount.`);
             }
-            // If exchangeRate === 1.0, no conversion was needed (same currency)
         }
 
         // Phase 2: Feature Flag - Check if review workflow is enabled
