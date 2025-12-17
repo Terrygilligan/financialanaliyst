@@ -1106,8 +1106,7 @@ section h2 {
 .admin-quick-nav {
     position: fixed;
     right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 100px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
