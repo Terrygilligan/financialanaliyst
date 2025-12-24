@@ -209,6 +209,7 @@ function showAssignmentModal() {
     const assignUsersBtn = document.getElementById('assign-users-btn');
     const assignEntityBtn = document.getElementById('assign-entity-btn');
     const closeBtn = document.getElementById('close-assignment-modal-btn');
+    const headerCloseBtn = document.getElementById('assignment-modal-close-btn'); // X button in header
     
     if (assignUsersBtn && !assignUsersBtn.dataset.listenerAttached) {
         assignUsersBtn.addEventListener('click', assignSelectedUsers);
@@ -223,6 +224,11 @@ function showAssignmentModal() {
     if (closeBtn && !closeBtn.dataset.listenerAttached) {
         closeBtn.addEventListener('click', hideAssignmentModal);
         closeBtn.dataset.listenerAttached = 'true';
+    }
+    
+    if (headerCloseBtn && !headerCloseBtn.dataset.listenerAttached) {
+        headerCloseBtn.addEventListener('click', hideAssignmentModal);
+        headerCloseBtn.dataset.listenerAttached = 'true';
     }
 }
 
@@ -336,6 +342,10 @@ async function editConfig(configId) {
     }
     
     // Bug Fix: Complete editConfig implementation - load all fields and set mode correctly
+    // Show modal first so form elements are in DOM and visible
+    showConfigModal();
+    
+    // Set title and populate form fields
     document.getElementById('modal-title').textContent = 'Edit Sheet Configuration';
     document.getElementById('config-name').value = config.name;
     document.getElementById('config-sheet-id').value = config.sheetId;
@@ -345,13 +355,14 @@ async function editConfig(configId) {
     document.getElementById('verification-result').style.display = 'none';
     
     // Set mode to "existing" since we're editing an existing sheet
-    const existingRadio = document.querySelector('input[name="sheet-mode"][value="existing"]');
-    if (existingRadio) {
-        existingRadio.checked = true;
-        handleModeChange({ target: existingRadio });
-    }
-    
-    showConfigModal();
+    // Use setTimeout to ensure modal is fully rendered before setting mode
+    setTimeout(() => {
+        const existingRadio = document.querySelector('input[name="sheet-mode"][value="existing"]');
+        if (existingRadio) {
+            existingRadio.checked = true;
+            handleModeChange({ target: existingRadio });
+        }
+    }, 100);
 }
 
 /**
