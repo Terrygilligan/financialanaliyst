@@ -130,18 +130,41 @@ export async function getSheetConfigForUser(userId: string): Promise<SheetConfig
  */
 export async function getAllSheetConfigs(): Promise<SheetConfig[]> {
   try {
-    const snapshot = await db.collection('sheet_configs')
-      .where('status', '==', 'active')
-      .orderBy('name')
-      .get();
-    
-    const configs = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as SheetConfig));
-    
-    console.log(`[Sheet Config] Found ${configs.length} active sheet configs`);
-    return configs;
+    // Try with orderBy first (requires index)
+    try {
+      const snapshot = await db.collection('sheet_configs')
+        .where('status', '==', 'active')
+        .orderBy('name')
+        .get();
+      
+      const configs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as SheetConfig));
+      
+      console.log(`[Sheet Config] Found ${configs.length} active sheet configs`);
+      return configs;
+    } catch (indexError: any) {
+      // If index is missing, fall back to query without orderBy
+      if (indexError.code === 9 || indexError.message?.includes('index')) {
+        console.warn('[Sheet Config] Index missing, falling back to query without orderBy');
+        const snapshot = await db.collection('sheet_configs')
+          .where('status', '==', 'active')
+          .get();
+        
+        const configs = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as SheetConfig));
+        
+        // Sort in memory instead
+        configs.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        console.log(`[Sheet Config] Found ${configs.length} active sheet configs (sorted in memory)`);
+        return configs;
+      }
+      throw indexError;
+    }
   } catch (error) {
     console.error('[Sheet Config] Error fetching all sheet configs:', error);
     return [];
@@ -186,7 +209,12 @@ export async function createSheetConfig(
       ...config,
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
-      createdBy: creatorUid
+      createdBy: creatorUid,
+      // Bug Fix: Initialize stats field to prevent Firestore transaction errors
+      stats: {
+        totalReceipts: 0,
+        lastReceiptAt: undefined
+      }
     };
     
     // If this is set as default, unset any existing defaults
