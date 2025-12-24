@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Business Signup - AI Financial Analyst">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Business Signup - AI Financial Analyst</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Identity Services - Load synchronously to preserve user gesture context -->
+    <script src="https://accounts.google.com/gsi/client"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFunctions } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
+        import { firebaseConfig } from './firebase-config.js';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const functions = getFunctions(app, 'us-central1');
+        
+        // Smart Emulator Detection: Only use emulators if explicitly enabled
+        // This allows Google Sign-In to work properly with live Firebase Auth
+        const { shouldUseEmulators, emulatorConfig } = await import('./firebase-config.js');
+        
+        if (shouldUseEmulators()) {
+            console.log('🔧 Emulator mode enabled (auto-detected localhost)');
+            
+            // Connect Functions emulator
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js').then(({ connectFunctionsEmulator }) => {
+                connectFunctionsEmulator(functions, emulatorConfig.functions.host, emulatorConfig.functions.port);
+                console.log(`✅ Connected to Functions emulator on ${emulatorConfig.functions.host}:${emulatorConfig.functions.port}`);
+            });
+            
+            // Connect Auth emulator
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js').then(({ connectAuthEmulator }) => {
+                connectAuthEmulator(auth, `http://${emulatorConfig.auth.host}:${emulatorConfig.auth.port}`, { disableWarnings: true });
+                console.log(`✅ Connected to Auth emulator on ${emulatorConfig.auth.host}:${emulatorConfig.auth.port}`);
+            });
+            
+            // Connect Firestore emulator (if used)
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js').then(({ connectFirestoreEmulator, getFirestore }) => {
+                const db = getFirestore(app);
+                connectFirestoreEmulator(db, emulatorConfig.firestore.host, emulatorConfig.firestore.port);
+                console.log(`✅ Connected to Firestore emulator on ${emulatorConfig.firestore.host}:${emulatorConfig.firestore.port}`);
+            });
+        } else {
+            console.log('🌐 Using live Firebase (recommended for Google Sign-In)');
+            console.log('💡 To use emulators, add ?emulator=true to URL, set localStorage.setItem("useEmulator", "true"), or use localhost');
+        }
+        
+        // Create Google Provider with Drive scope
+        const googleProvider = new GoogleAuthProvider();
+        googleProvider.addScope('https://www.googleapis.com/auth/drive');
+        googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets');
+        
+        // Make available globally
+        window.firebase = { app, auth, functions, googleProvider };
+    </script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .signup-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+        .signup-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .signup-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        .signup-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .signup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .form-group input {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #1565c0;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .divider span {
+            padding: 0 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .back-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-header">
+            <h1>🏢 Create Your Business</h1>
+            <p>Set up your automated financial tracking system</p>
+        </div>
+
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <!-- Step 1: Authentication -->
+        <div id="auth-step" class="signup-form">
+            <div class="info-box" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;">
+                <strong>⚠️ Business Admin Requirement:</strong>
+                Business admins (bookkeepers) must sign in with Google to create and manage businesses. 
+                This allows us to automatically create your Google Drive folder and Sheet.
+            </div>
+
+            <div class="info-box">
+                <strong>📋 What happens next:</strong>
+                We'll automatically create a Google Drive folder and Google Sheet for your business. 
+                All receipts will be organized automatically!
+            </div>
+
+            <div class="form-group">
+                <label>Business Name</label>
+                <input type="text" id="business-name" placeholder="e.g., Acme Corporation" required>
+            </div>
+
+            <div class="divider">
+                <span>Sign in with Google to continue</span>
+            </div>
+
+            <!-- Google Identity Services will render the button here -->
+            <div id="google-signin-btn-container" style="width: 100%; display: flex; justify-content: center; margin: 10px 0;"></div>
+            
+            <!-- Fallback button (hidden, used if GIS fails to load) -->
+            <button type="button" id="google-signup-btn" class="btn-google" style="width: 100%; display: none;">
+                <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                    <path fill="#FBBC05" d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.712s.102-1.172.282-1.712V4.956H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.044l3.007-2.332z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288C4.672 5.163 6.656 3.58 9 3.58z"/>
+                </svg>
+                Sign in with Google (Required)
+            </button>
+
+            <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #667eea;">
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                    <strong>Note:</strong> Regular users (drivers) can use email/password or Google login. 
+                    Business admins must use Google login to enable automatic Drive setup.
+                </p>
+            </div>
+
+            <div class="back-link">
+                <a href="login.html">Already have an account? Sign in</a>
+            </div>
+        </div>
+
+        <!-- Step 2: Provisioning (shown after auth) -->
+        <div id="provisioning-step" style="display: none;">
+            <div class="info-box">
+                <strong>⏳ Setting up your business...</strong>
+                <p style="margin: 10px 0 0 0;">This may take a few moments. Please don't close this page.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">Creating your business...</p>
+    </div>
+
+    <script type="module" src="business-signup.js"></script>
+</body>
+</html>
+

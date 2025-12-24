@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Review - AI Financial Analyst</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20251217-phase4">
     <!-- Translations (Phase 1.2: Multi-Language Support) -->
     <script src="translations.js"></script>
     <!-- Firebase SDKs -->
@@ -14,16 +14,7 @@
         import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { getFunctions } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
-
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyB7D8sK7NqBHHxvZjHN8RQr9xWxH-0K0Y0",
-            authDomain: "financialanaliyst.firebaseapp.com",
-            projectId: "financialanaliyst",
-            storageBucket: "financialanaliyst.firebasestorage.app",
-            messagingSenderId: "427691437515",
-            appId: "1:427691437515:web:7a1a5b0e5c5e5e5e5e5e5e"
-        };
+        import { firebaseConfig } from './firebase-config.js';
 
         const app = initializeApp(firebaseConfig);
         window.auth = getAuth(app);
@@ -159,7 +150,7 @@
         </div>
     </div>
 
-    <script src="admin-review.js"></script>
+    <script src="admin-review.js?v=20251217-phase4-fixed"></script>
 </body>
 </html>
 

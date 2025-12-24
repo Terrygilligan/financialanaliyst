@@ -19,6 +19,20 @@ ui-debug.log
 .env.local
 .env.*.local
 functions/.env
+*.env
+*.env.*
+
+# Secrets and keys
+*service-account*.json
+*key*.json
+*credentials*.json
+*-key.json
+*-secret.json
+*.pem
+*.key
+*.p12
+service-account-key.json
+google-credentials.json
 
 # Build outputs
 functions/lib/
