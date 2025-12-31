@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Deny all reads/writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Tenant data is isolated by businessId
+    match /businesses/{businessId}/{document=**} {
+      // Allow read/write only if the user's custom claim matches the businessId in the path
+      allow read, write: if request.auth != null && request.auth.token.businessId == businessId;
+    }
+
+    // User lookup collection is readable by any authenticated user for registration/login
+    match /user_lookup/{email} {
+      allow get: if request.auth != null;
+    }
+  }
+}

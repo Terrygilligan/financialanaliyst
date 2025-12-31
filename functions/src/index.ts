@@ -1,265 +1,204 @@
 // functions/src/index.ts
 
-// Load environment variables from .env file (for local development)
-// In production, these should be set via Secret Manager or runtime config
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+import { processReceiptBatch } from "./processor";
+import { ReceiptData } from "./schema";
 
-// Initialize the Firebase Admin SDK once for all functions
 initializeApp();
 const storage = getStorage();
 const db = getFirestore();
 const auth = getAuth();
 
-// --- Import the main processor logic ---
-import { processReceiptBatch } from "./processor"; 
-import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets"; 
-
-/**
- * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
- * This is the starting point of the AI Financial Analyst workflow.
- */
 export const analyzeReceiptUpload = onObjectFinalized(
     {
-        // IMPORTANT: Only trigger on files uploaded to the 'receipts/' prefix
-        region: "us-central1", // Use a region near your Firestore/Gemini location
-        maxInstances: 5, // Limit concurrent runs for cost control
-        memory: "1GiB", // Increase memory for image processing and AI API calls
+        region: "us-central1",
+        maxInstances: 5,
+        memory: "1GiB",
     },
     async (event) => {
-    
-    // 1. Basic Validation and Path Check
-    const file = event.data;
-    if (!file || !file.name || !file.bucket) {
-        console.error("No file data found in event.");
-        return;
-    }
-
-    const filePath = file.name; // e.g., receipts/user123/receipt-1678886400.jpg
-    const bucketName = file.bucket; // Get bucket from event
-    
-    console.log(`File uploaded to bucket: ${bucketName}, path: ${filePath}`);
-    
-    // Ignore files not in the expected path or files created during processing (e.g., resized versions)
-    if (!filePath.startsWith('receipts/')) {
-        console.log(`Ignoring file outside the target path: ${filePath}`);
-        return;
-    }
-
-    console.log(`Starting analysis for file: ${filePath}`);
-
-    try {
-        // 2. Download the File Buffer from Storage
-        const bucket = storage.bucket(bucketName);
-        const [fileBuffer] = await bucket.file(filePath).download();
-        
-        // 3. Extract necessary metadata (userId, filename)
-        // Assume path format is: receipts/{userId}/{filename}
-        const pathParts = filePath.split('/');
-        const userId = pathParts[1];
-        const fileName = pathParts.pop();
-
-        if (!userId) {
-            console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
+        const file = event.data;
+        if (!file || !file.name || !file.bucket) {
+            console.error("No file data found in event.");
             return;
         }
 
-        // 4. Call the core processor function (defined in processor.ts)
-        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+        const filePath = file.name;
+        const bucketName = file.bucket;
 
-        // 5. Append data to Google Sheets (Steps 8-9)
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-        let sheetsWriteSuccess = false;
-        let googleSheetLink = null;
-        
-        // Debug logging for environment variables
-        console.log("Environment check:", {
-            hasSheetId: !!sheetId,
-            sheetIdLength: sheetId?.length || 0,
-            hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
-            hasGeminiKey: !!process.env.GEMINI_API_KEY
-        });
-        
-        if (sheetId) {
-            try {
-                await appendReceiptToSheet(receiptData, sheetId);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
-                sheetsWriteSuccess = true;
-                googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-            } catch (sheetsError) {
-                // Log Sheets error but don't fail the entire operation
-                // The receipt was processed successfully, Sheets write is secondary
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                console.error("Full error:", sheetsError);
-            }
-        } else {
-            console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
-            console.error("This means environment variables are not configured for the deployed function.");
-            console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
-            console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
-            console.error("2. OR Firebase Functions Secrets");
+        if (!filePath.startsWith('tenants/')) {
+            console.log(`Ignoring file outside the target path: ${filePath}`);
+            return;
         }
 
-        // 6. Update Firestore Status (Step 10)
-        await db.collection('batches').doc(userId).set({
-            status: 'complete',
-            lastFileProcessed: fileName,
-            receiptData: receiptData, // Store the extracted data for reference
-            sheetsWriteSuccess: sheetsWriteSuccess,
-            googleSheetLink: googleSheetLink,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
+        console.log(`Starting analysis for file: ${filePath}`);
 
-        // 7. Update user statistics in /users collection
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await userRef.get();
-        const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
-        
-        await userRef.set({
-            totalReceipts: (currentStats.totalReceipts || 0) + 1,
-            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-            lastUpdated: new Date().toISOString(),
-            lastReceiptProcessed: fileName,
-            lastReceiptTimestamp: new Date().toISOString()
-        }, { merge: true });
+        try {
+            const bucket = storage.bucket(bucketName);
+            const [fileBuffer] = await bucket.file(filePath).download();
 
-        console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
+            const pathParts = filePath.split('/');
+            const businessId = pathParts[1];
+            const userId = pathParts[3];
+            const fileName = pathParts.pop();
 
-    } catch (error) {
-        console.error(`FATAL ERROR processing file ${filePath}:`, error);
-        
-        // Update Firestore status to error (Step 10)
-        const pathParts = filePath.split('/');
-        const userId = pathParts[1] || 'unknown';
-        await db.collection('batches').doc(userId).set({
-            status: 'error',
-            errorFile: filePath,
-            errorMessage: (error as Error).message,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
-    }
-});
+            if (!businessId || !userId) {
+                console.error(`Could not determine businessId or userId from path: ${filePath}`);
+                return;
+            }
 
-/**
- * Cloud Function: Set Admin Custom Claim
- * 
- * This function allows an existing admin (or super-admin) to grant admin privileges
- * to a user by setting a custom claim on their auth token.
- * 
- * Usage (via Firebase Console or HTTP call):
- * - Call this function with the target user's UID
- * - Only callable by authenticated users (you can add additional checks)
- * 
- * Security: In production, you should add additional checks to ensure only
- * authorized users can call this function (e.g., check if caller is already admin).
- */
+            const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+
+            await db.collection('businesses').doc(businessId).collection('batches').doc(userId).set({
+                status: 'complete',
+                lastFileProcessed: fileName,
+                receiptData: receiptData,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+
+            const userRef = db.collection('businesses').doc(businessId).collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+
+            await userRef.set({
+                totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+                lastUpdated: new Date().toISOString(),
+                lastReceiptProcessed: fileName,
+                lastReceiptTimestamp: new Date().toISOString()
+            }, { merge: true });
+
+            console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
+
+        } catch (e) {
+            console.error(`FATAL ERROR processing file ${filePath}:`, e);
+            const pathParts = filePath.split('/');
+            const businessId = pathParts[1] || 'unknown';
+            const userId = pathParts[3] || 'unknown';
+            await db.collection('businesses').doc(businessId).collection('batches').doc(userId).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: (e as Error).message,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        }
+    });
+
 export const setAdminClaim = onCall(
     {
         region: "us-central1",
     },
     async (request) => {
-        // Get the target user UID from the request
-        const targetUserId = request.data.uid;
-        
-        if (!targetUserId) {
-            throw new Error("User UID is required");
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
         }
 
-        // Optional: Verify the caller is already an admin
-        // For initial setup, you might want to skip this check
-        const callerUid = request.auth?.uid;
-        if (callerUid) {
-            try {
-                const caller = await auth.getUser(callerUid);
-                if (!caller.customClaims?.admin) {
-                    // Optional: Allow if no admins exist yet (bootstrap scenario)
-                    const allUsers = await auth.listUsers();
-                    const hasAdmin = allUsers.users.some(u => u.customClaims?.admin);
-                    if (hasAdmin) {
-                        throw new Error("Only existing admins can grant admin privileges");
-                    }
-                }
-            } catch (error) {
-                // Re-throw authorization errors instead of silently suppressing them
-                if (error instanceof Error && error.message.includes("Only existing admins")) {
-                    throw error;
-                }
-                console.error("Error checking caller admin status:", error);
-                // For initial setup, allow the call only for non-authorization errors
-            }
+        const callerUid = request.auth.uid;
+        const { targetUserId } = request.data;
+
+        if (!targetUserId) {
+            throw new HttpsError('invalid-argument', 'The function must be called with a "targetUserId" argument.');
         }
 
         try {
-            // Set the custom claim
-            await auth.setCustomUserClaims(targetUserId, { admin: true });
-            
-            console.log(`Admin claim set for user: ${targetUserId}`);
-            
+            const callerUser = await auth.getUser(callerUid);
+            const businessId = callerUser.customClaims?.businessId;
+
+            if (!callerUser.customClaims?.admin || !businessId) {
+                throw new HttpsError('permission-denied', 'Only admins can grant admin privileges.');
+            }
+
+            const targetUser = await auth.getUser(targetUserId);
+            if (targetUser.customClaims?.businessId !== businessId) {
+                throw new HttpsError('permission-denied', 'Cannot set admin claim for a user in another business.');
+            }
+
+            await auth.setCustomUserClaims(targetUserId, { ...targetUser.customClaims, admin: true });
+
             return {
                 success: true,
                 message: `Admin privileges granted to user ${targetUserId}`,
             };
-        } catch (error) {
-            console.error(`Error setting admin claim for ${targetUserId}:`, error);
-            throw new Error(`Failed to set admin claim: ${(error as Error).message}`);
+        } catch (e) {
+            console.error(`Error setting admin claim for ${targetUserId}:`, e);
+            throw new HttpsError('internal', (e as Error).message);
         }
     }
 );
 
-/**
- * Cloud Function: Remove Admin Custom Claim
- * 
- * Removes admin privileges from a user.
- */
 export const removeAdminClaim = onCall(
     {
         region: "us-central1",
     },
     async (request) => {
-        const targetUserId = request.data.uid;
-        
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+        }
+
+        const callerUid = request.auth.uid;
+        const { targetUserId } = request.data;
+
         if (!targetUserId) {
-            throw new Error("User UID is required");
+            throw new HttpsError('invalid-argument', 'The function must be called with a "targetUserId" argument.');
         }
 
-        // Verify caller is authenticated and is admin
-        const callerUid = request.auth?.uid;
-        if (!callerUid) {
-            throw new Error("Unauthorized: Authentication required");
-        }
-        
         try {
-            const caller = await auth.getUser(callerUid);
-            if (!caller.customClaims?.admin) {
-                throw new Error("Only admins can remove admin privileges");
+            const callerUser = await auth.getUser(callerUid);
+            const businessId = callerUser.customClaims?.businessId;
+
+            if (!callerUser.customClaims?.admin || !businessId) {
+                throw new HttpsError('permission-denied', 'Only admins can remove admin privileges.');
             }
-        } catch (error) {
-            throw new Error("Unauthorized: Admin privileges required");
-        }
 
-        try {
-            await auth.setCustomUserClaims(targetUserId, { admin: false });
-            console.log(`Admin claim removed for user: ${targetUserId}`);
-            
+            const targetUser = await auth.getUser(targetUserId);
+            if (targetUser.customClaims?.businessId !== businessId) {
+                throw new HttpsError('permission-denied', 'Cannot remove admin claim for a user in another business.');
+            }
+
+            await auth.setCustomUserClaims(targetUserId, { ...targetUser.customClaims, admin: false });
+
             return {
                 success: true,
                 message: `Admin privileges removed from user ${targetUserId}`,
             };
-        } catch (error) {
-            console.error(`Error removing admin claim for ${targetUserId}:`, error);
-            throw new Error(`Failed to remove admin claim: ${(error as Error).message}`);
+        } catch (e) {
+            console.error(`Error removing admin claim for ${targetUserId}:`, e);
+            throw new HttpsError('internal', (e as Error).message);
         }
     }
 );
 
-// Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
-// and GOOGLE_SHEET_ID before deploying.
+export const setCustomClaims = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        if (!request.auth) {
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+        }
+
+        const { uid, claims } = request.data;
+
+        if (!uid || !claims) {
+            throw new HttpsError('invalid-argument', 'The function must be called with "uid" and "claims" arguments.');
+        }
+
+        try {
+            await auth.setCustomUserClaims(uid, claims);
+            return {
+                success: true,
+                message: `Custom claims set for user: ${uid}`,
+            };
+        } catch (e) {
+            console.error(`Error setting custom claims for ${uid}:`, e);
+            throw new HttpsError('internal', (e as Error).message);
+        }
+    }
+);
