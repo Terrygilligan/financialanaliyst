@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             tab.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
             tab.style.borderBottom = '3px solid #ffd700';
             
-            const tabId = tab.getAttribute('data-doc-tab') + '-doc-tab';
+            const tabName = tab.getAttribute('data-doc-tab');
+            const tabId = tabName + '-doc-tab';
             const tabContent = document.getElementById(tabId);
             if (tabContent) {
                 tabContent.style.display = 'block';
@@ -107,6 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'analytics-section',
         'receipts-section',
         'errors-section',
+        'schemas-section',
         'users-section'
     ];
 
@@ -139,11 +141,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const functionsModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
     
     const { signOut, onAuthStateChanged } = authModule;
     const { 
         doc, 
         getDoc, 
+        setDoc,
+        deleteDoc,
         collection, 
         getDocs, 
         query, 
@@ -151,8 +156,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         orderBy,
         limit 
     } = firestoreModule;
+    const { httpsCallable } = functionsModule;
 
-    const { auth, db } = window.firebase;
+    const { auth, db, functions } = window.firebase;
 
     // DOM Elements
     const mainContent = document.getElementById('admin-content');
@@ -227,6 +233,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
+            // Multi-tenant: Check for businessId in custom claims
+            const idTokenResult = await user.getIdTokenResult(true); 
+            window.businessId = idTokenResult.claims.businessId;
+            window.isGlobalAdmin = idTokenResult.claims.admin === true;
+            console.log('🏢 Admin context:', window.businessId || 'Global');
+
             // Check admin status
             const isAdmin = await checkAdminStatus(user);
             if (!isAdmin) {
@@ -239,6 +251,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             userInfo.style.display = 'flex';
             accessDenied.style.display = 'none';
             mainContent.style.display = 'grid';
+            
+            // Show current business ID in header if available
+            if (window.businessId) {
+                const header = document.querySelector('header h1');
+                if (header) {
+                    header.innerHTML += ` <span style="font-size: 14px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: normal; margin-left: 10px;">Business: ${window.businessId}</span>`;
+                }
+            }
             
             // Show admin link in navigation
             const adminLinkContainer = document.getElementById('admin-link-container');
@@ -260,16 +280,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadStatistics(),
             loadAllReceipts(),
             loadErrorLogs(),
-            loadUsers()
+            loadUsers(),
+            loadSchemas()
         ]);
     }
 
     // Load statistics
     async function loadStatistics() {
         try {
-            const batchesRef = collection(db, 'batches');
-            const batchesSnap = await getDocs(batchesRef);
-
             let totalReceipts = 0;
             let successful = 0;
             let failed = 0;
@@ -278,31 +296,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryCounts = {};
             const statusCounts = {};
 
-            batchesSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                const userId = docSnap.id;
+            // Multi-tenant: If businessId is present, fetch from the business silo
+            if (window.businessId) {
+                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
+                const receiptsSnap = await getDocs(receiptsRef);
                 
-                userIds.add(userId);
-                totalReceipts++;
+                receiptsSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = data.userId || 'unknown';
+                    
+                    userIds.add(userId);
+                    totalReceipts++;
 
-                // Count status
-                const status = data.status || 'unknown';
-                statusCounts[status] = (statusCounts[status] || 0) + 1;
+                    const status = data.status || 'unknown';
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
 
-                if (status === 'complete') {
-                    successful++;
-                    if (data.receiptData && data.receiptData.totalAmount) {
-                        totalAmount += data.receiptData.totalAmount;
+                    if (status === 'processed' || status === 'complete') {
+                        successful++;
+                        if (data.receiptData && data.receiptData.totalAmount) {
+                            totalAmount += data.receiptData.totalAmount;
+                        }
+                        if (data.receiptData && data.receiptData.category) {
+                            const category = data.receiptData.category;
+                            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                        }
+                    } else if (status === 'error') {
+                        failed++;
                     }
-                    // Count categories
-                    if (data.receiptData && data.receiptData.category) {
-                        const category = data.receiptData.category;
-                        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                });
+            } else {
+                // Global/Legacy fallback
+                const batchesRef = collection(db, 'batches');
+                const batchesSnap = await getDocs(batchesRef);
+
+                batchesSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const userId = docSnap.id;
+                    
+                    userIds.add(userId);
+                    totalReceipts++;
+
+                    const status = data.status || 'unknown';
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+                    if (status === 'complete') {
+                        successful++;
+                        if (data.receiptData && data.receiptData.totalAmount) {
+                            totalAmount += data.receiptData.totalAmount;
+                        }
+                        if (data.receiptData && data.receiptData.category) {
+                            const category = data.receiptData.category;
+                            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                        }
+                    } else if (status === 'error') {
+                        failed++;
                     }
-                } else if (status === 'error') {
-                    failed++;
-                }
-            });
+                });
+            }
 
             // Update UI
             totalReceiptsAdmin.textContent = totalReceipts;
@@ -393,17 +443,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             receiptsTableContainer.innerHTML = '<div class="loading-state">Loading receipts...</div>';
             
-            const batchesRef = collection(db, 'batches');
-            const batchesSnap = await getDocs(batchesRef);
-
             allReceiptsData = [];
-            batchesSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                allReceiptsData.push({
-                    userId: docSnap.id,
-                    ...data
+
+            if (window.businessId) {
+                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
+                const receiptsSnap = await getDocs(receiptsRef);
+                
+                receiptsSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    allReceiptsData.push({
+                        receiptId: docSnap.id,
+                        userId: data.userId || 'unknown',
+                        ...data
+                    });
                 });
-            });
+            } else {
+                const batchesRef = collection(db, 'batches');
+                const batchesSnap = await getDocs(batchesRef);
+
+                batchesSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    allReceiptsData.push({
+                        userId: docSnap.id,
+                        ...data
+                    });
+                });
+            }
 
             displayReceipts(allReceiptsData);
         } catch (error) {
@@ -473,9 +538,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <tbody>
                         ${filtered.map(receipt => {
                             const receiptData = receipt.receiptData || {};
-                            const timestamp = receipt.timestamp ? new Date(receipt.timestamp).toLocaleString() : 'N/A';
-                            const filePath = receipt.errorFile || `receipts/${receipt.userId}/${receipt.fileName || receipt.lastFileProcessed || 'unknown'}`;
-                            const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/${filePath}`;
+                            const timestamp = receipt.timestamp || receipt.createdAt?.toDate?.()?.toLocaleString() || 'N/A';
+                            
+                            // Multi-tenant: Build correct storage path
+                            let filePath = receipt.filePath || receipt.errorFile;
+                            if (!filePath) {
+                                if (window.businessId) {
+                                    filePath = `tenants/${window.businessId}/drivers/${receipt.userId}/${receipt.fileName || 'unknown'}`;
+                                } else {
+                                    filePath = `receipts/${receipt.userId}/${receipt.fileName || 'unknown'}`;
+                                }
+                            }
+                            
+                            const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/financialanaliyst.firebasestorage.app/files/main/${filePath}`;
                             
                             return `
                                 <tr>
@@ -504,21 +579,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             errorLogsContainer.innerHTML = '<div class="loading-state">Loading error logs...</div>';
             
-            const batchesRef = collection(db, 'batches');
-            const batchesSnap = await getDocs(batchesRef);
-
             const errors = [];
-            batchesSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                if (data.status === 'error') {
+
+            if (window.businessId) {
+                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
+                const q = query(receiptsRef, where('status', '==', 'error'));
+                const errorSnap = await getDocs(q);
+                
+                errorSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
                     errors.push({
-                        userId: docSnap.id,
+                        userId: data.userId || 'unknown',
                         fileName: data.fileName || data.lastFileProcessed || 'Unknown',
                         errorMessage: data.errorMessage || 'Unknown error',
-                        timestamp: data.timestamp || new Date().toISOString()
+                        timestamp: data.timestamp || data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
                     });
-                }
-            });
+                });
+            } else {
+                const batchesRef = collection(db, 'batches');
+                const batchesSnap = await getDocs(batchesRef);
+
+                batchesSnap.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.status === 'error') {
+                        errors.push({
+                            userId: docSnap.id,
+                            fileName: data.fileName || data.lastFileProcessed || 'Unknown',
+                            errorMessage: data.errorMessage || 'Unknown error',
+                            timestamp: data.timestamp || new Date().toISOString()
+                        });
+                    }
+                });
+            }
 
             if (errors.length === 0) {
                 errorLogsContainer.innerHTML = '<div class="empty-state">No errors found. Great job! 🎉</div>';
@@ -557,13 +649,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             usersContainer.innerHTML = '<div class="loading-state">Loading users...</div>';
             
-            // Get users from /users collection (has statistics)
+            // Get users from /users collection
             const usersRef = collection(db, 'users');
-            const usersSnap = await getDocs(usersRef);
+            let usersQuery = usersRef;
             
-            // Also get batch data for status
-            const batchesRef = collection(db, 'batches');
-            const batchesSnap = await getDocs(batchesRef);
+            // Multi-tenant: Filter users by businessId if not a global admin
+            if (window.businessId && !window.isGlobalAdmin) {
+                usersQuery = query(usersRef, where('businessId', '==', window.businessId));
+            }
+            
+            const usersSnap = await getDocs(usersQuery);
             
             const userMap = new Map();
             
@@ -576,36 +671,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                     receiptCount: userData.totalReceipts || 0,
                     totalAmount: userData.totalAmount || 0,
                     lastActivity: userData.lastReceiptTimestamp || userData.lastUpdated || null,
-                    status: 'active'
+                    status: 'active',
+                    businessId: userData.businessId || 'None'
                 });
             });
             
-            // Update with batch status
-            batchesSnap.forEach((docSnap) => {
-                const userId = docSnap.id;
-                const batchData = docSnap.data();
+            // For multi-tenant admins, we only show users in their silo.
+            // We skip the global batch status update for now as it's legacy.
+            if (!window.businessId || window.isGlobalAdmin) {
+                // Global admin: also get batch data for status
+                const batchesRef = collection(db, 'batches');
+                const batchesSnap = await getDocs(batchesRef);
                 
-                if (!userMap.has(userId)) {
-                    userMap.set(userId, {
-                        userId,
-                        receiptCount: 0,
-                        totalAmount: 0,
-                        lastActivity: batchData.timestamp || null,
-                        status: batchData.status || 'unknown'
-                    });
-                }
-                
-                const user = userMap.get(userId);
-                if (batchData.status) {
-                    user.status = batchData.status;
-                }
-                if (batchData.timestamp) {
-                    const timestamp = new Date(batchData.timestamp);
-                    if (!user.lastActivity || timestamp > new Date(user.lastActivity)) {
-                        user.lastActivity = batchData.timestamp;
+                batchesSnap.forEach((docSnap) => {
+                    const userId = docSnap.id;
+                    const batchData = docSnap.data();
+                    
+                    if (userMap.has(userId)) {
+                        const user = userMap.get(userId);
+                        if (batchData.status) user.status = batchData.status;
+                        if (batchData.timestamp && (!user.lastActivity || new Date(batchData.timestamp) > new Date(user.lastActivity))) {
+                            user.lastActivity = batchData.timestamp;
+                        }
                     }
-                }
-            });
+                });
+            }
 
             allUsersData = Array.from(userMap.values());
             displayUsers(allUsersData);
@@ -682,6 +772,168 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert('User disable functionality requires a Cloud Function. This is a placeholder.');
         console.log('Would disable user:', userId);
     }
+
+    // Load Schema Definitions
+    async function loadSchemas() {
+        const schemasContainer = document.getElementById('schemas-container');
+        if (!schemasContainer || !window.businessId) return;
+
+        try {
+            schemasContainer.innerHTML = '<div class="loading-state">Loading schema definitions...</div>';
+            
+            const schemaRef = collection(db, 'businesses', window.businessId, 'schemas');
+            const schemaSnap = await getDocs(schemaRef);
+            
+            if (schemaSnap.empty) {
+                // Try legacy schema_definitions
+                const legacyRef = collection(db, 'businesses', window.businessId, 'schema_definitions');
+                const legacySnap = await getDocs(legacyRef);
+                if (legacySnap.empty) {
+                    schemasContainer.innerHTML = '<div class="empty-state">No custom fields defined. Gemini will use the standard schema.</div>';
+                    return;
+                }
+                displaySchemaFields(legacySnap, schemasContainer);
+            } else {
+                // Multi-tenant apps usually have ONE active schema with multiple fields
+                // We'll look for the active one first
+                const activeSchema = schemaSnap.docs.find(d => d.data().active === true);
+                if (activeSchema) {
+                    displayActiveSchema(activeSchema, schemasContainer);
+                } else {
+                    displaySchemaFields(schemaSnap, schemasContainer);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading schemas:', error);
+            schemasContainer.innerHTML = '<div class="error-state">Error loading schema definitions.</div>';
+        }
+    }
+
+    function displayActiveSchema(docSnap, container) {
+        const schema = docSnap.data();
+        const fields = schema.fields?.properties || schema.properties || {};
+        
+        let html = `<h4>Active Schema: ${docSnap.id}</h4><div class="schemas-list-grid">`;
+        Object.keys(fields).forEach(key => {
+            if (['vendorName', 'transactionDate', 'totalAmount', 'category', 'currency'].includes(key)) return;
+            
+            const field = fields[key];
+            html += `
+                <div class="schema-card">
+                    <div class="schema-header">
+                        <span class="schema-id">${key}</span>
+                    </div>
+                    <div class="schema-body">
+                        <p class="schema-desc">${field.description || 'No description'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function displaySchemaFields(snap, container) {
+        let html = '<div class="schemas-list-grid">';
+        snap.forEach(docSnap => {
+            const schema = docSnap.data();
+            html += `
+                <div class="schema-card">
+                    <div class="schema-header">
+                        <span class="schema-id">${docSnap.id}</span>
+                        <button class="btn-icon delete-schema" data-id="${docSnap.id}">🗑️</button>
+                    </div>
+                    <div class="schema-body">
+                        <p class="schema-desc">${schema.description || 'No description'}</p>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Add delete listeners
+        document.querySelectorAll('.delete-schema').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const schemaId = btn.dataset.id;
+                if (confirm(`Delete custom field "${schemaId}"? AI will no longer extract this data.`)) {
+                    // Try both collections
+                    await deleteDoc(doc(db, 'businesses', window.businessId, 'schemas', schemaId)).catch(() => {});
+                    await deleteDoc(doc(db, 'businesses', window.businessId, 'schema_definitions', schemaId)).catch(() => {});
+                    loadSchemas();
+                }
+            });
+        });
+    }
+
+    // Modal management
+    const fieldModal = document.getElementById('field-modal');
+    const userModal = document.getElementById('user-modal');
+    const addSchemaBtn = document.getElementById('add-schema-field-btn');
+    const inviteUserBtn = document.getElementById('invite-user-btn');
+    const cancelFieldBtn = document.getElementById('cancel-field-btn');
+    const cancelUserBtn = document.getElementById('cancel-user-btn');
+
+    addSchemaBtn?.addEventListener('click', () => fieldModal.style.display = 'flex');
+    inviteUserBtn?.addEventListener('click', () => userModal.style.display = 'flex');
+    cancelFieldBtn?.addEventListener('click', () => fieldModal.style.display = 'none');
+    cancelUserBtn?.addEventListener('click', () => userModal.style.display = 'none');
+
+    // Add Schema Field
+    const addFieldForm = document.getElementById('add-field-form');
+    addFieldForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fieldId = document.getElementById('field-id').value.trim().replace(/\s+/g, '_').toLowerCase();
+        const description = document.getElementById('field-description').value.trim();
+
+        if (!window.businessId) {
+            alert('Business context missing. Please re-login.');
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, 'businesses', window.businessId, 'schema_definitions', fieldId), {
+                description,
+                createdAt: new Date().toISOString()
+            });
+            fieldModal.style.display = 'none';
+            addFieldForm.reset();
+            loadSchemas();
+        } catch (error) {
+            console.error('Error adding field:', error);
+            alert('Failed to add field: ' + error.message);
+        }
+    });
+
+    // Create User
+    const createUserForm = document.getElementById('create-user-form');
+    createUserForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('new-user-email').value.trim();
+        const displayName = document.getElementById('new-user-display-name').value.trim();
+        const password = document.getElementById('new-user-password').value;
+
+        if (!window.businessId) {
+            alert('Business context missing. Please re-login.');
+            return;
+        }
+
+        try {
+            const inviteUserToBusiness = httpsCallable(functions, 'inviteUserToBusiness');
+            const result = await inviteUserToBusiness({ email, password, displayName });
+            
+            if (result.data.success) {
+                alert(`User ${displayName} created successfully!`);
+                userModal.style.display = 'none';
+                createUserForm.reset();
+                loadUsers();
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            alert('Failed to create user: ' + error.message);
+        }
+    });
 
     // Event listeners
     searchReceipts?.addEventListener('input', () => {

@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // DOM Elements
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
+    const businessCodeInput = document.getElementById('business-code-input');
+    const setTenantBtn = document.getElementById('set-tenant-btn');
     const loginToggle = document.getElementById('login-toggle');
     const signupToggle = document.getElementById('signup-toggle');
     const googleLoginBtn = document.getElementById('google-login-btn');
@@ -115,20 +117,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         loginForm.style.display = 'flex';
     });
 
+    // Tenant Selection Logic
+    setTenantBtn?.addEventListener('click', () => {
+        const businessId = businessCodeInput.value.trim();
+        if (businessId) {
+            auth.tenantId = businessId;
+            console.log(`🎯 Explicitly set auth.tenantId to: ${businessId}`);
+            setTenantBtn.textContent = 'Active ✅';
+            setTenantBtn.style.background = '#28a745';
+        } else {
+            auth.tenantId = null;
+            setTenantBtn.textContent = 'Apply';
+            setTenantBtn.style.background = '#6c757d';
+        }
+    });
+
     // Login Form
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('email-input').value;
+        const email = document.getElementById('email-input').value.trim();
         const password = document.getElementById('password-input').value;
 
+        if (!email || !password) {
+            showError('Please enter both email and password.');
+            return;
+        }
+
         try {
+            // 1. Multi-tenant Lookup (The "Updates" advantage)
+            // We check if this email belongs to a specific tenant/business
+            const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { db } = window.firebase;
+            
+            const userLookupRef = doc(db, 'user_lookup', email.toLowerCase());
+            const userLookupSnap = await getDoc(userLookupRef);
+            
+            if (userLookupSnap.exists()) {
+                const businessId = userLookupSnap.data().businessId;
+                if (!auth.tenantId) {
+                    console.log(`📡 Tenant auto-detected: ${businessId}. Setting auth context.`);
+                    auth.tenantId = businessId;
+                }
+            } else if (!auth.tenantId) {
+                console.log('🌐 No specific tenant found and no manual Business ID. Using global context.');
+                auth.tenantId = null;
+            }
+
+            // 2. Perform the sign in
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
             // Check if email is verified
             if (!user.emailVerified) {
                 await auth.signOut();
+                auth.tenantId = null; // Clear tenant context
                 showError('Please verify your email address before logging in. Check your inbox for the verification link.');
+                // ... (rest of verification logic)
                 verificationMessage.style.display = 'block';
                 verificationMessage.innerHTML = `
                     <p>📧 Please verify your email address. Check your inbox for the verification link.</p>
@@ -221,7 +265,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Google Sign-In (Login)
+    /**
+     * @deprecated Legacy Google Sign-In (Login)
+     * Use Email/Password with Business Context for secure multi-tenant isolation.
+     */
     googleLoginBtn?.addEventListener('click', async () => {
         try {
             await signInWithPopup(auth, googleProvider);
@@ -234,7 +281,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Google Sign-In (Signup)
+    /**
+     * @deprecated Legacy Google Sign-In (Signup)
+     * Use Email/Password with Business Context for secure multi-tenant isolation.
+     */
     googleSignupBtn?.addEventListener('click', async () => {
         try {
             await signInWithPopup(auth, googleProvider);

@@ -1,5 +1,5 @@
 // Service Worker for AI Financial Analyst PWA
-const CACHE_NAME = 'financial-analyst-v5'; // Updated for layout fixes
+const CACHE_NAME = 'financial-analyst-v7-phase4-ui'; // Updated for Phase 4: UI implementation
 const urlsToCache = [
   '/',
   '/index.html',
@@ -7,15 +7,15 @@ const urlsToCache = [
   '/profile.html',
   '/admin.html',
   '/review.html',
-  '/admin-review.html',
-  '/styles.css',
+    '/admin-review.html',
+    '/styles.css',
   '/app.js',
   '/login.js',
   '/profile.js',
   '/admin.js',
   '/review.js',
-  '/admin-review.js',
-  '/translations.js',
+    '/admin-review.js',
+    '/translations.js',
   // '/firebase-config.js', // Always fetch fresh to ensure latest API key
   '/manifest.json',
   '/icon-192.png',

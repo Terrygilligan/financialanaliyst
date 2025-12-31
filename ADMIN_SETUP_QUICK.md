@@ -43,7 +43,7 @@ If you prefer automation, use the setup script I created:
 ### Prerequisites
 
 ```bash
-cd C:\Users\terry\Desktop\financialAnalyst
+cd C:\Users\terry\Desktop\financialanaliyst
 npm install firebase-admin --save-dev
 ```
 

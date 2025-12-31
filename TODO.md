@@ -78,52 +78,165 @@
 
 ## 🎯 Priority Tasks (Remaining)
 
-### Phase 4: Multi-Sheet Management - **HIGH PRIORITY** 📍 **CURRENT PHASE**
+### Phase 4: Multi-Tenant SaaS Silos - **HIGH PRIORITY** 📍 **CURRENT PHASE**
 
-**Status**: 📝 Ready to Start  
-**Timeline**: 2-3 weeks  
-**Branch**: `feature/phase-4-multi-sheet-management`
+**Status**: 🔄 **IN PROGRESS** (Dec 31, 2025)  
+**Timeline**: Transition from Sheets to Firestore Silos  
+**Branch**: `feat-multi-tenancy-migration`
+
+#### Overview
+Migrated from a single-tenant Google Sheets system to a robust Multi-Tenant SaaS architecture with data isolation at the Firestore and Storage levels.
+
+#### Implementation Progress
+
+- [x] **Identity & Access Control** ✅ **COMPLETE**
+  - [x] `businessId` custom claims for tenant isolation
+  - [x] Forced token refresh on login/provisioning
+  - [x] Script to seed admin access (`seed-admin-tenant.js`)
+
+- [x] **Data Isolation (Firestore Silos)** ✅ **COMPLETE**
+  - [x] Siloed path: `/businesses/{businessId}/receipts/`
+  - [x] Security rules enforcing `request.auth.token.businessId`
+  - [x] Default deny-all security posture
+
+- [x] **Storage Isolation (Multi-Tenant Buckets)** ✅ **COMPLETE**
+  - [x] Siloed path: `/tenants/{businessId}/drivers/{uid}/receipts/`
+  - [x] Security rules for tenant-scoped file access
+
+- [x] **Backend Refactor (Cloud Functions)** ✅ **COMPLETE**
+  - [x] Removed all Google Sheets dependencies
+  - [x] Updated extraction to target Firestore silos
+  - [x] Automated business provisioning (`provisionNewBusiness`)
+
+- [x] **Architectural Clean-up** ✅ **COMPLETE**
+  - [x] Deleted deprecated Sheets-related files
+  - [x] Cleaned up UI references to Google Sheets
+
+- [x] **Enterprise SaaS Features** ✅ **COMPLETE**
+  - [x] Delegated User Management (Admin can invite/create Drivers)
+  - [x] Dynamic Schema Definitions (Business-specific fields)
+  - [x] Frontend UI for Field Builder (Dynamic Schemas)
+  - [x] Frontend UI for User Management (Invite/Manage Drivers)
+  - [x] Tenant-aware Account Recovery (Password Reset) ✅ **Jules Update**
+  - [x] Server-side User Creation with Automatic Silo Provisioning
+
+- [ ] **Final Verification** 🔄 **IN PROGRESS**
+  - [ ] Deploy updated functions to production
+  - [ ] Test tenant isolation (Business A cannot see Business B data)
+  - [ ] Verify dynamic extraction with custom schemas
+  - [ ] Test user creation within silos
+
+#### Benefits
+- ✅ Absolute data isolation (no shared sheets)
+- ✅ Scalable to thousands of businesses
+- ✅ High performance (native Firestore/Storage)
+- ✅ Business admins can manage their own silos
+
+---
 
 **See**: [PHASE4_MULTI_SHEET_MANAGEMENT.md](PHASE4_MULTI_SHEET_MANAGEMENT.md) for full plan  
-**Quick Start**: [PHASE4_QUICK_START.md](PHASE4_QUICK_START.md) for implementation steps
+**Quick Start**: [PHASE4_QUICK_START.md](PHASE4_QUICK_START.md) for implementation steps  
+**Testing**: [PHASE4_TEST_SETUP.md](PHASE4_TEST_SETUP.md) for multi-business testing guide
 
 #### Overview
 Enable admin control panel to manage multiple Google Sheets, allowing different users/entities to have receipts routed to different sheets automatically.
 
-#### Key Features
-- [ ] **Backend - Sheet Configuration Service** (`sheet-config.ts`)
-  - [ ] Sheet config lookup by user/entity
-  - [ ] Default sheet fallback logic
-  - [ ] Sheet health verification
-  - [ ] Assignment management (user/entity to sheet)
+#### Implementation Progress
 
-- [ ] **Backend - Admin Cloud Functions** (`admin-sheet-management.ts`)
-  - [ ] Create/update/delete sheet configs
-  - [ ] Assign sheets to users/entities
-  - [ ] Bulk user assignment
-  - [ ] Get sheet assignments and statistics
+- [x] **Backend - Sheet Configuration Service** (`sheet-config.ts`) ✅ **COMPLETE**
+  - [x] Sheet config lookup by user/entity
+  - [x] Default sheet fallback logic
+  - [x] Sheet health verification
+  - [x] Assignment management (user/entity to sheet)
+  - [x] Statistics tracking per sheet
 
-- [ ] **Backend - Update Existing Functions**
-  - [ ] Update `sheets.ts` with `appendReceiptToUserSheet()`
-  - [ ] Update `index.ts` to use new routing
-  - [ ] Update `finalize.ts` to use new routing
-  - [ ] Update `admin-review.ts` to use new routing
+- [x] **Backend - Admin Cloud Functions** (`admin-sheet-management.ts`) ✅ **COMPLETE**
+  - [x] Create/update/delete sheet configs
+  - [x] Assign sheets to users/entities
+  - [x] Bulk user assignment
+  - [x] Get sheet assignments and statistics
+  - [x] Sheet health checks
+  - [x] Create new Google Sheets programmatically
+  - [x] Auto-share sheets with service account
 
-- [ ] **Frontend - Admin UI**
-  - [ ] Create `admin-sheets.html` page
-  - [ ] Create `admin-sheets.js` logic
-  - [ ] Sheet configuration CRUD interface
-  - [ ] User/entity assignment interface
-  - [ ] Sheet health monitoring UI
-  - [ ] Add navigation to admin dashboard
+- [x] **Backend - Update Existing Functions** ✅ **COMPLETE**
+  - [x] Update `sheets.ts` with `appendReceiptToUserSheet()`
+  - [x] Update `index.ts` to use new routing
+  - [x] Update `finalize.ts` to use new routing
+  - [x] Update `admin-review.ts` to use new routing
 
-- [ ] **Testing & Deployment**
-  - [ ] Test multi-sheet routing
+- [x] **Backend - Automatic Sheet Setup** (`auto-sheet-setup.ts`) ✅ **COMPLETE**
+  - [x] Firestore trigger for new entities
+  - [x] Automatic Google Sheet creation
+  - [x] Automatic sheet config creation
+  - [x] Automatic entity assignment
+
+- [x] **Frontend - Admin UI** ✅ **COMPLETE**
+  - [x] Create `admin-sheets.html` page
+  - [x] Create `admin-sheets.js` logic
+  - [x] Sheet configuration CRUD interface
+  - [x] User/entity assignment interface
+  - [x] Sheet health monitoring UI
+  - [x] Add navigation to admin dashboard
+  - [x] Sheet template/history system
+  - [x] Create new sheet vs use existing sheet modes
+  - [x] Admin guides and help sections
+
+- [x] **Documentation & Guides** ✅ **COMPLETE**
+  - [x] Phase 4 implementation plan
+  - [x] Testing setup guide
+  - [x] Auto-setup documentation
+  - [x] Troubleshooting guides
+  - [x] Admin UI guides integrated
+
+- [ ] **Service Account Permissions Fix** 🔧 **IN PROGRESS**
+  - [ ] Enable Google Sheets API in Google Cloud Console
+  - [ ] Enable Google Drive API in Google Cloud Console
+  - [ ] Grant Editor/Owner role to service account
+  - [ ] Verify sheet creation works
+  - **Reference**: [SERVICE_ACCOUNT_SHEET_CREATION_FIX.md](SERVICE_ACCOUNT_SHEET_CREATION_FIX.md)
+
+- [ ] **Testing & Verification** ⏳ **NEXT STEP**
+  - [ ] Test multi-sheet routing with 3 test businesses
+  - [ ] Verify receipt separation (Business A → Sheet A only)
   - [ ] Test user/entity assignments
   - [ ] Test health checks and verification
-  - [ ] Test backward compatibility
-  - [ ] Deploy to production
-  - [ ] Create default sheet config
+  - [ ] Test automatic sheet creation for new entities
+  - [ ] Test backward compatibility (default sheet fallback)
+  - [ ] Test template system
+  - **Setup Script**: `setup-test-businesses.js` (ready to use)
+
+- [ ] **Deployment**
+  - [ ] Deploy updated functions to production
+  - [ ] Create default sheet config in production
+  - [ ] Test in production environment
+  - [ ] Monitor for errors
+
+#### Problems Faced & Solutions
+
+1. **Service Account Permission Error**
+   - **Problem**: "The caller does not have permission" when creating sheets
+   - **Root Cause**: Google Sheets API and/or Google Drive API not enabled, or service account lacks Editor/Owner role
+   - **Solution**: Enable APIs in Google Cloud Console, grant proper IAM roles
+   - **Status**: 🔧 Fix in progress
+   - **Documentation**: `SERVICE_ACCOUNT_SHEET_CREATION_FIX.md`
+
+2. **Auto-Share Permission Error**
+   - **Problem**: Can't auto-share manually created sheets
+   - **Root Cause**: Service account can only share sheets it owns
+   - **Solution**: Added manual sharing instructions, improved error messages, "Create New Sheet" mode creates owned sheets
+   - **Status**: ✅ Resolved with workarounds
+
+3. **UI Mode Switching Issues**
+   - **Problem**: Sheet ID field visibility issues when switching modes
+   - **Root Cause**: DOM elements not ready when function called
+   - **Solution**: Added null checks, delayed mode setting, proper show/hide logic
+   - **Status**: ✅ Fixed
+
+4. **Template System**
+   - **Problem**: No way to reuse sheet configurations
+   - **Solution**: Implemented localStorage-based template system with save/load functionality
+   - **Status**: ✅ Complete
 
 #### Benefits
 - ✅ Multi-entity businesses can have separate sheets
@@ -131,6 +244,8 @@ Enable admin control panel to manage multiple Google Sheets, allowing different 
 - ✅ Flexible user or entity-level assignment
 - ✅ Monitor usage per sheet
 - ✅ Backward compatible with single-sheet setup
+- ✅ Automatic sheet creation for new businesses
+- ✅ Template system for quick setup
 
 ---
 
@@ -245,12 +360,16 @@ Enable admin control panel to manage multiple Google Sheets, allowing different 
 ### Immediate Next Steps (This Week)
 1. ✅ **SME Automation Upgrade complete** - All Phase 1-3 features implemented
 2. ✅ **Local testing environment ready** - Emulator setup guide and helper UI added
-3. [ ] Test end-to-end workflow with real receipts (use [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md))
-4. [ ] Verify currency conversion and VAT extraction accuracy
-5. [ ] Test admin review workflow with flagged receipts
-6. [ ] Verify accountant CSV sheet population
-7. [ ] Test on mobile devices
-8. [ ] Monitor error logs in Firestore (`/error_logs` collection)
+3. ✅ **Phase 4 Backend & UI Complete** - Multi-sheet management implemented
+4. 🔧 **Fix Service Account Permissions** - Enable Google Sheets/Drive APIs, grant Editor role
+5. ⏳ **Test Multi-Business Setup** - Use `setup-test-businesses.js` to create 3 test businesses
+6. ⏳ **Verify Receipt Separation** - Upload receipts as different business users, verify routing
+7. [ ] Test end-to-end workflow with real receipts (use [LOCAL_TESTING_GUIDE.md](LOCAL_TESTING_GUIDE.md))
+8. [ ] Verify currency conversion and VAT extraction accuracy
+9. [ ] Test admin review workflow with flagged receipts
+10. [ ] Verify accountant CSV sheet population
+11. [ ] Test on mobile devices
+12. [ ] Monitor error logs in Firestore (`/error_logs` collection)
 
 ### Short Term (Next 2 Weeks)
 1. [ ] Complete comprehensive testing
@@ -289,15 +408,18 @@ Enable admin control panel to manage multiple Google Sheets, allowing different 
 
 ## 🎉 Current Status
 
-**The application is fully functional with SME Automation Upgrade (Phase 1-3) complete!**
+**The application is fully functional with SME Automation Upgrade (Phase 1-3) complete and Phase 4 in progress!**
 
-**December 17, 2025 - Phase 3 Complete, Phase 4 Planned**:
+**December 19, 2025 - Phase 4 Implementation In Progress**:
 - ✅ All Phase 1-3 features implemented (Entity tracking, Review workflow, Currency conversion, VAT extraction, Accountant CSV, Audit trail)
 - ✅ Bug fixes: Currency defaults, validation race conditions, accountant sheet in legacy workflow
 - ✅ Local testing environment ready with emulator support and testing guides
 - ✅ User and Admin guides updated to v1.3
 - ✅ PWA UX improvements deployed
-- 📝 **Phase 4 Plan Ready**: Multi-Sheet Management (see PHASE4_MULTI_SHEET_MANAGEMENT.md)
+- ✅ **Phase 4 Backend Complete**: Multi-sheet routing, config management, auto-setup, admin functions
+- ✅ **Phase 4 Frontend Complete**: Admin UI, sheet management, assignments, templates, guides
+- 🔧 **Phase 4 Current Issue**: Service account permissions need fixing (Google Sheets/Drive API)
+- ⏳ **Phase 4 Next**: Multi-business testing and verification
 
 **Core Features Available**:
 - ✅ Sign up/login with email or Google
@@ -321,4 +443,4 @@ Enable admin control panel to manage multiple Google Sheets, allowing different 
 
 ---
 
-**Last Updated**: December 17, 2025 - Phase 3 complete. Phase 4 (Multi-Sheet Management) plan created and ready to implement.
+**Last Updated**: December 19, 2025 - Phase 4 implementation in progress. Backend and UI complete, fixing service account permissions, then testing multi-business separation.

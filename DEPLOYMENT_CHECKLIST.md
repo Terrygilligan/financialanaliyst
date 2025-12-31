@@ -32,7 +32,7 @@
 
 ### Step 1: Build Functions
 ```powershell
-cd C:\Users\terry\Desktop\financialAnalyst\functions
+cd C:\Users\terry\Desktop\financialanaliyst\functions
 npm run build
 cd ..
 ```

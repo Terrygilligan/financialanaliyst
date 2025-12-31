@@ -93,11 +93,38 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Check if user has admin privileges
  */
 async function checkAdminStatus(user) {
+    if (!user) {
+        console.log('[Admin Review] ❌ No user provided');
+        return false;
+    }
+    
+    console.log('[Admin Review] 🔍 Checking admin status for:', user.email);
+    
     try {
-        const tokenResult = await user.getIdTokenResult();
-        return tokenResult.claims.admin === true;
+        // Method 1: Check custom claims (preferred, faster)
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+        console.log('[Admin Review] 📋 Token claims:', idTokenResult.claims);
+        
+        if (idTokenResult.claims.admin === true) {
+            console.log('[Admin Review] ✅ Admin status confirmed via custom claims');
+            return true;
+        }
+        
+        // Method 2: Check Firestore admins collection (fallback)
+        console.log('[Admin Review] 🔍 Custom claims not found, checking Firestore admins collection...');
+        const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const adminDoc = await getDoc(doc(db, 'admins', user.email));
+        console.log('[Admin Review] 📄 Admin doc exists:', adminDoc.exists());
+        
+        if (adminDoc.exists()) {
+            console.log('[Admin Review] ✅ Admin status confirmed via Firestore admins collection');
+            return true;
+        }
+        
+        console.log('[Admin Review] ❌ User is not an admin');
+        return false;
     } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('[Admin Review] ❌ Error checking admin status:', error);
         return false;
     }
 }

@@ -2,7 +2,11 @@
 
 **Date**: December 17, 2025  
 **Severity**: Medium  
-**Status**: ✅ Fixed
+**Status**: ✅ Fixed (Code Implemented)
+
+> **📝 Note**: This documents the **actual implemented approach** in the codebase.  
+> **Semantic Invariant**: When `exchangeRate=1.0`, `originalAmount` MUST equal `totalAmount` (corrected value).  
+> This approach was chosen over preserving Gemini's original amount because it maintains data consistency.
 
 ---
 

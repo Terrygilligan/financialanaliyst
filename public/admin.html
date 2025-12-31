@@ -6,9 +6,9 @@
     <meta name="description" content="Admin Dashboard - AI Financial Analyst">
     <title>Admin Dashboard - AI Financial Analyst</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20251217-phase4">
     <!-- Translations (Phase 1.2: Multi-Language Support) -->
-    <script src="translations.js"></script>
+    <script src="translations.js?v=20251217"></script>
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Firebase SDKs -->
@@ -40,8 +40,8 @@
                         <a href="profile.html" class="nav-link">Profile</a>
                         <span id="admin-link-container">
                             <a href="admin.html" class="nav-link active admin-link">Admin</a>
-                            <a href="admin-sheets.html" class="nav-link admin-link">Sheet Management</a>
                             <a href="admin-review.html" class="nav-link admin-link">Review Queue</a>
+                            <a href="business-signup.html" class="nav-link admin-link">Create Business</a>
                         </span>
                     </nav>
                     <button id="logout-btn" class="btn-secondary">Logout</button>
@@ -81,6 +81,10 @@
                 <button class="quick-nav-btn" data-target="errors-section" title="Error Logs">
                     <span class="icon">⚠️</span>
                     <span class="label">Errors</span>
+                </button>
+                <button class="quick-nav-btn" data-target="schemas-section" title="Field Builder">
+                    <span class="icon">🏗️</span>
+                    <span class="label">Fields</span>
                 </button>
                 <button class="quick-nav-btn" data-target="users-section" title="User Management">
                     <span class="icon">👥</span>
@@ -217,17 +221,17 @@
                     <button class="doc-tab active" data-doc-tab="quickstart" style="background: rgba(255, 255, 255, 0.3); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-bottom: 3px solid #ffd700;">
                         🚀 Quick Start
                     </button>
-                    <button class="doc-tab" data-doc-tab="sheets" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        📊 Google Sheets
+                    <button class="doc-tab" data-doc-tab="silos" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
+                        🏢 Multi-Tenant Silos
                     </button>
                     <button class="doc-tab" data-doc-tab="signup" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        👥 User Signup
+                        👥 User Management
                     </button>
                     <button class="doc-tab" data-doc-tab="admin" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        👨‍💼 Admin Setup
+                        👨‍💼 Admin Roles
                     </button>
                     <button class="doc-tab" data-doc-tab="technical" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        ⚙️ Technical
+                        ⚙️ Technical Architecture
                     </button>
                 </div>
 
@@ -259,27 +263,31 @@
                         </ul>
                     </div>
 
-                    <!-- Google Sheets Tab -->
-                    <div id="sheets-doc-tab" class="doc-tab-content" style="display: none;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Google Sheets Setup</h3>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/NEXT_STEPS.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">📝</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">NEXT_STEPS.md</code> - Google Sheet setup guide</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/financialanaliyst/blob/feature/phase-2-categories/PHASE3_ACCOUNTANT_TAB.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">📊</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE3_ACCOUNTANT_TAB.md</code> - Accountant CSV tab</span>
-                                </a>
-                            </li>
-                        </ul>
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; border-left: 4px solid #ffd700;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 16px; color: #ffd700;">Service Account Email</h4>
-                            <p style="margin: 0; font-size: 14px; line-height: 1.6;">Share your Google Sheet with: <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">financial-output@financialanaliyst.iam.gserviceaccount.com</code></p>
+                    <!-- Multi-Tenant Silos Tab -->
+                    <div id="silos-doc-tab" class="doc-tab-content" style="display: none;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">🏢 Data Isolation & Silos</h3>
+                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 18px; color: #ffd700;">Enterprise Features</h4>
+                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                                <li>🏗️ <strong>Field Builder:</strong> Define custom fields (e.g., Odometer, Project ID) for Gemini to extract.</li>
+                                <li>👥 <strong>Delegated Management:</strong> Create Driver accounts scoped to your business.</li>
+                                <li>🛡️ <strong>Absolute Isolation:</strong> No business can see another's data or users.</li>
+                            </ul>
                         </div>
+                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="margin: 0 0 10px 0; font-size: 18px; color: #ffd700;">Security Enforcement</h4>
+                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
+                                <li>✅ <strong>Identity Based:</strong> Users must have a <code>businessId</code> claim in their auth token.</li>
+                                <li>✅ <strong>Path Scoped:</strong> Firestore rules prevent users from querying data outside their silo.</li>
+                                <li>✅ <strong>Storage Isolation:</strong> Images are stored at <code>/tenants/{businessId}/drivers/{uid}/...</code>.</li>
+                            </ul>
+                        </div>
+                        <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; list-style: none;">
+                            <a href="MULTI_TENANCY_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 20px;">🛡️</span>
+                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">MULTI_TENANCY_GUIDE.md</code> - Core architecture guide</span>
+                            </a>
+                        </li>
                     </div>
 
                     <!-- User Signup Tab -->
@@ -468,9 +476,49 @@
                 </div>
             </section>
 
+            <!-- Field Builder (Dynamic Schemas) -->
+            <section id="schemas-section" class="admin-section" style="scroll-margin-top: 20px;">
+                <div class="section-header">
+                    <h2>🏗️ Field Builder</h2>
+                    <button id="add-schema-field-btn" class="btn-primary">+ Add New Field</button>
+                </div>
+                <p style="margin-bottom: 20px; color: var(--text-secondary);">Define custom data fields for your business silo. These fields will be extracted by Gemini AI from uploaded receipts.</p>
+                
+                <div id="schemas-container" class="schemas-list">
+                    <!-- Schema fields will be rendered here -->
+                    <div class="loading-state">Loading schema definitions...</div>
+                </div>
+
+                <!-- Add Field Modal -->
+                <div id="field-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>Create New Custom Field</h3>
+                        <form id="add-field-form">
+                            <div class="form-group">
+                                <label for="field-id">Field ID (Unique Name)</label>
+                                <input type="text" id="field-id" placeholder="e.g., meat_temp" required>
+                                <small>No spaces or special characters allowed.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="field-description">AI Extraction Prompt</label>
+                                <input type="text" id="field-description" placeholder="e.g., Extract the internal temperature of the meat if mentioned." required>
+                                <small>Describe exactly what you want the AI to look for on the receipt.</small>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancel-field-btn">Cancel</button>
+                                <button type="submit" class="btn-primary">Create Field</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
             <!-- User Management -->
             <section id="users-section" class="admin-section" style="scroll-margin-top: 20px;">
-                <h2>User Management</h2>
+                <div class="section-header">
+                    <h2>👥 User Management</h2>
+                    <button id="invite-user-btn" class="btn-primary">+ Create Driver</button>
+                </div>
                 <div class="admin-controls">
                     <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
                     <button id="refresh-users" class="btn-primary">Refresh</button>
@@ -478,10 +526,36 @@
                 <div id="users-container">
                     <div class="loading-state">Loading users...</div>
                 </div>
+
+                <!-- Create User Modal -->
+                <div id="user-modal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>Create New Driver Account</h3>
+                        <p style="margin-bottom: 20px; color: var(--text-secondary);">New users will be automatically associated with your business silo.</p>
+                        <form id="create-user-form">
+                            <div class="form-group">
+                                <label for="new-user-email">Email Address</label>
+                                <input type="email" id="new-user-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-user-display-name">Display Name</label>
+                                <input type="text" id="new-user-display-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-user-password">Initial Password</label>
+                                <input type="password" id="new-user-password" required minlength="6">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancel-user-btn">Cancel</button>
+                                <button type="submit" class="btn-primary">Create User</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </section>
         </main>
     </div>
 
-    <script src="admin.js?v=20251217"></script>
+    <script src="admin.js?v=20251217-phase4"></script>
 </body>
 </html>

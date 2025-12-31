@@ -131,11 +131,21 @@
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>💰 AI Financial Analyst</h1>
-            <p>Sign in to continue</p>
+            <h1>🔐 Secure Business Login</h1>
+            <p>Log into your business silo</p>
         </div>
 
-        <div class="error-message" id="error-message"></div>
+        <div id="error-message" class="error-message"></div>
+        <div id="verification-message" class="verification-message" style="display: none;"></div>
+
+        <div id="tenant-selector" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+            <label style="display: block; font-size: 11px; color: #6c757d; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">🏢 Business Context</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="business-code-input" placeholder="Business ID (Optional)" style="flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;">
+                <button type="button" id="set-tenant-btn" style="padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Apply</button>
+            </div>
+            <p style="margin-top: 8px; font-size: 10px; color: #6c757d;">Leave blank for auto-detection via email.</p>
+        </div>
 
         <form id="login-form" class="login-form">
             <input type="email" id="email-input" placeholder="Email" required>
@@ -152,9 +162,12 @@
                     </svg>
                 </button>
             </div>
+            <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
+                <a href="forgot-password.html" class="btn-link" style="font-size: 12px; text-decoration: none;">Forgot password?</a>
+            </div>
             <button type="submit" class="btn-primary">Login</button>
             <div class="divider">
-                <span>or</span>
+                <span>or use legacy methods</span>
             </div>
             <button type="button" id="google-login-btn" class="btn-google">
                 <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
@@ -163,7 +176,7 @@
                     <path fill="#FBBC05" d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.712s.102-1.172.282-1.712V4.956H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.044l3.007-2.332z"/>
                     <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288C4.672 5.163 6.656 3.58 9 3.58z"/>
                 </svg>
-                Continue with Google
+                Continue with Google (Legacy)
             </button>
             <button type="button" id="signup-toggle" class="btn-link">Don't have an account? Sign up</button>
         </form>

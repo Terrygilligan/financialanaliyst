@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         onAuthStateChanged 
     } = authModule;
     const { ref, uploadBytesResumable } = storageModule;
-    const { doc, setDoc, getDoc, onSnapshot, collection, getDocs } = firestoreModule;
+    const { doc, setDoc, getDoc, onSnapshot, collection, getDocs, query, where, orderBy, limit } = firestoreModule;
 
     const { auth, storage, db } = window.firebase;
     const googleProvider = new GoogleAuthProvider();
@@ -87,6 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Authentication State
     onAuthStateChanged(auth, async (user) => {
         if (user) {
+            // Multi-tenant: Check for businessId in custom claims
+            const idTokenResult = await user.getIdTokenResult(true); // Force refresh to pick up new claims
+            const businessId = idTokenResult.claims.businessId;
+            window.businessId = businessId; // Store globally for the session
+            console.log('🏢 Tenant context:', businessId || 'None');
+
             // Check if email is verified
             if (!user.emailVerified) {
                 // Email not verified, redirect to login with message
@@ -330,7 +336,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Generate unique filename
         const timestamp = Date.now();
         const fileName = `${timestamp}-${file.name}`;
-        const filePath = `receipts/${user.uid}/${fileName}`;
+        
+        // Multi-tenant: Use tenant-scoped path if businessId is available
+        const businessId = window.businessId;
+        const filePath = businessId 
+            ? `tenants/${businessId}/drivers/${user.uid}/receipts/${fileName}`
+            : `receipts/${user.uid}/${fileName}`;
+            
         const storageRef = ref(storage, filePath);
 
         // Show progress
@@ -384,7 +396,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }, { merge: true });
 
                     // Monitor status
-                    monitorBatchStatus(user.uid, fileName);
+                    const receiptId = fileName; // Match Jules's backend logic
+                    if (businessId) {
+                        monitorTenantReceiptStatus(businessId, receiptId);
+                    } else {
+                        monitorBatchStatus(user.uid, fileName);
+                    }
                 }
             );
         } catch (error) {
@@ -405,8 +422,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function updateStatusDisplay(data, fileName) {
+    // Multi-tenant: Monitor receipt status in the business silo
+    function monitorTenantReceiptStatus(businessId, receiptId) {
+        const receiptRef = doc(db, `businesses/${businessId}/receipts/${receiptId}`);
+        
+        onSnapshot(receiptRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                updateStatusDisplay(data);
+                updateHistory(businessId);
+            }
+        });
+    }
+
+    function updateStatusDisplay(data) {
         statusContainer.innerHTML = '';
+        const fileName = data.fileName || 'receipt';
 
         if (data.status === 'processing') {
             statusContainer.innerHTML = `
@@ -415,30 +446,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p>Analyzing receipt with AI...</p>
                 </div>
             `;
-        } else if (data.status === 'complete') {
-            const receiptData = data.receiptData || {};
+        } else if (data.status === 'complete' || data.status === 'processed') {
             statusContainer.innerHTML = `
                 <div class="status-card">
                     <h3>✅ Processing Complete: ${fileName}</h3>
                     <div class="data-row">
                         <span class="data-label">Vendor:</span>
-                        <span class="data-value">${receiptData.vendorName || 'N/A'}</span>
+                        <span class="data-value">${data.vendorName || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Date:</span>
-                        <span class="data-value">${receiptData.transactionDate || 'N/A'}</span>
+                        <span class="data-value">${data.transactionDate || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Amount:</span>
-                        <span class="data-value">$${receiptData.totalAmount?.toFixed(2) || 'N/A'}</span>
+                        <span class="data-value">$${data.totalAmount?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Category:</span>
-                        <span class="data-value">${receiptData.category || 'N/A'}</span>
+                        <span class="data-value">${data.category || 'N/A'}</span>
                     </div>
-                    <p style="margin-top: 15px; color: var(--text-secondary);">
-                        Data has been written to your Google Sheet.
-                    </p>
                 </div>
             `;
         } else if (data.status === 'error') {
@@ -451,18 +478,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function updateHistory(userId) {
-        // This would fetch and display upload history
-        // For now, we'll just show a placeholder
-        const batchRef = doc(db, 'batches', userId);
-        const snapshot = await getDoc(batchRef);
+    async function updateHistory(businessId) {
+        const receiptsRef = collection(db, `businesses/${businessId}/receipts`);
+        const q = query(receiptsRef, orderBy('timestamp', 'desc'), limit(10));
+        const querySnapshot = await getDocs(q);
         
-        if (snapshot.exists()) {
-            const data = snapshot.data();
-            historyContainer.innerHTML = `
+        historyContainer.innerHTML = ''; // Clear existing history
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            historyContainer.innerHTML += `
                 <div class="history-item">
                     <div>
-                        <div class="file-name">${data.lastFileProcessed || 'Unknown'}</div>
+                        <div class="file-name">${data.fileName || 'Unknown'}</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">
                             ${new Date(data.timestamp).toLocaleString()}
                         </div>
@@ -470,7 +497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="file-status ${data.status}">${data.status}</span>
                 </div>
             `;
-        }
+        });
     }
 
     // Initialize history on load
