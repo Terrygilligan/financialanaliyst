@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Business data is siloed by businessId
+    match /businesses/{businessId}/{document=**} {
+      allow read, write: if request.auth.token.businessId == businessId;
+    }
+
+    // Admins can manage users and schemas within their own business
+    match /businesses/{businessId}/users/{userId} {
+      allow read, write: if request.auth.token.admin == true && request.auth.token.businessId == businessId;
+    }
+
+    match /businesses/{businessId}/schemas/{schemaId} {
+      allow read, write: if request.auth.token.admin == true && request.auth.token.businessId == businessId;
+    }
+  }
+}

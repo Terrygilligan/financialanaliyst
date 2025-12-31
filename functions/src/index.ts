@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -69,14 +69,31 @@ export const analyzeReceiptUpload = onObjectFinalized(
 
         if (!userId) {
             console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
             return;
         }
 
-        // 4. Call the core processor function (defined in processor.ts)
-        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+        // 4. Get businessId from user's custom claims
+        const user = await auth.getUser(userId);
+        const businessId = user.customClaims?.businessId;
 
-        // 5. Append data to Google Sheets (Steps 8-9)
+        if (!businessId) {
+            // This is a critical error, as all data is siloed by business.
+            // The function should not proceed without a businessId.
+            console.error(`FATAL: User ${userId} is not associated with a business (missing businessId claim).`);
+            await db.collection('batches').doc(userId).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: `User ${userId} does not have a businessId custom claim.`,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+            return;
+        }
+
+
+        // 5. Call the core processor function (defined in processor.ts)
+        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath, businessId);
+
+        // 6. Append data to Google Sheets (Steps 8-9)
         const sheetId = process.env.GOOGLE_SHEET_ID;
         let sheetsWriteSuccess = false;
         let googleSheetLink = null;
@@ -109,7 +126,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
             console.error("2. OR Firebase Functions Secrets");
         }
 
-        // 6. Update Firestore Status (Step 10)
+        // 7. Update Firestore Status (Step 10)
         await db.collection('batches').doc(userId).set({
             status: 'complete',
             lastFileProcessed: fileName,
@@ -119,7 +136,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
             timestamp: new Date().toISOString()
         }, { merge: true });
 
-        // 7. Update user statistics in /users collection
+        // 8. Update user statistics in /users collection
         const userRef = db.collection('users').doc(userId);
         const userDoc = await userRef.get();
         const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
@@ -137,7 +154,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
     } catch (error) {
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
         
-        // Update Firestore status to error (Step 10)
+        // Update Firestore status to error
         const pathParts = filePath.split('/');
         const userId = pathParts[1] || 'unknown';
         await db.collection('batches').doc(userId).set({
@@ -257,6 +274,88 @@ export const removeAdminClaim = onCall(
         } catch (error) {
             console.error(`Error removing admin claim for ${targetUserId}:`, error);
             throw new Error(`Failed to remove admin claim: ${(error as Error).message}`);
+        }
+    }
+);
+
+/**
+ * Cloud Function: Invite a new user to a business.
+ *
+ * This function allows a business admin to create a new user account
+ * associated with their business.
+ *
+ * - The caller must be an authenticated user.
+ * - The caller must have the 'admin' custom claim set to true.
+ * - The caller must have a 'businessId' custom claim.
+ * - The new user will be created with a 'businessId' custom claim matching the admin's.
+ *
+ * @param {object} data - The data passed to the function.
+ * @param {string} data.email - The email address for the new user.
+ * @param {string} data.password - The password for the new user.
+ * @returns {Promise<{success: boolean, message: string, uid?: string}>}
+ */
+export const inviteUserToBusiness = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // 1. Verify caller is an authenticated admin with a businessId
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+        }
+
+        const callerUser = await auth.getUser(callerUid);
+        const callerClaims = callerUser.customClaims;
+
+        if (!callerClaims?.admin) {
+            throw new HttpsError('permission-denied', 'Only admins can invite new users.');
+        }
+
+        const businessId = callerClaims.businessId;
+        if (!businessId) {
+            throw new HttpsError('permission-denied', 'Admin is not associated with a business.');
+        }
+
+        // 2. Get new user details from the request
+        const { email, password } = request.data;
+        if (!email || !password) {
+            throw new HttpsError('invalid-argument', 'Email and password are required.');
+        }
+         if (password.length < 6) {
+            throw new HttpsError('invalid-argument', 'Password must be at least 6 characters long.');
+        }
+
+
+        try {
+            // 3. Create the new user with the Admin SDK
+            const newUserRecord = await auth.createUser({
+                email: email,
+                password: password,
+                emailVerified: true, // Optional: set email as verified
+                disabled: false,
+            });
+
+            // 4. Set the businessId custom claim for the new user
+            await auth.setCustomUserClaims(newUserRecord.uid, { businessId: businessId });
+
+            console.log(`Successfully created new user ${newUserRecord.uid} for business ${businessId}`);
+
+            return {
+                success: true,
+                message: `User ${email} created successfully.`,
+                uid: newUserRecord.uid,
+            };
+        } catch (error: any) {
+            console.error('Error creating new user:', error);
+            // Check for specific auth errors
+            if (error.code === 'auth/email-already-exists') {
+                 throw new HttpsError('already-exists', 'The email address is already in use by another account.');
+            }
+             if (error.code === 'auth/invalid-password') {
+                 throw new HttpsError('invalid-argument', 'The password is not valid. It must be at least 6 characters long.');
+            }
+            throw new HttpsError('internal', 'An unexpected error occurred while creating the user.');
         }
     }
 );

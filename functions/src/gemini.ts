@@ -1,7 +1,11 @@
 // functions/src/gemini.ts
 
 import { VertexAI } from "@google-cloud/vertexai";
-import { ReceiptData, Category } from "./schema";
+import { getFirestore } from "firebase-admin/firestore";
+import { ReceiptData, Category, RECEIPT_SCHEMA } from "./schema";
+
+
+const db = getFirestore();
 
 // Initialize Vertex AI client using service account (ADC). No API key required.
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
@@ -65,37 +69,56 @@ function getMimeType(filePath: string): string {
  * 
  * @param imageBuffer - The binary content of the receipt image
  * @param filePath - The file path (used to determine MIME type)
+ * @param {string} businessId - The ID of the business to fetch the schema for.
  * @returns Promise<ReceiptData> - The extracted receipt data
  * @throws Error if the API call fails or returns invalid data
  */
 export async function extractReceiptData(
     imageBuffer: Buffer,
-    filePath: string
+    filePath: string,
+    businessId: string
 ): Promise<ReceiptData> {
+
+    // 1. Fetch the active schema for the business
+    let schema: any;
+    try {
+        const schemaSnapshot = await db.collection(`businesses/${businessId}/schemas`)
+            .where('active', '==', true)
+            .limit(1)
+            .get();
+
+        if (schemaSnapshot.empty) {
+            console.warn(`No active schema found for business ${businessId}. Falling back to default schema.`);
+            schema = RECEIPT_SCHEMA; // Use the default schema
+        } else {
+            schema = schemaSnapshot.docs[0].data();
+            console.log(`Using active schema '${schemaSnapshot.docs[0].id}' for business ${businessId}`);
+        }
+    } catch (error) {
+        console.error(`Error fetching schema for business ${businessId}:`, error);
+        // Fallback to default schema on error
+        schema = RECEIPT_SCHEMA;
+    }
+
+
     const generativeModel = getGenerativeModel();
 
     // Convert image to base64
     const base64Image = bufferToBase64(imageBuffer);
     const mimeType = getMimeType(filePath);
 
-    // Construct the prompt with clear instructions
-    const prompt = `Analyze this receipt image and extract the following information as JSON:
-{
-  "vendorName": "The name of the store or business",
-  "transactionDate": "The purchase date in YYYY-MM-DD format",
-  "totalAmount": The final total including tax (as a number, no currency symbols),
-  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other"
-}
+    // 2. Dynamically generate the prompt from the schema
+    const prompt = `Analyze this receipt image and extract the following information as a valid JSON object.
 
-Categories:
-- "Maintenance": Tools, hardware, repairs, equipment maintenance
-- "Cleaning Supplies": Cleaning products, detergents, paper towels, etc.
-- "Utilities": Electricity, water, gas, internet, phone bills
-- "Supplies": Office supplies, general business supplies
-- "Other": Anything that doesn't fit the above categories
+    **JSON Schema:**
+    \`\`\`json
+    ${JSON.stringify(schema.fields, null, 2)}
+    \`\`\`
 
-Be precise and extract only information that is clearly visible on the receipt.
-Return ONLY valid JSON, no other text.`;
+    **Instructions:**
+    - Extract the data based on the descriptions in the JSON schema.
+    - The "category" field must be one of the following values: ${schema.fields.properties.category.enum.join(", ")}.
+    - Return ONLY the valid JSON object, with no additional text or explanations.`;
 
     try {
         // Prepare the multimodal request for Vertex AI (service account auth)
