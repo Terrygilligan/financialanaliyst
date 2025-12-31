@@ -13,6 +13,7 @@ export enum Category {
 
 /**
  * TypeScript interface for the clean, structured data extracted by Gemini.
+ * Allows for additional custom fields.
  */
 export interface ReceiptData {
     vendorName: string;
@@ -20,6 +21,7 @@ export interface ReceiptData {
     totalAmount: number;
     category: Category;
     timestamp: string; // ISO 8601 timestamp of when the function ran
+    [key: string]: any; // Allow for custom schema fields
 }
 
 /**

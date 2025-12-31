@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Multi-tenant security model based on businessId
+    match /businesses/{businessId}/{document=**} {
+      allow read, write: if request.auth.token.businessId == businessId && request.auth.token.role == 'admin';
+    }
+
+    // User management security rules
+    match /users/{userId} {
+      // Users can manage their own document
+      allow read, write: if request.auth.uid == userId;
+
+      // Admins can manage any user within their own business
+      allow read, write: if request.auth.token.role == 'admin'
+                          && request.auth.token.businessId == get(/databases/$(database)/documents/users/$(userId)).data.businessId;
+    }
+
+    // Schema definitions can be read by any authenticated user in the business
+    match /businesses/{businessId}/schema_definitions/{schemaId} {
+        allow read: if request.auth.token.businessId == businessId;
+        allow write: if request.auth.token.businessId == businessId && request.auth.token.role == 'admin';
+    }
+  }
+}

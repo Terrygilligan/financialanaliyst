@@ -70,7 +70,8 @@ function getMimeType(filePath: string): string {
  */
 export async function extractReceiptData(
     imageBuffer: Buffer,
-    filePath: string
+    filePath: string,
+    schemaDefinitions: Map<string, any>
 ): Promise<ReceiptData> {
     const generativeModel = getGenerativeModel();
 
@@ -78,16 +79,31 @@ export async function extractReceiptData(
     const base64Image = bufferToBase64(imageBuffer);
     const mimeType = getMimeType(filePath);
 
-    // Construct the prompt with clear instructions
-    const prompt = `Analyze this receipt image and extract the following information as JSON:
-{
-  "vendorName": "The name of the store or business",
-  "transactionDate": "The purchase date in YYYY-MM-DD format",
-  "totalAmount": The final total including tax (as a number, no currency symbols),
-  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other"
-}
+    // 1. Start with the base schema.
+    const jsonSchema: { [key: string]: string } = {
+        vendorName: "The name of the store or business",
+        transactionDate: "The purchase date in YYYY-MM-DD format",
+        totalAmount: "The final total including tax (as a number, no currency symbols)",
+        category: `One of: ${Object.values(Category).join(', ')}`,
+    };
 
-Categories:
+    // 2. Add custom schema definitions to the prompt.
+    if (schemaDefinitions.size > 0) {
+        schemaDefinitions.forEach((schema, id) => {
+            // Use the 'description' field from the schema definition for the prompt
+            jsonSchema[id] = schema.description || `Value for ${id}`;
+        });
+    }
+
+    // 3. Construct the dynamic prompt.
+    const jsonSchemaString = JSON.stringify(jsonSchema, null, 2)
+        .replace(/"/g, '') // Remove quotes for cleaner look in prompt
+        .replace(/,\n/g, ',\n');
+
+    const prompt = `Analyze this receipt image and extract the following information as a valid JSON object:
+${jsonSchemaString}
+
+Category Descriptions:
 - "Maintenance": Tools, hardware, repairs, equipment maintenance
 - "Cleaning Supplies": Cleaning products, detergents, paper towels, etc.
 - "Utilities": Electricity, water, gas, internet, phone bills
@@ -95,7 +111,7 @@ Categories:
 - "Other": Anything that doesn't fit the above categories
 
 Be precise and extract only information that is clearly visible on the receipt.
-Return ONLY valid JSON, no other text.`;
+Return ONLY a single, valid JSON object, with no other text, comments, or markdown.`;
 
     try {
         // Prepare the multimodal request for Vertex AI (service account auth)
@@ -159,8 +175,18 @@ Return ONLY valid JSON, no other text.`;
             transactionDate: extractedData.transactionDate || extractedData.date || new Date().toISOString().split('T')[0],
             totalAmount: parseFloat(extractedData.totalAmount || extractedData.amount || extractedData.total || "0"),
             category: validateCategory(extractedData.category),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         };
+
+        // Dynamically add custom schema fields to the final object
+        schemaDefinitions.forEach((_, id) => {
+            if (extractedData[id] !== undefined) {
+                receiptData[id] = extractedData[id];
+            } else {
+                receiptData[id] = null; // Or a default value
+            }
+        });
+
 
         // Validate required fields
         if (!receiptData.vendorName || receiptData.vendorName === "Unknown Vendor") {

@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -73,10 +73,47 @@ export const analyzeReceiptUpload = onObjectFinalized(
             return;
         }
 
-        // 4. Call the core processor function (defined in processor.ts)
-        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+        // 4. Get businessId from user's custom claims to fetch the correct schema.
+        const userRecord = await auth.getUser(userId);
+        const businessId = userRecord.customClaims?.businessId;
 
-        // 5. Append data to Google Sheets (Steps 8-9)
+        if (!businessId) {
+            console.error(`User ${userId} does not have a businessId custom claim.`);
+            // Update Firestore with an error state
+            await db.collection('batches').doc(userId).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: 'User is not associated with a business.',
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+            return;
+        }
+
+        console.log(`User ${userId} belongs to business ${businessId}. Fetching schema...`);
+
+        // 5. Fetch custom schema definitions for the business.
+        const schemaDefinitions = new Map<string, any>();
+        try {
+            const schemaSnapshot = await db.collection(`businesses/${businessId}/schema_definitions`).get();
+            if (!schemaSnapshot.empty) {
+                schemaSnapshot.forEach(doc => {
+                    schemaDefinitions.set(doc.id, doc.data());
+                });
+                console.log(`Loaded ${schemaDefinitions.size} schema definitions for business ${businessId}.`);
+            } else {
+                console.log(`No custom schema definitions found for business ${businessId}. Using default schema.`);
+            }
+        } catch (schemaError) {
+            console.error(`Error fetching schema for business ${businessId}:`, schemaError);
+            // Decide if you want to proceed with a default schema or fail.
+            // For now, we'll proceed with an empty schema map.
+        }
+
+
+        // 6. Call the core processor function with the custom schema.
+        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath, schemaDefinitions);
+
+        // 7. Append data to Google Sheets (Steps 8-9)
         const sheetId = process.env.GOOGLE_SHEET_ID;
         let sheetsWriteSuccess = false;
         let googleSheetLink = null;
@@ -109,17 +146,20 @@ export const analyzeReceiptUpload = onObjectFinalized(
             console.error("2. OR Firebase Functions Secrets");
         }
 
-        // 6. Update Firestore Status (Step 10)
-        await db.collection('batches').doc(userId).set({
+        // 8. Update Firestore Status (Step 10)
+        // Note: The data is now stored under the business collection for proper siloing.
+        const batchRef = db.collection(`businesses/${businessId}/batches`).doc(); // Create a new doc for each receipt
+        await batchRef.set({
+            userId: userId, // Keep track of which user uploaded it
             status: 'complete',
-            lastFileProcessed: fileName,
-            receiptData: receiptData, // Store the extracted data for reference
+            fileName: fileName,
+            receiptData: receiptData,
             sheetsWriteSuccess: sheetsWriteSuccess,
             googleSheetLink: googleSheetLink,
             timestamp: new Date().toISOString()
-        }, { merge: true });
+        });
 
-        // 7. Update user statistics in /users collection
+        // 9. Update user statistics in /users collection
         const userRef = db.collection('users').doc(userId);
         const userDoc = await userRef.get();
         const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
@@ -138,11 +178,23 @@ export const analyzeReceiptUpload = onObjectFinalized(
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
         
         // Update Firestore status to error (Step 10)
-        const pathParts = filePath.split('/');
-        const userId = pathParts[1] || 'unknown';
-        await db.collection('batches').doc(userId).set({
+        const errorPathParts = filePath.split('/');
+        const errorUserId = errorPathParts[1] || 'unknown';
+
+        // Try to get businessId even on error to log correctly
+        let businessIdForError = 'unknown';
+        try {
+            const userRecordOnError = await auth.getUser(errorUserId);
+            businessIdForError = userRecordOnError.customClaims?.businessId || 'unknown';
+        } catch (e) {
+            // User might not exist or other auth error
+        }
+
+        const errorBatchRef = db.collection(`businesses/${businessIdForError}/batches`).doc();
+        await errorBatchRef.set({
+            userId: errorUserId,
             status: 'error',
-            errorFile: filePath,
+            fileName: errorPathParts.pop() || 'unknown',
             errorMessage: (error as Error).message,
             timestamp: new Date().toISOString()
         }, { merge: true });
@@ -211,6 +263,81 @@ export const setAdminClaim = onCall(
         } catch (error) {
             console.error(`Error setting admin claim for ${targetUserId}:`, error);
             throw new Error(`Failed to set admin claim: ${(error as Error).message}`);
+        }
+    }
+);
+
+/**
+ * Cloud Function: Admin Create User
+ *
+ * This function allows a tenant admin to create a new user within their own business.
+ * The new user is automatically assigned the admin's `businessId` and a 'driver' role.
+ *
+ * Security: The function is protected by checking the caller's custom claims for `role: 'admin'`.
+ */
+export const adminCreateUser = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // 1. Verify the caller is an admin.
+        if (request.auth?.token?.role !== 'admin') {
+            throw new HttpsError('permission-denied', 'Only admins can create users.');
+        }
+
+        // 2. Get the admin's businessId from their custom claims.
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new HttpsError('failed-precondition', 'Admin user is not associated with a business.');
+        }
+
+        // 3. Get new user data from the request.
+        const { email, password, displayName } = request.data;
+        if (!email || !password || !displayName) {
+            throw new HttpsError('invalid-argument', 'Email, password, and display name are required.');
+        }
+
+        try {
+            // 4. Create the new user.
+            const userRecord = await auth.createUser({
+                email,
+                password,
+                displayName,
+            });
+
+            // 5. Set custom claims for the new user.
+            await auth.setCustomUserClaims(userRecord.uid, {
+                businessId: businessId,
+                role: 'driver' // Default role for new users
+            });
+
+            // 6. Create a user profile document in Firestore (optional but good practice)
+            //    This helps in listing/managing users from the frontend.
+            await db.collection('users').doc(userRecord.uid).set({
+                email: userRecord.email,
+                displayName: userRecord.displayName,
+                businessId: businessId,
+                role: 'driver',
+                createdAt: new Date().toISOString()
+            });
+
+            console.log(`Admin ${request.auth?.uid} created new user ${userRecord.uid} in business ${businessId}`);
+
+            return {
+                success: true,
+                message: `User ${displayName} created successfully with UID: ${userRecord.uid}`,
+                uid: userRecord.uid
+            };
+        } catch (error) {
+            console.error(`Error creating user by admin ${request.auth?.uid}:`, error);
+            if (error instanceof Error) {
+                 // Check for specific auth errors
+                 if ((error as any).code === 'auth/email-already-exists') {
+                    throw new HttpsError('already-exists', 'A user with this email already exists.');
+                 }
+                 throw new HttpsError('internal', error.message);
+            }
+            throw new HttpsError('internal', 'An unknown error occurred while creating the user.');
         }
     }
 );
