@@ -38,6 +38,7 @@ export interface ReceiptData {
     processedBy?: string; // 'user' or 'admin' or 'system'
     validationStatus?: string; // 'passed', 'warning', 'failed', 'admin_override'
     hasErrors?: boolean; // Flag for receipts that had processing errors
+    [key: string]: any; // Allow for custom schema fields
 }
 
 /**

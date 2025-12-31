@@ -4,7 +4,6 @@ import { onCall } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { ReceiptData } from "./schema";
-import { appendReceiptToUserSheet } from "./sheets"; // Phase 4: Multi-sheet routing
 import { validateReceiptData } from "./validation";
 import { logInfo, logWarning, logErrorWithDetails } from "./error-logging";
 
@@ -155,29 +154,11 @@ export const adminApproveReceipt = onCall(
             finalReceiptData.validationStatus = !validation.isValid ? 'admin_override' : validation.warnings.length > 0 ? 'warning' : 'passed';
             finalReceiptData.hasErrors = false;
 
-            // 3. Write to Google Sheets
-            let sheetsWriteSuccess = false;
-            let googleSheetLink = null;
-
-            // Phase 4: Use multi-sheet routing for user-specific sheets
-            // Use the receipt owner's userId (not admin's) for sheet routing
-            try {
-                const sheetResult = await appendReceiptToUserSheet(finalReceiptData, pendingReceipt.userId);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetResult.sheetId}`);
-                sheetsWriteSuccess = true;
-                googleSheetLink = sheetResult.sheetLink;
-            } catch (sheetsError) {
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                // Don't fail the entire operation if Sheets write fails
-            }
-
             // 4. Update batches collection with final status
             await db.collection('batches').doc(userId).set({
                 status: 'complete',
                 lastFileProcessed: pendingReceipt.fileName,
                 receiptData: finalReceiptData,
-                sheetsWriteSuccess: sheetsWriteSuccess,
-                googleSheetLink: googleSheetLink,
                 adminApproved: true,
                 approvedBy: callerUid,
                 approvedAt: new Date().toISOString(),
@@ -219,9 +200,7 @@ export const adminApproveReceipt = onCall(
             return {
                 success: true,
                 message: "Receipt approved and finalized",
-                receiptData: finalReceiptData,
-                sheetsWriteSuccess: sheetsWriteSuccess,
-                googleSheetLink: googleSheetLink
+                receiptData: finalReceiptData
             };
         } catch (error) {
             console.error(`Error approving receipt ${receiptId}:`, error);

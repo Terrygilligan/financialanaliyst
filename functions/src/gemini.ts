@@ -1,7 +1,10 @@
 // functions/src/gemini.ts
 
 import { VertexAI } from "@google-cloud/vertexai";
-import { ReceiptData, Category } from "./schema";
+import { getFirestore } from "firebase-admin/firestore";
+import { ReceiptData, Category, RECEIPT_SCHEMA } from "./schema";
+
+const db = getFirestore();
 
 // Initialize Vertex AI client using service account (ADC). No API key required.
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
@@ -61,6 +64,47 @@ function getMimeType(filePath: string): string {
 }
 
 /**
+ * Retry wrapper for Gemini API calls with exponential backoff
+ * Handles 429 rate limit errors gracefully
+ */
+async function retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    initialDelay: number = 1000
+): Promise<T> {
+    let lastError: Error;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            lastError = error;
+            
+            // Check if it's a rate limit error (429)
+            const isRateLimit = error.code === 429 || 
+                               error.status === 429 ||
+                               error.message?.includes('429') ||
+                               error.message?.includes('rate limit') ||
+                               error.message?.includes('quota');
+            
+            if (!isRateLimit || attempt === maxRetries) {
+                // Not a rate limit error, or max retries reached
+                throw error;
+            }
+            
+            // Calculate exponential backoff delay
+            const delay = initialDelay * Math.pow(2, attempt);
+            console.log(`[Gemini] Rate limit hit (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`);
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    
+    throw lastError!;
+}
+
+/**
  * Calls Google Gemini API to extract structured receipt data from an image.
  * 
  * @param imageBuffer - The binary content of the receipt image
@@ -70,139 +114,174 @@ function getMimeType(filePath: string): string {
  */
 export async function extractReceiptData(
     imageBuffer: Buffer,
-    filePath: string
+    filePath: string,
+    businessId: string
 ): Promise<ReceiptData> {
-    const generativeModel = getGenerativeModel();
+    return retryWithBackoff(async () => {
+        const generativeModel = getGenerativeModel();
+
+    // 1. Fetch the active schema for the business
+    let schema: any;
+    try {
+        const schemaSnapshot = await db.collection(`businesses/${businessId}/schemas`)
+            .where('active', '==', true)
+            .limit(1)
+            .get();
+
+        if (schemaSnapshot.empty) {
+            // Fallback to schema_definitions (legacy)
+            const legacySnapshot = await db.collection(`businesses/${businessId}/schema_definitions`).get();
+            if (legacySnapshot.empty) {
+                console.warn(`No active schema found for business ${businessId}. Falling back to default schema.`);
+                schema = RECEIPT_SCHEMA;
+            } else {
+                // Merge legacy custom fields into the base schema
+                const customFields: any = {};
+                legacySnapshot.forEach(doc => {
+                    customFields[doc.id] = {
+                        type: "string",
+                        description: doc.data().description || `Custom field: ${doc.id}`
+                    };
+                });
+                schema = {
+                    ...RECEIPT_SCHEMA,
+                    properties: { ...RECEIPT_SCHEMA.properties, ...customFields }
+                };
+            }
+        } else {
+            const schemaData = schemaSnapshot.docs[0].data();
+            // Jules format uses a 'fields' property containing the schema
+            schema = schemaData.fields || schemaData;
+            console.log(`Using active schema '${schemaSnapshot.docs[0].id}' for business ${businessId}`);
+        }
+    } catch (error) {
+        console.error(`Error fetching schema for business ${businessId}:`, error);
+        schema = RECEIPT_SCHEMA;
+    }
 
     // Convert image to base64
     const base64Image = bufferToBase64(imageBuffer);
     const mimeType = getMimeType(filePath);
 
-    // Construct the prompt with clear instructions
-    const prompt = `Analyze this receipt image and extract the following information as JSON:
-{
-  "vendorName": "The name of the store or business",
-  "transactionDate": "The purchase date in YYYY-MM-DD format",
-  "totalAmount": The final total including tax (as a number, no currency symbols),
-  "currency": "The currency code (e.g., USD, GBP, EUR). Default to GBP if not visible.",
-  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other",
-  "supplierVatNumber": "The supplier's VAT registration number (e.g., GB123456789) if visible - OPTIONAL",
-  "vatBreakdown": {
-    "subtotal": Amount before VAT/tax (as a number) - OPTIONAL,
-    "vatAmount": VAT/tax amount (as a number) - OPTIONAL,
-    "vatRate": VAT/tax rate as percentage (e.g., 20 for 20%) - OPTIONAL
-  }
-}
+    // 3. Construct the dynamic prompt.
+    const prompt = `Analyze this receipt image and extract the following information as a valid JSON object:
+${JSON.stringify(schema.properties, null, 2)}
 
-Categories:
+Category Descriptions:
 - "Maintenance": Tools, hardware, repairs, equipment maintenance
 - "Cleaning Supplies": Cleaning products, detergents, paper towels, etc.
 - "Utilities": Electricity, water, gas, internet, phone bills
 - "Supplies": Office supplies, general business supplies
 - "Other": Anything that doesn't fit the above categories
 
-VAT Information (Phase 3.1 - Extract if visible):
-- Look for "VAT Number", "VAT Reg No", "Tax ID", or similar labels for the supplier's VAT number
-- Look for subtotal, VAT amount, and VAT rate (often shown as "VAT @ 20%" or similar)
-- If VAT information is not clearly visible, omit the vatBreakdown field entirely
-
 Be precise and extract only information that is clearly visible on the receipt.
-Return ONLY valid JSON, no other text.`;
+Return ONLY a single, valid JSON object, with no other text, comments, or markdown.`;
 
     try {
-        // Prepare the multimodal request for Vertex AI (service account auth)
-        const result = await generativeModel.generateContent({
-            contents: [
-                {
-                    role: "user",
-                    parts: [
-                        {
-                            inlineData: {
-                                mimeType,
-                                data: base64Image
-                            }
-                        },
-                        { text: prompt }
-                    ]
+            // Prepare the multimodal request for Vertex AI (service account auth)
+            const result = await generativeModel.generateContent({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            {
+                                inlineData: {
+                                    mimeType,
+                                    data: base64Image
+                                }
+                            },
+                            { text: prompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2
                 }
-            ],
-            generationConfig: {
-                temperature: 0.2
+            });
+
+            const candidate = result.response?.candidates?.[0];
+            const textResponse = candidate?.content?.parts
+                ?.map((part: any) => part.text || "")
+                .join("")
+                .trim();
+
+            if (!textResponse) {
+                throw new Error("No text response from Gemini API");
             }
-        });
 
-        const candidate = result.response?.candidates?.[0];
-        const textResponse = candidate?.content?.parts
-            ?.map((part: any) => part.text || "")
-            .join("")
-            .trim();
+            // Parse the JSON response
+            let jsonText = textResponse.trim();
+            
+            // Remove markdown code blocks if present
+            if (jsonText.startsWith('```json')) {
+                jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+            } else if (jsonText.startsWith('```')) {
+                jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+            }
 
-        if (!textResponse) {
-            throw new Error("No text response from Gemini API");
+            // Parse the JSON
+            let extractedData: any;
+            try {
+                extractedData = JSON.parse(jsonText);
+            } catch (parseError) {
+                // If direct parsing fails, try to extract JSON from the text
+                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    extractedData = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error(`Failed to parse JSON from Gemini API response: ${textResponse.substring(0, 200)}`);
+            }
+            }
+
+            // Validate and transform the extracted data
+            const receiptData: ReceiptData = {
+                vendorName: extractedData.vendorName || extractedData.vendor || "Unknown Vendor",
+                transactionDate: extractedData.transactionDate || extractedData.date || new Date().toISOString().split('T')[0],
+                totalAmount: parseFloat(extractedData.totalAmount || extractedData.amount || extractedData.total || "0"),
+                category: validateCategory(extractedData.category),
+                timestamp: new Date().toISOString(),
+                // Phase 2.4: Currency field (extracted by Gemini)
+                currency: extractedData.currency,
+                // Phase 3.1: VAT fields (extracted by Gemini if visible)
+                supplierVatNumber: extractedData.supplierVatNumber,
+                vatBreakdown: extractedData.vatBreakdown ? {
+                    subtotal: extractedData.vatBreakdown.subtotal ? parseFloat(extractedData.vatBreakdown.subtotal) : undefined,
+                    vatAmount: extractedData.vatBreakdown.vatAmount ? parseFloat(extractedData.vatBreakdown.vatAmount) : undefined,
+                    vatRate: extractedData.vatBreakdown.vatRate ? parseFloat(extractedData.vatBreakdown.vatRate) : undefined
+                } : undefined
+            };
+
+            // Dynamically add custom schema fields to the final object
+            // We can determine which fields are custom by checking schema.properties
+            Object.keys(schema.properties).forEach((key) => {
+                if (!RECEIPT_SCHEMA.properties.hasOwnProperty(key)) {
+                    if (extractedData[key] !== undefined) {
+                        receiptData[key] = extractedData[key];
+                    }
+                }
+            });
+
+            // Validate required fields
+            if (!receiptData.vendorName || receiptData.vendorName === "Unknown Vendor") {
+                throw new Error("Could not extract vendor name from receipt");
+            }
+            
+            if (isNaN(receiptData.totalAmount) || receiptData.totalAmount <= 0) {
+                throw new Error(`Invalid total amount extracted: ${extractedData.totalAmount}`);
+            }
+
+            if (!receiptData.transactionDate || !/^\d{4}-\d{2}-\d{2}$/.test(receiptData.transactionDate)) {
+                console.warn(`Invalid date format, using today's date: ${receiptData.transactionDate}`);
+                receiptData.transactionDate = new Date().toISOString().split('T')[0];
+            }
+
+            return receiptData;
+
+        } catch (error) {
+            console.error("Gemini API error:", error);
+            throw new Error(`Failed to extract receipt data: ${(error as Error).message}`);
         }
-
-        // Parse the JSON response
-        let jsonText = textResponse.trim();
-        
-        // Remove markdown code blocks if present
-        if (jsonText.startsWith('```json')) {
-            jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (jsonText.startsWith('```')) {
-            jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        }
-
-        // Parse the JSON
-        let extractedData: any;
-        try {
-            extractedData = JSON.parse(jsonText);
-        } catch (parseError) {
-            // If direct parsing fails, try to extract JSON from the text
-            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                extractedData = JSON.parse(jsonMatch[0]);
-        } else {
-            throw new Error(`Failed to parse JSON from Gemini API response: ${textResponse.substring(0, 200)}`);
-        }
-        }
-
-        // Validate and transform the extracted data
-        const receiptData: ReceiptData = {
-            vendorName: extractedData.vendorName || extractedData.vendor || "Unknown Vendor",
-            transactionDate: extractedData.transactionDate || extractedData.date || new Date().toISOString().split('T')[0],
-            totalAmount: parseFloat(extractedData.totalAmount || extractedData.amount || extractedData.total || "0"),
-            category: validateCategory(extractedData.category),
-            timestamp: new Date().toISOString(),
-            // Phase 2.4: Currency field (extracted by Gemini)
-            currency: extractedData.currency,
-            // Phase 3.1: VAT fields (extracted by Gemini if visible)
-            supplierVatNumber: extractedData.supplierVatNumber,
-            vatBreakdown: extractedData.vatBreakdown ? {
-                subtotal: extractedData.vatBreakdown.subtotal ? parseFloat(extractedData.vatBreakdown.subtotal) : undefined,
-                vatAmount: extractedData.vatBreakdown.vatAmount ? parseFloat(extractedData.vatBreakdown.vatAmount) : undefined,
-                vatRate: extractedData.vatBreakdown.vatRate ? parseFloat(extractedData.vatBreakdown.vatRate) : undefined
-            } : undefined
-        };
-
-        // Validate required fields
-        if (!receiptData.vendorName || receiptData.vendorName === "Unknown Vendor") {
-            throw new Error("Could not extract vendor name from receipt");
-        }
-        
-        if (isNaN(receiptData.totalAmount) || receiptData.totalAmount <= 0) {
-            throw new Error(`Invalid total amount extracted: ${extractedData.totalAmount}`);
-        }
-
-        if (!receiptData.transactionDate || !/^\d{4}-\d{2}-\d{2}$/.test(receiptData.transactionDate)) {
-            console.warn(`Invalid date format, using today's date: ${receiptData.transactionDate}`);
-            receiptData.transactionDate = new Date().toISOString().split('T')[0];
-        }
-
-        return receiptData;
-
-    } catch (error) {
-        console.error("Gemini API error:", error);
-        throw new Error(`Failed to extract receipt data: ${(error as Error).message}`);
-    }
+    });
 }
 
 /**

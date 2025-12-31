@@ -20,9 +20,10 @@ import { extractReceiptData } from "./gemini";
  */
 export async function processReceiptBatch(
     fileBuffer: Buffer,
-    filePath: string
+    filePath: string,
+    businessId: string
 ): Promise<ReceiptData> {
-    console.log(`Processing receipt: ${filePath} (${fileBuffer.length} bytes)`);
+    console.log(`Processing receipt: ${filePath} (${fileBuffer.length} bytes) for business: ${businessId}`);
 
     // Validate file buffer
     if (!fileBuffer || fileBuffer.length === 0) {
@@ -43,7 +44,7 @@ export async function processReceiptBatch(
         // - Data validation
         // - Category normalization
         // - Timestamp addition
-        const receiptData = await extractReceiptData(fileBuffer, filePath);
+        const receiptData = await extractReceiptData(fileBuffer, filePath, businessId);
 
         // Additional validation
         if (!receiptData.vendorName || receiptData.vendorName.trim().length === 0) {

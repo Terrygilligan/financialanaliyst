@@ -6,11 +6,12 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
-import { onCall } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
+// import * as admin from "firebase-admin";
 
 // Initialize the Firebase Admin SDK once for all functions
 initializeApp();
@@ -21,7 +22,6 @@ const auth = getAuth();
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
-import { appendReceiptToUserSheet } from "./sheets"; // Phase 4: Multi-sheet routing
 import { lookupEntityForUser } from "./entities";
 import { convertReceiptToBaseCurrency } from "./currency"; 
 
@@ -70,177 +70,129 @@ export const analyzeReceiptUpload = onObjectFinalized(
         return;
     }
 
-    const filePath = file.name; // e.g., receipts/user123/receipt-1678886400.jpg
-    const bucketName = file.bucket; // Get bucket from event
+    const filePath = file.name; // e.g., tenants/business_001/drivers/user123/receipts/receipt.jpg
+    const bucketName = file.bucket; 
     
     console.log(`File uploaded to bucket: ${bucketName}, path: ${filePath}`);
     
-    // Ignore files not in the expected path or files created during processing (e.g., resized versions)
-    if (!filePath.startsWith('receipts/')) {
-        console.log(`Ignoring file outside the target path: ${filePath}`);
+    // Support both new tenant-scoped path and legacy path for migration
+    const isTenantPath = filePath.startsWith('tenants/');
+    const isLegacyPath = filePath.startsWith('receipts/');
+
+    if (!isTenantPath && !isLegacyPath) {
+        console.log(`Ignoring file outside the target paths: ${filePath}`);
         return;
     }
 
-    console.log(`Starting analysis for file: ${filePath}`);
+    console.log(`Starting analysis for file: ${filePath} (Tenant path: ${isTenantPath})`);
 
     try {
         // 2. Download the File Buffer from Storage
         const bucket = storage.bucket(bucketName);
         const [fileBuffer] = await bucket.file(filePath).download();
         
-        // 3. Extract necessary metadata (userId, filename)
-        // Assume path format is: receipts/{userId}/{filename}
-        const pathParts = filePath.split('/');
-        const userId = pathParts[1];
-        const fileName = pathParts.pop();
+        // 3. Extract necessary metadata (businessId, userId, filename)
+        let userId: string;
+        let businessId: string | null = null;
+        let fileName: string;
+
+        if (isTenantPath) {
+            // Path format: tenants/{businessId}/drivers/{driverId}/receipts/{filename}
+            const pathParts = filePath.split('/');
+            businessId = pathParts[1];
+            userId = pathParts[3];
+            fileName = pathParts.pop() || 'unknown.jpg';
+        } else {
+            // Legacy path format: receipts/{userId}/{filename}
+            const pathParts = filePath.split('/');
+            userId = pathParts[1];
+            fileName = pathParts.pop() || 'unknown.jpg';
+            
+            // Try to lookup businessId for legacy user
+            const userDoc = await db.collection('users').doc(userId).get();
+            businessId = userDoc.exists ? (userDoc.data()?.businessId || null) : null;
+        }
 
         if (!userId) {
             console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
             return;
         }
 
         // 4. Call the core processor function (defined in processor.ts)
-        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath, businessId || 'global');
+        receiptData.processedBy = 'system';
+        receiptData.timestamp = new Date().toISOString();
 
-        // 4.5. Look up entity for user (Phase 1.1: Entity Tracking)
+        // 4.5. Look up entity for user
         const entityName = await lookupEntityForUser(userId);
         receiptData.entity = entityName;
 
-        // 4.6. Currency conversion (Phase 2.4: Currency Conversion)
-        // Extract currency from Gemini response (if available)
+        // 4.6. Currency conversion
         const extractedCurrency = receiptData.currency;
-        const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
+        // const baseCurrency = process.env.BASE_CURRENCY || 'GBP';
         
         if (extractedCurrency) {
-            console.log(`Receipt currency detected: ${extractedCurrency}`);
             const conversionResult = await convertReceiptToBaseCurrency(
                 receiptData.totalAmount,
                 extractedCurrency
             );
 
             if (conversionResult) {
-                if (conversionResult.exchangeRate !== 1.0) {
-                    // Currency conversion was performed (different currency)
-                    receiptData.originalCurrency = conversionResult.originalCurrency;
-                    receiptData.originalAmount = conversionResult.originalAmount;
-                    receiptData.totalAmount = conversionResult.convertedAmount;
-                    receiptData.exchangeRate = conversionResult.exchangeRate;
-                    receiptData.conversionDate = conversionResult.conversionDate;
-                    console.log(`Converted ${conversionResult.originalAmount} ${conversionResult.originalCurrency} to ${conversionResult.convertedAmount} ${conversionResult.baseCurrency} (rate: ${conversionResult.exchangeRate})`);
-                } else {
-                    // Same currency (exchangeRate === 1.0) - still record currency info for consistency
-                    receiptData.originalCurrency = conversionResult.originalCurrency;
-                    receiptData.originalAmount = conversionResult.originalAmount;
-                    receiptData.exchangeRate = conversionResult.exchangeRate;
-                    receiptData.conversionDate = conversionResult.conversionDate;
-                    console.log(`Receipt already in base currency ${conversionResult.baseCurrency}, no conversion needed`);
-                }
-            } else {
-                // Conversion failed - log warning but continue with original amount
-                console.warn(`Currency conversion failed for ${extractedCurrency}. Using original amount.`);
+                receiptData.originalCurrency = conversionResult.originalCurrency;
+                receiptData.originalAmount = conversionResult.originalAmount;
+                receiptData.totalAmount = conversionResult.convertedAmount;
+                receiptData.exchangeRate = conversionResult.exchangeRate;
+                receiptData.conversionDate = conversionResult.conversionDate;
             }
-        } else {
-            // No currency extracted - assume base currency and populate defaults for consistency
-            console.log(`No currency extracted by Gemini, assuming base currency: ${baseCurrency}`);
-            receiptData.currency = baseCurrency;
-            receiptData.originalCurrency = baseCurrency;
-            receiptData.originalAmount = receiptData.totalAmount;
-            receiptData.exchangeRate = 1.0;
-            receiptData.conversionDate = new Date().toISOString();
         }
 
-        // Phase 2: Feature Flag - Check if review workflow is enabled
+        // 5. Save to Multi-Tenant Silo (Firestore)
+        const cleanedReceiptData = removeUndefinedFields(receiptData);
+        
+        if (businessId) {
+            const receiptId = fileName; // Use filename as unique ID (Jules optimization)
+            const businessReceiptRef = db.collection('businesses').doc(businessId)
+                                         .collection('receipts').doc(receiptId);
+            
+            await businessReceiptRef.set({
+                userId,
+                driverId: userId, // Ensure consistency with Jules's schema
+                fileName,
+                filePath,
+                status: 'complete', // Jules uses 'complete'
+                ...cleanedReceiptData,
+                timestamp: new Date().toISOString(),
+                createdAt: FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log(`Analysis complete for ${fileName}. Data written to Firestore silo: /businesses/${businessId}/receipts/${receiptId}`);
+        }
+
+// Phase 2: Feature Flag - Check if review workflow is enabled
         const enableReviewWorkflow = process.env.ENABLE_REVIEW_WORKFLOW === 'true';
         
         if (enableReviewWorkflow) {
-            // New workflow: Store as pending for user review
-            // This will be implemented in Phase 2.2: Pending Receipts System
+            // New workflow: Store as pending for user review in the silo
             console.log(`Review workflow enabled. Storing receipt as pending for user review.`);
             
-            // Store receipt in pending_receipts collection for user review
-            const receiptId = `${userId}_${Date.now()}_${fileName}`;
-            // Clean undefined values before writing to Firestore
-            const cleanedReceiptData = removeUndefinedFields(receiptData);
-            await db.collection('pending_receipts').doc(receiptId).set({
-                userId: userId,
-                fileName: fileName,
-                filePath: filePath,
-                receiptData: cleanedReceiptData,
-                status: 'pending_review',
-                createdAt: new Date().toISOString(),
-                timestamp: new Date().toISOString()
-            });
-
-            // Update batches collection with pending status
-            await db.collection('batches').doc(userId).set({
-                status: 'pending_review',
-                lastFileProcessed: fileName,
-                receiptData: cleanedReceiptData,
-                pendingReceiptId: receiptId,
-                timestamp: new Date().toISOString()
-            }, { merge: true });
-
-            // Update user statistics using transaction to prevent race conditions
-            // Note: totalAmount is not updated here; it will be updated when receipt is finalized
-            const userRef = db.collection('users').doc(userId);
-            await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+            if (businessId) {
+                const receiptId = fileName;
+                const receiptRef = db.collection('businesses').doc(businessId).collection('receipts').doc(receiptId);
                 
-                transaction.set(userRef, {
-                    pendingReceipts: (currentStats.pendingReceipts || 0) + 1,
-                    lastUpdated: new Date().toISOString(),
-                    lastReceiptProcessed: fileName,
-                    lastReceiptTimestamp: new Date().toISOString()
+                await receiptRef.set({
+                    userId,
+                    driverId: userId,
+                    fileName,
+                    filePath,
+                    receiptData: cleanedReceiptData,
+                    status: 'pending_review',
+                    createdAt: FieldValue.serverTimestamp(),
+                    timestamp: new Date().toISOString()
                 }, { merge: true });
-            });
-
-            console.log(`Receipt stored as pending for review. Receipt ID: ${receiptId}`);
-        } else {
-            // Existing workflow: Direct processing and Sheets write
-            // 5. Append data to Google Sheets (Steps 8-9)
-            const sheetId = process.env.GOOGLE_SHEET_ID;
-            let sheetsWriteSuccess = false;
-            let accountantSheetsWriteSuccess = false; // Track accountant sheet separately
-            let googleSheetLink = null;
-            
-            // Debug logging for environment variables
-            console.log("Environment check:", {
-                hasSheetId: !!sheetId,
-                sheetIdLength: sheetId?.length || 0,
-                hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
-                hasGeminiKey: !!process.env.GEMINI_API_KEY
-            });
-            
-            // Phase 4: Use multi-sheet routing for user-specific sheets
-            try {
-                const sheetResult = await appendReceiptToUserSheet(receiptData, userId);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetResult.sheetId}`);
-                sheetsWriteSuccess = true;
-                accountantSheetsWriteSuccess = true; // Both sheets handled by appendReceiptToUserSheet
-                googleSheetLink = sheetResult.sheetLink;
-            } catch (sheetsError) {
-                // Log Sheets error but don't fail the entire operation
-                // The receipt was processed successfully, Sheets write is secondary
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                console.error("Full error:", sheetsError);
+                console.log(`Receipt stored as pending in silo: businesses/${businessId}/receipts/${receiptId}`);
             }
-
-            // 6. Update Firestore Status (Step 10)
-            // Clean undefined values before writing to Firestore
-            const cleanedReceiptData = removeUndefinedFields(receiptData);
-            await db.collection('batches').doc(userId).set({
-                status: 'complete',
-                lastFileProcessed: fileName,
-                receiptData: cleanedReceiptData, // Store the extracted data for reference
-                sheetsWriteSuccess: sheetsWriteSuccess,
-                accountantSheetsWriteSuccess: accountantSheetsWriteSuccess, // Track accountant sheet status
-                googleSheetLink: googleSheetLink,
-                timestamp: new Date().toISOString()
-            }, { merge: true });
-
-            // 7. Update user statistics in /users collection (using transaction to prevent race conditions)
+        } else {
+            // Default Multi-Tenant Workflow: Finalize statistics only
+            console.log(`Finalizing silo statistics.`);
             const userRef = db.collection('users').doc(userId);
             await db.runTransaction(async (transaction) => {
                 const userDoc = await transaction.get(userRef);
@@ -249,27 +201,46 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 transaction.set(userRef, {
                     totalReceipts: (currentStats.totalReceipts || 0) + 1,
                     totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-                    lastUpdated: new Date().toISOString(),
-                    lastReceiptProcessed: fileName,
-                    lastReceiptTimestamp: new Date().toISOString()
+                    lastUpdated: new Date().toISOString()
                 }, { merge: true });
             });
-
-            console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
+            console.log(`Analysis complete for ${fileName}. Firestore silo updated.`);
         }
 
     } catch (error) {
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
         
         // Update Firestore status to error (Step 10)
+        // Try to determine businessId and userId for correct error logging
         const pathParts = filePath.split('/');
-        const userId = pathParts[1] || 'unknown';
-        await db.collection('batches').doc(userId).set({
-            status: 'error',
-            errorFile: filePath,
-            errorMessage: (error as Error).message,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
+        let businessIdForError: string | null = null;
+        let userIdForError: string = 'unknown';
+        
+        if (filePath.startsWith('tenants/')) {
+            businessIdForError = pathParts[1];
+            userIdForError = pathParts[3];
+        } else if (filePath.startsWith('receipts/')) {
+            userIdForError = pathParts[1];
+        }
+
+        if (businessIdForError) {
+            const receiptId = pathParts.pop() || 'unknown';
+            await db.collection('businesses').doc(businessIdForError)
+                    .collection('receipts').doc(receiptId).set({
+                status: 'error',
+                userId: userIdForError,
+                errorMessage: (error as Error).message,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        } else {
+            // Fallback for non-tenant paths or if businessId is unknown
+            await db.collection('batches').doc(userIdForError).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: (error as Error).message,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        }
     }
 });
 
@@ -340,6 +311,93 @@ export const setAdminClaim = onCall(
 );
 
 /**
+ * Cloud Function: Invite a new user to a business.
+ *
+ * This function allows a business admin to create a new user account
+ * associated with their business.
+ */
+export const inviteUserToBusiness = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        // 1. Verify the caller is an admin or bookkeeper.
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
+        }
+
+        const callerUser = await auth.getUser(callerUid);
+        const callerClaims = callerUser.customClaims;
+
+        if (!callerClaims?.admin && callerClaims?.role !== 'bookkeeper') {
+            throw new HttpsError('permission-denied', 'Only admins or bookkeepers can invite users.');
+        }
+
+        // 2. Get the admin's businessId from their custom claims.
+        const businessId = callerClaims.businessId;
+        if (!businessId) {
+            throw new HttpsError('failed-precondition', 'Admin user is not associated with a business.');
+        }
+
+        // 3. Get new user data from the request.
+        const { email, password, displayName } = request.data;
+        if (!email || !password || !displayName) {
+            throw new HttpsError('invalid-argument', 'Email, password, and display name are required.');
+        }
+
+        try {
+            // 4. Create the new user within the specific Auth Tenant (Identity Platform)
+            // This ensures physical isolation in the auth layer.
+            const tenantAuth = auth.tenantManager().authForTenant(businessId);
+            
+            const userRecord = await tenantAuth.createUser({
+                email,
+                password,
+                displayName,
+                emailVerified: true
+            });
+
+            // 5. Set custom claims for the new user (Identity Layer)
+            await tenantAuth.setCustomUserClaims(userRecord.uid, {
+                businessId: businessId,
+                role: 'driver' // Default role for new users
+            });
+
+            // 5.5. Create a record in the top-level user_lookup collection
+            // This allows unauthenticated password reset flows to find the tenantId
+            await db.collection('user_lookup').doc(email.toLowerCase()).set({
+                businessId: businessId,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            // 6. Create a user profile document in Firestore
+            await db.collection('users').doc(userRecord.uid).set({
+                email: userRecord.email,
+                displayName: userRecord.displayName,
+                businessId: businessId,
+                role: 'driver',
+                createdAt: new Date().toISOString()
+            });
+
+            console.log(`Admin ${callerUid} invited new user ${userRecord.uid} to business ${businessId}`);
+
+            return {
+                success: true,
+                message: `User ${displayName} created successfully with UID: ${userRecord.uid}`,
+                uid: userRecord.uid
+            };
+        } catch (error: any) {
+            console.error(`Error inviting user:`, error);
+            if (error.code === 'auth/email-already-exists') {
+                throw new HttpsError('already-exists', 'A user with this email already exists.');
+            }
+            throw new HttpsError('internal', error.message || 'An unknown error occurred.');
+        }
+    }
+);
+
+/**
  * Cloud Function: Remove Admin Custom Claim
  * 
  * Removes admin privileges from a user.
@@ -397,20 +455,13 @@ export { getCategories, createCategory, updateCategory, deleteCategory } from ".
 // Phase 2.6: Admin review functions
 export { adminApproveReceipt, adminRejectReceipt } from "./admin-review";
 
-// Phase 4: Multi-Sheet Management - Admin functions
-export { 
-  createSheetConfiguration,
-  updateSheetConfiguration,
-  deleteSheetConfiguration,
-  getSheetConfigurations,
-  checkSheetHealth,
-  assignSheetConfigToUser,
-  assignSheetConfigToEntity,
-  getSheetConfigAssignments,
-  bulkAssignUsersToSheet,
-  removeUserSheetAssignment,
-  removeEntitySheetAssignment
-} from "./admin-sheet-management";
+// Phase 5: Identity & User Management
+export { createUser, sendPasswordReset } from "./user";
 
-// Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
-// and GOOGLE_SHEET_ID before deploying.
+// Automated Business Provisioning - Multi-Tenant SaaS Silo
+export {
+  provisionNewBusiness,
+  getBusinessDetails,
+  updateBusinessSettings,
+  addAuthorizedUser
+} from "./business-management";

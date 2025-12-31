@@ -3,7 +3,6 @@
 import { onCall } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { ReceiptData } from "./schema";
-import { appendReceiptToUserSheet } from "./sheets"; // Phase 4: Multi-sheet routing
 import { validateReceiptData } from "./validation";
 import { logInfo, logWarning, logErrorWithDetails } from "./error-logging";
 
@@ -179,28 +178,11 @@ export const finalizeReceipt = onCall(
             finalReceiptData.validationStatus = validation.warnings.length > 0 ? 'warning' : 'passed';
             finalReceiptData.hasErrors = false;
 
-            // 4. Write to Google Sheets (Phase 4: Multi-sheet routing)
-            let sheetsWriteSuccess = false;
-            let googleSheetLink = null;
-
-            // Phase 4: Use multi-sheet routing for user-specific sheets
-            try {
-                const sheetResult = await appendReceiptToUserSheet(finalReceiptData, callerUid);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetResult.sheetId}`);
-                sheetsWriteSuccess = true;
-                googleSheetLink = sheetResult.sheetLink;
-            } catch (sheetsError) {
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                // Don't fail the entire operation if Sheets write fails
-            }
-
             // 5. Update batches collection with final status
             await db.collection('batches').doc(callerUid).set({
                 status: 'complete',
                 lastFileProcessed: pendingReceipt.fileName,
                 receiptData: finalReceiptData,
-                sheetsWriteSuccess: sheetsWriteSuccess,
-                googleSheetLink: googleSheetLink,
                 finalizedAt: new Date().toISOString(),
                 timestamp: new Date().toISOString()
             }, { merge: true });
@@ -236,10 +218,8 @@ export const finalizeReceipt = onCall(
 
             return {
                 success: true,
-                message: "Receipt finalized and written to Google Sheets",
-                receiptData: finalReceiptData,
-                sheetsWriteSuccess: sheetsWriteSuccess,
-                googleSheetLink: googleSheetLink
+                message: "Receipt finalized",
+                receiptData: finalReceiptData
             };
         } catch (error) {
             console.error(`Error finalizing receipt ${receiptId}:`, error);
