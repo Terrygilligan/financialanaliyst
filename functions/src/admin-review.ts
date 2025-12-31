@@ -14,7 +14,7 @@ const auth = getAuth();
  * Admin approve receipt (override validation).
  * 
  * Allows admins to manually approve receipts that failed validation.
- * Writes to Google Sheets and updates user statistics.
+ * Updates Firestore status and business statistics.
  * 
  * @param request.data.receiptId - The ID of the pending receipt
  * @param request.data.receiptData - Corrected receipt data

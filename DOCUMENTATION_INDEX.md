@@ -90,7 +90,6 @@ Complete guide to all project documentation, organized by category and purpose.
 ### Initial Setup
 - **[SETUP.md](SETUP.md)** - Complete backend setup
 - **[ENV_SETUP.md](ENV_SETUP.md)** - Environment variables configuration
-- **[NEXT_STEPS.md](NEXT_STEPS.md)** - Google Sheet setup guide
 - **[BACKEND_SETUP_CHECKLIST.md](BACKEND_SETUP_CHECKLIST.md)** - Quick setup checklist
 
 ### Service Configuration
@@ -115,17 +114,7 @@ Complete guide to all project documentation, organized by category and purpose.
 
 ---
 
-## Implementation Plans
-
-### Active Plans
-
-- **[PHASE4_MULTI_SHEET_MANAGEMENT.md](PHASE4_MULTI_SHEET_MANAGEMENT.md)** ⭐ **CURRENT PHASE - Multi-Sheet Management**
-  - Admin control panel for managing multiple Google Sheets
-  - User/entity-specific sheet routing
-  - Sheet health monitoring and statistics
-  - Bulk user management operations
-  - Status: 📝 Ready to Start (2-3 weeks)
-  - Quick Start: See [PHASE4_QUICK_START.md](PHASE4_QUICK_START.md)
+### Implementation Plans
 
 - **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** - SME AUTOMATION UPGRADE (Phase 1-3)
   - Phase 0: Setup & Security (Week 1) ✅
@@ -141,12 +130,6 @@ Complete guide to all project documentation, organized by category and purpose.
   - Enhanced User Dashboard (Future)
   - Receipt editing features (Future)
   - Consolidated from IMPLEMENTATION_PLAN.md and PROFILE_AND_ADMIN_PLAN.md
-
-- **[PHASE3_DATA_PIPELINE_PLAN.md](PHASE3_DATA_PIPELINE_PLAN.md)** - Google Sheets integration
-  - Data pipeline verification (✅ Complete)
-  - Environment variable configuration (✅ Complete)
-  - Testing procedures (✅ Complete)
-  - Status: ✅ Complete
 
 ### Branch Workflow & Development Plan
 - **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** ⭐ **MASTER PLAN** - Complete SME Automation Upgrade plan
@@ -165,7 +148,6 @@ Complete guide to all project documentation, organized by category and purpose.
 ## Troubleshooting
 
 ### Common Issues
-- **[TROUBLESHOOT_SHEETS_NOT_UPDATING.md](TROUBLESHOOT_SHEETS_NOT_UPDATING.md)** - Sheets update issues
 - **[EMAIL_VERIFICATION_TROUBLESHOOTING.md](EMAIL_VERIFICATION_TROUBLESHOOTING.md)** - Email verification problems
 - **[VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md](VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md)** - Vertex AI 404 errors
 - **[GEMINI_API_KEY_FIX.md](GEMINI_API_KEY_FIX.md)** - API key issues
@@ -178,10 +160,7 @@ Complete guide to all project documentation, organized by category and purpose.
 - **[MOBILE_FIXES_SUMMARY.md](MOBILE_FIXES_SUMMARY.md)** - Mobile fixes summary
 
 ### Testing & Verification
-- **[PHASE3_COMPLETE_TESTING.md](PHASE3_COMPLETE_TESTING.md)** - Phase 3 testing results
 - **[PHASE3_WEB_SUCCESS.md](PHASE3_WEB_SUCCESS.md)** - Phase 3 web success notes
-- **[STEP1_ENV_VERIFICATION_COMPLETE.md](STEP1_ENV_VERIFICATION_COMPLETE.md)** - Environment verification
-- **[STEP2_SHEET_SHARING_COMPLETE.md](STEP2_SHEET_SHARING_COMPLETE.md)** - Sheet sharing verification
 
 ---
 
@@ -213,7 +192,6 @@ Complete guide to all project documentation, organized by category and purpose.
 ### Completion Summaries
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Profile & Admin Dashboard ✅
 - **[IMPLEMENTATION_UPDATES.md](IMPLEMENTATION_UPDATES.md)** - Custom Claims & Performance ✅
-- **[PHASE3_COMPLETE_TESTING.md](PHASE3_COMPLETE_TESTING.md)** - Phase 3 testing ✅
 - **[PHASE3_WEB_SUCCESS.md](PHASE3_WEB_SUCCESS.md)** - Phase 3 web success ✅
 
 ### Presentations

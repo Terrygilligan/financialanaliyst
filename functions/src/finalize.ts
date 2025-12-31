@@ -14,10 +14,9 @@ const db = getFirestore();
  * This function:
  * 1. Validates the user owns the receipt
  * 2. Updates receipt data with user corrections (if any)
- * 3. Writes to Google Sheets
- * 4. Updates Firestore status
- * 5. Updates user statistics
- * 6. Removes from pending_receipts collection
+ * 3. Updates Firestore status
+ * 4. Updates business statistics
+ * 5. Updates business silo activity log
  * 
  * @param request.data.receiptId - The ID of the pending receipt
  * @param request.data.receiptData - Updated receipt data (optional corrections)

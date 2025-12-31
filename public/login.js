@@ -146,8 +146,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // 1. Multi-tenant Lookup (The "Updates" advantage)
             // We check if this email belongs to a specific tenant/business
-            const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-            const { db } = window.firebase;
+            const { getDoc, doc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            // Defensive: Get db from window.firebase or initialize it if missing
+            let db = window.firebase.db;
+            if (!db && window.firebase.app) {
+                console.log('📡 [Login] Firestore instance missing from window.firebase, initializing fallback...');
+                db = getFirestore(window.firebase.app);
+                window.firebase.db = db;
+            }
+
+            if (!db) {
+                throw new Error("Firestore initialization failed. Please check your connection and refresh.");
+            }
             
             const userLookupRef = doc(db, 'user_lookup', email.toLowerCase());
             const userLookupSnap = await getDoc(userLookupRef);

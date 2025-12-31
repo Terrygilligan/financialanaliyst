@@ -1,7 +1,7 @@
 {
   "name": "financialanalyst",
   "version": "1.0.0",
-  "description": "A full-stack serverless application that automatically processes receipt images using AI and stores structured financial data in Google Sheets.",
+  "description": "A full-stack serverless application that automatically processes receipt images using AI and stores structured financial data in Firestore silos.",
   "main": "check-drive-api-status.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
