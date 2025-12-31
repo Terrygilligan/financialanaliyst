@@ -48,8 +48,8 @@ export const analyzeReceiptUpload = onObjectFinalized(
     
     console.log(`File uploaded to bucket: ${bucketName}, path: ${filePath}`);
     
-    // Ignore files not in the expected path or files created during processing (e.g., resized versions)
-    if (!filePath.startsWith('receipts/')) {
+    // Ignore files not in the new multi-tenant path
+    if (!filePath.startsWith('tenants/')) {
         console.log(`Ignoring file outside the target path: ${filePath}`);
         return;
     }
@@ -61,91 +61,64 @@ export const analyzeReceiptUpload = onObjectFinalized(
         const bucket = storage.bucket(bucketName);
         const [fileBuffer] = await bucket.file(filePath).download();
         
-        // 3. Extract necessary metadata (userId, filename)
-        // Assume path format is: receipts/{userId}/{filename}
+        // 3. Extract metadata from the new multi-tenant path
+        // Expected format: tenants/{businessId}/drivers/{driverId}/receipts/{fileName}
         const pathParts = filePath.split('/');
-        const userId = pathParts[1];
+        if (pathParts.length < 5 || pathParts[0] !== 'tenants' || pathParts[2] !== 'drivers') {
+            console.error(`Invalid file path format for multi-tenancy: ${filePath}`);
+            return;
+        }
+        const businessId = pathParts[1];
+        const driverId = pathParts[3];
         const fileName = pathParts.pop();
 
-        if (!userId) {
-            console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
+        if (!businessId || !driverId || !fileName) {
+            console.error(`Could not determine businessId, driverId, or fileName from path: ${filePath}`);
             return;
         }
 
-        // 4. Call the core processor function (defined in processor.ts)
+        // 4. Call the core processor function (this logic is preserved)
         const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
 
-        // 5. Append data to Google Sheets (Steps 8-9)
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-        let sheetsWriteSuccess = false;
-        let googleSheetLink = null;
-        
-        // Debug logging for environment variables
-        console.log("Environment check:", {
-            hasSheetId: !!sheetId,
-            sheetIdLength: sheetId?.length || 0,
-            hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
-            hasGeminiKey: !!process.env.GEMINI_API_KEY
-        });
-        
-        if (sheetId) {
-            try {
-                await appendReceiptToSheet(receiptData, sheetId);
-                console.log(`Receipt data successfully written to Google Sheet: ${sheetId}`);
-                sheetsWriteSuccess = true;
-                googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
-            } catch (sheetsError) {
-                // Log Sheets error but don't fail the entire operation
-                // The receipt was processed successfully, Sheets write is secondary
-                console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                console.error("Full error:", sheetsError);
-            }
-        } else {
-            console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
-            console.error("This means environment variables are not configured for the deployed function.");
-            console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
-            console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
-            console.error("2. OR Firebase Functions Secrets");
-        }
+        // 5. [DISABLED] Google Sheets integration is disabled for multi-tenancy
+        console.log("Google Sheets integration is disabled.");
 
-        // 6. Update Firestore Status (Step 10)
-        await db.collection('batches').doc(userId).set({
+        // 6. Write extracted data to the correct Firestore silo
+        // New path: /businesses/{businessId}/receipts/{receiptId}
+        const receiptId = fileName; // Use filename as a unique ID for the receipt
+        const receiptRef = db.collection('businesses').doc(businessId).collection('receipts').doc(receiptId);
+
+        await receiptRef.set({
             status: 'complete',
-            lastFileProcessed: fileName,
-            receiptData: receiptData, // Store the extracted data for reference
-            sheetsWriteSuccess: sheetsWriteSuccess,
-            googleSheetLink: googleSheetLink,
+            driverId: driverId,
+            fileName: fileName,
+            filePath: filePath,
+            ...receiptData, // Spread the extracted receipt data
             timestamp: new Date().toISOString()
         }, { merge: true });
 
-        // 7. Update user statistics in /users collection
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await userRef.get();
-        const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
-        
-        await userRef.set({
-            totalReceipts: (currentStats.totalReceipts || 0) + 1,
-            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-            lastUpdated: new Date().toISOString(),
-            lastReceiptProcessed: fileName,
-            lastReceiptTimestamp: new Date().toISOString()
-        }, { merge: true });
-
-        console.log(`Analysis complete for ${fileName}. Data:`, receiptData);
+        console.log(`Analysis complete for ${fileName}. Data written to Firestore silo: /businesses/${businessId}/receipts/${receiptId}`);
 
     } catch (error) {
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
         
-        // Update Firestore status to error (Step 10)
+        // Update Firestore status to error in the correct silo
         const pathParts = filePath.split('/');
-        const userId = pathParts[1] || 'unknown';
-        await db.collection('batches').doc(userId).set({
-            status: 'error',
-            errorFile: filePath,
-            errorMessage: (error as Error).message,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
+        if (pathParts.length > 3 && pathParts[0] === 'tenants') {
+            const businessId = pathParts[1];
+            const driverId = pathParts[3];
+            const receiptId = pathParts[pathParts.length - 1] || 'unknown_receipt';
+
+            await db.collection('businesses').doc(businessId).collection('receipts').doc(receiptId).set({
+                status: 'error',
+                driverId: driverId,
+                errorFile: filePath,
+                errorMessage: (error as Error).message,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        } else {
+            console.error(`Could not log error to Firestore due to invalid path: ${filePath}`);
+        }
     }
 });
 

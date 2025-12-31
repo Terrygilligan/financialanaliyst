@@ -268,6 +268,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // **Multi-Tenancy**: Get businessId from custom claims, force refresh if needed
+        let idTokenResult = await user.getIdTokenResult();
+        let businessId = idTokenResult.claims.businessId;
+
+        // If businessId is missing, force a token refresh to get latest claims
+        if (!businessId) {
+            console.log("businessId claim missing, forcing token refresh...");
+            idTokenResult = await user.getIdTokenResult(true); // Force refresh
+            businessId = idTokenResult.claims.businessId;
+        }
+
+        if (!businessId) {
+            console.error('User does not have a businessId claim. Cannot upload.');
+            alert('Your account is not associated with a business. Please contact support.');
+            return;
+        }
+
         // Validate file type
         if (!file.type || !file.type.startsWith('image/')) {
             console.error('Invalid file type:', file.type);
@@ -284,10 +301,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log('File validation passed, starting upload...');
 
-        // Generate unique filename
+        // **Multi-Tenancy**: Generate unique filename and construct the new siloed path
         const timestamp = Date.now();
         const fileName = `${timestamp}-${file.name}`;
-        const filePath = `receipts/${user.uid}/${fileName}`;
+        const driverId = user.uid;
+        const filePath = `tenants/${businessId}/drivers/${driverId}/receipts/${fileName}`;
         const storageRef = ref(storage, filePath);
 
         // Show progress
@@ -296,52 +314,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         uploadStatus.textContent = 'Uploading...';
 
         try {
-            // Ensure we send a contentType so some mobile browsers (camera captures) don't stall
             const metadata = { contentType: file.type || 'image/jpeg' };
-
-            // Upload file
             const uploadTask = uploadBytesResumable(storageRef, file, metadata);
 
-            // Detect stalled uploads (common on aggressive blockers)
-            let lastProgress = 0;
-            let stallTimer = setTimeout(() => {
-                if (lastProgress === 0) {
-                    uploadStatus.textContent = 'Still waiting to start... If this stays at 0%, disable tracking protection or try Chrome.';
-                    uploadStatus.style.color = 'var(--warning-color)' || '#d97706';
-                }
-            }, 12000);
-
-            // Monitor upload progress
             uploadTask.on('state_changed',
                 (snapshot) => {
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    lastProgress = progress;
                     progressFill.style.width = progress + '%';
                     uploadStatus.textContent = `Uploading... ${Math.round(progress)}%`;
                 },
                 (error) => {
-                    clearTimeout(stallTimer);
                     console.error('Upload error:', error);
                     uploadStatus.textContent = 'Upload failed: ' + error.message;
                     uploadStatus.style.color = 'var(--error-color)';
                 },
                 async () => {
-                    clearTimeout(stallTimer);
                     // Upload complete
                     uploadStatus.textContent = 'Upload complete! Processing...';
                     uploadStatus.style.color = 'var(--secondary-color)';
                     
-                    // Create batch document in Firestore
-                    const batchRef = doc(db, 'batches', user.uid);
-                    await setDoc(batchRef, {
+                    // **Multi-Tenancy**: Create receipt document in the correct Firestore silo
+                    const receiptId = fileName; // Use filename as receipt ID
+                    const receiptRef = doc(db, `businesses/${businessId}/receipts/${receiptId}`);
+                    await setDoc(receiptRef, {
                         status: 'processing',
+                        driverId: driverId,
                         fileName: fileName,
                         filePath: filePath,
                         timestamp: new Date().toISOString()
                     }, { merge: true });
 
-                    // Monitor status
-                    monitorBatchStatus(user.uid, fileName);
+                    // **Multi-Tenancy**: Monitor status from the new siloed path
+                    monitorBatchStatus(businessId, receiptId);
                 }
             );
         } catch (error) {
@@ -350,20 +354,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function monitorBatchStatus(userId, fileName) {
-        const batchRef = doc(db, 'batches', userId);
+    function monitorBatchStatus(businessId, receiptId) {
+        const receiptRef = doc(db, `businesses/${businessId}/receipts/${receiptId}`);
         
-        onSnapshot(batchRef, (snapshot) => {
+        onSnapshot(receiptRef, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
-                updateStatusDisplay(data, fileName);
-                updateHistory(userId);
+                updateStatusDisplay(data);
+                updateHistory(businessId); // Refresh history when status changes
             }
         });
     }
 
-    function updateStatusDisplay(data, fileName) {
+    function updateStatusDisplay(data) {
         statusContainer.innerHTML = '';
+        const fileName = data.fileName || 'receipt';
 
         if (data.status === 'processing') {
             statusContainer.innerHTML = `
@@ -373,29 +378,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
         } else if (data.status === 'complete') {
-            const receiptData = data.receiptData || {};
             statusContainer.innerHTML = `
                 <div class="status-card">
                     <h3>✅ Processing Complete: ${fileName}</h3>
                     <div class="data-row">
                         <span class="data-label">Vendor:</span>
-                        <span class="data-value">${receiptData.vendorName || 'N/A'}</span>
+                        <span class="data-value">${data.vendorName || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Date:</span>
-                        <span class="data-value">${receiptData.transactionDate || 'N/A'}</span>
+                        <span class="data-value">${data.transactionDate || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Amount:</span>
-                        <span class="data-value">$${receiptData.totalAmount?.toFixed(2) || 'N/A'}</span>
+                        <span class="data-value">$${data.totalAmount?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Category:</span>
-                        <span class="data-value">${receiptData.category || 'N/A'}</span>
+                        <span class="data-value">${data.category || 'N/A'}</span>
                     </div>
-                    <p style="margin-top: 15px; color: var(--text-secondary);">
-                        Data has been written to your Google Sheet.
-                    </p>
                 </div>
             `;
         } else if (data.status === 'error') {
@@ -408,18 +409,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function updateHistory(userId) {
-        // This would fetch and display upload history
-        // For now, we'll just show a placeholder
-        const batchRef = doc(db, 'batches', userId);
-        const snapshot = await getDoc(batchRef);
+    async function updateHistory(businessId) {
+        const receiptsRef = collection(db, `businesses/${businessId}/receipts`);
+        const querySnapshot = await getDocs(receiptsRef);
         
-        if (snapshot.exists()) {
-            const data = snapshot.data();
-            historyContainer.innerHTML = `
+        historyContainer.innerHTML = ''; // Clear existing history
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            historyContainer.innerHTML += `
                 <div class="history-item">
                     <div>
-                        <div class="file-name">${data.lastFileProcessed || 'Unknown'}</div>
+                        <div class="file-name">${data.fileName || 'Unknown'}</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">
                             ${new Date(data.timestamp).toLocaleString()}
                         </div>
@@ -427,13 +427,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="file-status ${data.status}">${data.status}</span>
                 </div>
             `;
-        }
+        });
     }
 
     // Initialize history on load
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            updateHistory(user.uid);
+            const idTokenResult = await user.getIdTokenResult();
+            const businessId = idTokenResult.claims.businessId;
+            if (businessId) {
+                updateHistory(businessId);
+            }
         }
     });
 });
