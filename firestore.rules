@@ -46,11 +46,6 @@ service cloud.firestore {
       }
     }
     
-    // Legacy Business collection match (keep for now but restrict)
-    match /businesses_legacy/{businessId} {
-      // ... existing rules if needed ...
-    }
-    
     // Business assignments - Links users to businesses
     match /business_assignments/{userId} {
       // Users can read their own assignment
