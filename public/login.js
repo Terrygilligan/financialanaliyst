@@ -10,11 +10,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Import Firebase modules
     const { 
         signInWithEmailAndPassword, 
-        createUserWithEmailAndPassword, 
         signInWithPopup,
         sendEmailVerification,
         onAuthStateChanged 
     } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
+
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
 
     const { auth, googleProvider } = window.firebase;
 
@@ -161,65 +162,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
+        const businessName = document.getElementById('business-name').value;
+
+        const functions = getFunctions();
+        const createUser = httpsCallable(functions, 'createUser');
 
         try {
-            // Create user account
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await createUser({ email, password, businessName });
+
+            // After calling the function, we need to sign in the user to send the verification email
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            
-            console.log('User created:', user.email);
-            
-            // Send verification email (user must be signed in to send)
-            try {
-                await sendEmailVerification(user, {
-                    url: window.location.origin + '/login.html',
-                    handleCodeInApp: false
-                });
-                console.log('Verification email sent successfully');
-                
-                // Show verification message
-                verificationMessage.style.display = 'block';
-                errorMessage.style.display = 'none';
-                verificationMessage.innerHTML = `
-                    <p>📧 Verification email sent to ${email}! Please check your inbox (and spam folder) and click the verification link to activate your account.</p>
-                    <p style="margin-top: 8px; font-size: 12px;">After verifying, you can log in.</p>
-                    <button type="button" id="resend-verification-signup" class="btn-link" style="margin-top: 8px; background: none; border: none; color: var(--primary-color); cursor: pointer; text-decoration: underline;">Resend verification email</button>
-                `;
-                
-                // Add resend button handler
-                document.getElementById('resend-verification-signup')?.addEventListener('click', async () => {
-                    try {
-                        // User needs to be signed in to resend
-                        await signInWithEmailAndPassword(auth, email, password);
-                        const currentUser = auth.currentUser;
-                        if (currentUser) {
-                            await sendEmailVerification(currentUser);
-                            await auth.signOut();
-                            showError('Verification email resent! Please check your inbox.');
-                        }
-                    } catch (error) {
-                        showError('Error resending verification email: ' + error.message);
-                    }
-                });
-                
-                // Sign out the user after a short delay to ensure email is sent
-                setTimeout(async () => {
-                    await auth.signOut();
-                    console.log('User signed out after verification email sent');
-                }, 1000);
-                
-            } catch (verifyError) {
-                console.error('Error sending verification email:', verifyError);
-                showError('Account created but failed to send verification email: ' + verifyError.message);
-                // Still sign out
-                await auth.signOut();
-            }
-            
+
+            await sendEmailVerification(user, {
+                url: window.location.origin + '/login.html',
+                handleCodeInApp: false
+            });
+
+            verificationMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            verificationMessage.innerHTML = `
+                <p>📧 Verification email sent to ${email}! Please check your inbox (and spam folder) and click the verification link to activate your account.</p>
+                <p style="margin-top: 8px; font-size: 12px;">After verifying, you can log in.</p>
+            `;
+
+            await auth.signOut();
+
         } catch (error) {
             console.error('Signup error:', error);
             showError('Signup error: ' + error.message);
         }
     });
+
+    // Add a "Forgot Password" link
+    const forgotPasswordLink = document.createElement('a');
+    forgotPasswordLink.href = 'forgot-password.html';
+    forgotPasswordLink.textContent = 'Forgot Password?';
+    forgotPasswordLink.classList.add('forgot-password-link');
+    loginForm.appendChild(forgotPasswordLink);
 
     // Google Sign-In (Login)
     googleLoginBtn?.addEventListener('click', async () => {

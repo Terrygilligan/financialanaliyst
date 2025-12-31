@@ -19,9 +19,12 @@ const db = getFirestore();
 const auth = getAuth();
 
 // --- Import the main processor logic ---
-import { processReceiptBatch } from "./processor"; 
+import { processReceiptBatch } from "./processor";
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets"; 
+import { appendReceiptToSheet } from "./sheets";
+import { createUser, sendPasswordReset } from "./user";
+
+export { createUser, sendPasswordReset };
 
 /**
  * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
