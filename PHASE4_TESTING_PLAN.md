@@ -23,7 +23,7 @@
 - [ ] Deploy frontend to Firebase Hosting
 - [ ] Verify admin access (Custom Claims or Firestore admins collection)
 - [ ] Have 2-3 test Google Sheets ready
-- [ ] Share all test sheets with service account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- [ ] Share all test sheets with service account: `<SERVICE_ACCOUNT_EMAIL>`
 
 ### 2. Test Data Setup
 - [ ] Create 2-3 test users in Firebase Auth

@@ -27,7 +27,7 @@ if (process.env.FIRESTORE_EMULATOR_HOST) {
 // Initialize Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'financialanaliyst'
+    projectId: '<YOUR_PROJECT_ID>'
   });
 }
 
@@ -139,7 +139,7 @@ async function setupTestBusinesses() {
     console.log('✅ All test businesses set up!\n');
     console.log('📝 Next steps:');
     console.log('   1. Create Google Sheets for each business');
-    console.log('   2. Share sheets with: financial-output@financialanaliyst.iam.gserviceaccount.com');
+    console.log('   2. Share sheets with: <SERVICE_ACCOUNT_EMAIL>');
     console.log('   3. Update sheet IDs in Firestore (sheet_configs collection)');
     console.log('   4. Create auth users in Emulator UI (http://127.0.0.1:4000)');
     console.log('   5. Test receipt routing!\n');

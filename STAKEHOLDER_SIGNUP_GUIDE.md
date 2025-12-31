@@ -10,7 +10,7 @@ This guide explains how new stakeholders, testers, and users can access and star
 
 ### Step 1: Access the Application
 
-**Production URL:** `https://financialanaliyst.web.app` (or your deployed Firebase Hosting URL)
+**Production URL:** `https://<YOUR_PROJECT_ID>.web.app` (or your deployed Firebase Hosting URL)
 
 **Local Testing:** `http://localhost:5000` (if testing locally)
 

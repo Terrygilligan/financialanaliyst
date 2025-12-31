@@ -257,7 +257,7 @@ service cloud.firestore {
 
 ## ✅ How to Deploy
 
-1. Go to: https://console.firebase.google.com/project/financialanaliyst/firestore/rules
+1. Go to: https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/firestore/rules
 2. Copy the rules above (everything between the ```javascript tags)
 3. Paste into Firebase Console
 4. Click **Publish**

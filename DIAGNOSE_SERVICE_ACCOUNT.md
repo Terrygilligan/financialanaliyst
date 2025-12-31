@@ -32,7 +32,7 @@ node -e "console.log(JSON.parse(require('fs').readFileSync('.env', 'utf8').match
 Or manually check `functions/.env`:
 - Look for `GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY`
 - Extract the JSON and find `client_email`
-- Should be: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- Should be: `<SERVICE_ACCOUNT_EMAIL>`
 
 ### Step 2: Add Logging to Verify Identity
 
@@ -40,13 +40,13 @@ We should add logging to see which service account is actually being used when c
 
 ### Step 3: Check Cloud Logs
 
-1. Go to: https://console.cloud.google.com/logs/query?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/logs/query?project=<YOUR_PROJECT_ID>
 2. Filter: `resource.type="cloud_function"` AND `textPayload=~"createNewGoogleSheet"`
 3. Look for the error and check `principalEmail`
 
 ### Step 4: Verify APIs Are Enabled
 
-1. Go to: https://console.cloud.google.com/apis/library?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/apis/library?project=<YOUR_PROJECT_ID>
 2. Verify both are enabled:
    - Google Sheets API
    - Google Drive API
@@ -55,8 +55,8 @@ We should add logging to see which service account is actually being used when c
 
 If logs show it's using the default Compute Engine SA:
 
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find: `622000096460-compute@developer.gserviceaccount.com` (or similar)
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find: `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com` (or similar)
 3. Grant **Editor** role
 
 ## Alternative: Use Secret Manager (More Secure)

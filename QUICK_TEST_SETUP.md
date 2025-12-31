@@ -22,7 +22,7 @@ This creates:
 ### Step 3: Create Google Sheets
 
 For each business, create a Google Sheet and share with:
-`financial-output@financialanaliyst.iam.gserviceaccount.com`
+`<SERVICE_ACCOUNT_EMAIL>`
 
 ### Step 4: Update Sheet IDs
 

@@ -13,16 +13,16 @@ The Cloud Function needs permission to use Vertex AI.
 ### Find Your Function's Service Account
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select project: **financialanaliyst**
+2. Select project: **<YOUR_PROJECT_ID>**
 3. Go to **Functions** → Click on `analyzeReceiptUpload`
 4. Look for **Service account** - it will be something like:
-   - `622000096460-compute@developer.gserviceaccount.com`
-   - Or `financialanaliyst@appspot.gserviceaccount.com`
+   - `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com`
+   - Or `<YOUR_PROJECT_ID>@appspot.gserviceaccount.com`
 
 ### Grant Vertex AI User Role
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select project: **financialanaliyst**
+2. Select project: **<YOUR_PROJECT_ID>**
 3. Go to **IAM & Admin** → **IAM**
 4. Find the service account (from above)
 5. Click the **pencil icon** (Edit) next to it
@@ -31,7 +31,7 @@ The Cloud Function needs permission to use Vertex AI.
 8. Click **Save**
 
 **OR** use this direct link:
-👉 [Grant Vertex AI User Role](https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst)
+👉 [Grant Vertex AI User Role](https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>)
 
 ## Step 2: Enable Vertex AI API
 
@@ -41,7 +41,7 @@ The Cloud Function needs permission to use Vertex AI.
 4. Click **Enable**
 
 **OR** use this direct link:
-👉 [Enable Vertex AI API](https://console.developers.google.com/apis/api/aiplatform.googleapis.com/overview?project=622000096460)
+👉 [Enable Vertex AI API](https://console.developers.google.com/apis/api/aiplatform.googleapis.com/overview?project=<YOUR_PROJECT_NUMBER>)
 
 ## Step 3: Install Dependencies & Deploy
 
@@ -60,7 +60,7 @@ The code has been updated. Now:
 
 3. **Deploy**:
    ```bash
-   firebase deploy --only functions --project financialanaliyst
+   firebase deploy --only functions --project <YOUR_PROJECT_ID>
    ```
 
 ## What Changed

@@ -16,7 +16,7 @@
 ### Step 1: Get Your Firebase Web App Configuration
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Click the gear icon ⚙️ → **Project Settings**
 4. Scroll down to **Your apps** section
 5. If you don't have a web app yet:
@@ -31,9 +31,9 @@ Edit `public/firebase-config.js` and replace the placeholder values:
 ```javascript
 export const firebaseConfig = {
     apiKey: "AIza...",  // Your actual API key
-    authDomain: "financialanaliyst.firebaseapp.com",
-    projectId: "financialanaliyst",
-    storageBucket: "financialanaliyst.firebasestorage.app",
+    authDomain: "<YOUR_PROJECT_ID>.firebaseapp.com",
+    projectId: "<YOUR_PROJECT_ID>",
+    storageBucket: "<YOUR_PROJECT_ID>.firebasestorage.app",
     messagingSenderId: "123456789",  // Your actual sender ID
     appId: "1:123456789:web:abc123"  // Your actual app ID
 };
@@ -89,13 +89,13 @@ service cloud.firestore {
 Once configuration is complete:
 
 ```bash
-firebase deploy --only hosting --project financialanaliyst
+firebase deploy --only hosting --project <YOUR_PROJECT_ID>
 ```
 
 Or deploy everything (functions + hosting):
 
 ```bash
-firebase deploy --project financialanaliyst
+firebase deploy --project <YOUR_PROJECT_ID>
 ```
 
 ## 📝 Testing Locally
@@ -103,7 +103,7 @@ firebase deploy --project financialanaliyst
 You can test the hosting locally before deploying:
 
 ```bash
-firebase serve --only hosting --project financialanaliyst
+firebase serve --only hosting --project <YOUR_PROJECT_ID>
 ```
 
 Then open: `http://localhost:5000`
@@ -130,8 +130,8 @@ The frontend includes:
 ## 🔗 URLs After Deployment
 
 After deploying, your app will be available at:
-- **Production**: `https://financialanaliyst.web.app`
-- **Alternative**: `https://financialanaliyst.firebaseapp.com`
+- **Production**: `https://<YOUR_PROJECT_ID>.web.app`
+- **Alternative**: `https://<YOUR_PROJECT_ID>.firebaseapp.com`
 
 ---
 

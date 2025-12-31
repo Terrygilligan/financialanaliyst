@@ -2,21 +2,21 @@
 
 ## Error Message
 ```
-Generative Language API has not been used in project 622000096460 before or it is disabled.
+Generative Language API has not been used in project <YOUR_PROJECT_ID> before or it is disabled.
 ```
 
 ## Quick Fix
 
 ### Option 1: Direct Link (Easiest)
 Click this link to enable the Generative Language API:
-👉 **[Enable Generative Language API](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=622000096460)**
+👉 **[Enable Generative Language API](https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview?project=<YOUR_PROJECT_ID>)**
 
 Then click **"Enable"** button.
 
 ### Option 2: Manual Steps
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project: **financialanaliyst** (or project number: 622000096460)
+2. Select your project: **<YOUR_PROJECT_ID>** (or project number: <YOUR_PROJECT_NUMBER>)
 3. Navigate to **APIs & Services** → **Library**
 4. Search for **"Generative Language API"**
 5. Click on it and click **"Enable"**
@@ -24,7 +24,7 @@ Then click **"Enable"** button.
 ### Option 3: Via Firebase Console
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Go to **Project Settings** (gear icon)
 4. Click **"APIs"** tab or go to **Google Cloud Console** link
 5. Search for **"Generative Language API"**

@@ -3,17 +3,17 @@
 ## Quick Check
 
 1. **Open the folder**:
-   - https://drive.google.com/drive/folders/1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg
+   - https://drive.google.com/drive/folders/<YOUR_FOLDER_ID>
 
 2. **Click the "Share" button** (top right)
 
 3. **Look for the service account**:
-   - Email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Email: `<SERVICE_ACCOUNT_EMAIL>`
    - Should show as: **Editor** or **Can edit**
 
 4. **If it's not there, add it**:
    - Click "Add people and groups"
-   - Enter: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Enter: `<SERVICE_ACCOUNT_EMAIL>`
    - Select role: **Editor**
    - **Uncheck** "Notify people" (optional, but recommended)
    - Click "Share"

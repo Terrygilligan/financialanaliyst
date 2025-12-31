@@ -95,7 +95,7 @@ match /admin_data/{document=**} {
 ## 🚀 How to Apply
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Click **Firestore Database** in the left menu
 4. Click the **Rules** tab
 5. Replace the existing rules with the rules above

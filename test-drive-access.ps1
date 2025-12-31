@@ -1,7 +1,7 @@
 # Test Drive API Access Script
 # Tests if service account can create and access Google Sheets
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 $SA_EMAIL = "backend-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 Write-Host "Testing Drive/Sheets API access for: $SA_EMAIL" -ForegroundColor Cyan

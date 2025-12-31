@@ -41,7 +41,7 @@ firebase deploy --only functions
 ### Option A: Using Firebase Console (Recommended for First Admin)
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Go to **Authentication** → **Users**
 4. Find the user you want to make admin
 5. Copy their **UID** (User ID)
@@ -64,7 +64,7 @@ firebase functions:call setAdminClaim --data '{"uid":"YOUR_USER_UID_HERE"}'
 # Then make a POST request with your auth token
 
 curl -X POST \
-  https://us-central1-financialanaliyst.cloudfunctions.net/setAdminClaim \
+  https://us-central1-<YOUR_PROJECT_ID>.cloudfunctions.net/setAdminClaim \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ID_TOKEN" \
   -d '{"data":{"uid":"YOUR_USER_UID_HERE"}}'

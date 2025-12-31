@@ -12,15 +12,15 @@ The service account needs the **Editor role at the PROJECT level** (not just on 
 ### Step 1: Go to IAM & Admin → IAM
 
 1. **Open IAM page:**
-   - Direct link: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
+   - Direct link: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → IAM & Admin → IAM
 
 ### Step 2: Find or Add Service Account
 
-1. **Look for:** `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. **Look for:** `<SERVICE_ACCOUNT_EMAIL>`
 2. **If it's NOT in the list:**
    - Click **"+ Grant Access"** button (top of the page)
-   - In "New principals" field, enter: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - In "New principals" field, enter: `<SERVICE_ACCOUNT_EMAIL>`
    - In "Select a role" dropdown, choose: **"Editor"**
    - Click **"Save"**
 
@@ -32,7 +32,7 @@ The service account needs the **Editor role at the PROJECT level** (not just on 
 ### Step 3: Verify Google Drive API is Enabled
 
 1. **Check API status:**
-   - Go to: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+   - Go to: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
    - Should show: **"Status: Enabled"**
    - If not, click **"Enable"**
 

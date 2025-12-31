@@ -5,7 +5,7 @@
 
 set -e  # Exit on error
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 SA_EMAIL="backend-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 echo "🛠️  Starting Repair for Project: $PROJECT_ID"

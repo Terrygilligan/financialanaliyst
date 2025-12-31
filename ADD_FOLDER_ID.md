@@ -4,17 +4,17 @@
 
 From your Google Drive URL:
 ```
-https://drive.google.com/drive/folders/1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg
+https://drive.google.com/drive/folders/<YOUR_FOLDER_ID>
 ```
 
-**Folder ID**: `1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg`
+**Folder ID**: `<YOUR_FOLDER_ID>`
 
 ## Add to functions/.env
 
 Add this line to your `functions/.env` file:
 
 ```
-GOOGLE_DRIVE_FOLDER_ID=1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg
+GOOGLE_DRIVE_FOLDER_ID=<YOUR_FOLDER_ID>
 ```
 
 ## Verify Folder is Shared
@@ -22,7 +22,7 @@ GOOGLE_DRIVE_FOLDER_ID=1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg
 Before testing, make sure:
 
 1. ✅ The folder is shared with the service account:
-   - Email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Email: `<SERVICE_ACCOUNT_EMAIL>`
    - Role: **Editor**
    - Notify: **Unchecked**
 

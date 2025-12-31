@@ -5,7 +5,7 @@
 ### Step 1: Go to Firebase Console
 
 1. Open [Firebase Console](https://console.firebase.google.com)
-2. Select project: **financialanaliyst**
+2. Select project: **<YOUR_PROJECT_ID>**
 
 ### Step 2: Add Admin to Firestore
 
@@ -43,7 +43,7 @@ If you prefer automation, use the setup script I created:
 ### Prerequisites
 
 ```bash
-cd C:\Users\terry\Desktop\financialanaliyst
+cd C:\Users\terry\Desktop\<YOUR_PROJECT_ID>
 npm install firebase-admin --save-dev
 ```
 

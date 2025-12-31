@@ -19,7 +19,7 @@ Create files in a **Shared Drive** instead of the service account's personal Dri
    - Click "New" → "Shared drive"
    - Name it: "Financial Analyst Sheets"
    - Add the service account email as a Manager:
-     - `financial-output@financialanaliyst.iam.gserviceaccount.com`
+     - `<SERVICE_ACCOUNT_EMAIL>`
 
 2. **Get the Shared Drive ID**:
    - Open the Shared Drive
@@ -89,7 +89,7 @@ Have users create sheets manually, then share with service account (what you're 
 3. Name: "Financial Analyst Sheets"
 4. Add service account as Manager:
    - Click "Add members"
-   - Add: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Add: `<SERVICE_ACCOUNT_EMAIL>`
    - Role: Manager
    - Click "Send"
 

@@ -2,7 +2,7 @@
 
 ## ⚠️ Issue
 
-You're currently testing on **production** (`financialanaliyst.firebaseapp.com`), but the emulators are running on **localhost**. 
+You're currently testing on **production** (`<YOUR_PROJECT_ID>.firebaseapp.com`), but the emulators are running on **localhost**. 
 
 The OAuth callback is working, but you need to test on the local development server.
 
@@ -36,7 +36,7 @@ Check that you see:
 
 ## 🔧 Why This Matters
 
-- **Production** (`financialanaliyst.firebaseapp.com`) uses **deployed** Cloud Functions
+- **Production** (`<YOUR_PROJECT_ID>.firebaseapp.com`) uses **deployed** Cloud Functions
 - **Localhost** (`localhost:5000`) uses **emulated** Cloud Functions
 - For development, always use **localhost**
 

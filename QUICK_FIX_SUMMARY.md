@@ -42,16 +42,16 @@ firebase emulators:start
 #### Option A: Grant Service Account Permissions (Recommended)
 
 1. **Enable Google Sheets API**:
-   - https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst
+   - https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>
    - Click **"Enable"**
 
 2. **Enable Google Drive API**:
-   - https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+   - https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
    - Click **"Enable"**
 
 3. **Grant Service Account Editor Role**:
-   - Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-   - Find: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+   - Find: `<SERVICE_ACCOUNT_EMAIL>`
    - Click pencil icon → Add role: **Editor** → Save
 
 #### Option B: Use OAuth Token (Alternative)
@@ -78,12 +78,12 @@ firebase emulators:start
 ```
 
 ### Step 3: Enable Google APIs
-1. Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst
-2. Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+1. Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>
+2. Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
 
 ### Step 4: Grant Service Account Permissions
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find service account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find service account: `<SERVICE_ACCOUNT_EMAIL>`
 3. Grant **Editor** role
 
 ### Step 5: Test Again

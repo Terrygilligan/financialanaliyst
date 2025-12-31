@@ -463,7 +463,7 @@ firebase emulators:start
 
 ### Staging Environment
 
-1. Create separate Firebase project: `financialanaliyst-staging`
+1. Create separate Firebase project: `<YOUR_PROJECT_ID>-staging`
 2. Deploy feature branch to staging:
 
 ```bash

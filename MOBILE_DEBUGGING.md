@@ -25,7 +25,7 @@
 ## Method 2: Using Chrome on Android (Simpler)
 
 1. Open Chrome on your Android device
-2. Navigate to your app: `https://financialanaliyst.web.app`
+2. Navigate to your app: `https://<YOUR_PROJECT_ID>.web.app`
 3. Tap the **three dots menu** (⋮) in the top right
 4. Go to **Settings** → **Developer tools** (if available)
 5. Or use Chrome's built-in remote debugging URL: `chrome://inspect` (type this in the address bar)

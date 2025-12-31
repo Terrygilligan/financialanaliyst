@@ -40,20 +40,27 @@ export const finalizeReceipt = onCall(
             throw new Error("receiptId is required");
         }
 
+        // Get businessId from auth token (The Silo Rule)
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: No business association found");
+        }
+
         try {
-            // 1. Get the pending receipt
-            const pendingReceiptRef = db.collection('pending_receipts').doc(receiptId);
+            // 1. Get the pending receipt from the business silo
+            const pendingReceiptRef = db.collection('businesses').doc(businessId)
+                                         .collection('receipts').doc(receiptId);
             const pendingReceiptDoc = await pendingReceiptRef.get();
 
             if (!pendingReceiptDoc.exists) {
-                throw new Error("Pending receipt not found");
+                throw new Error("Pending receipt not found in your business silo");
             }
 
             const pendingReceipt = pendingReceiptDoc.data();
             
-            // 2. Verify user owns this receipt
-            if (pendingReceipt?.userId !== callerUid) {
-                throw new Error("Unauthorized: You can only finalize your own receipts");
+            // 2. Verify user context matches (optional but recommended for Jules)
+            if (pendingReceipt?.driverId !== callerUid && pendingReceipt?.userId !== callerUid) {
+                throw new Error("Unauthorized: You can only finalize receipts within your context");
             }
 
             // 3. Merge user corrections with original Gemini data
@@ -134,16 +141,17 @@ export const finalizeReceipt = onCall(
                     warnings: validation.warnings
                 });
                 
-                // Store receipt in needs_admin_review status (keep in pending_receipts collection)
-                await db.collection('pending_receipts').doc(receiptId).update({
+                // Store receipt in needs_admin_review status (remains in business silo)
+                await pendingReceiptRef.update({
                     status: 'needs_admin_review',
                     validationErrors: validation.errors,
                     validationWarnings: validation.warnings,
                     reviewRequestedAt: new Date().toISOString()
                 });
 
-                // Update batches collection
-                await db.collection('batches').doc(callerUid).set({
+                // Update business silo activity log (replacing deprecated batches)
+                await db.collection('businesses').doc(businessId).collection('activity').doc(callerUid).set({
+                    lastAction: 'validation_failure',
                     status: 'needs_admin_review',
                     validationErrors: validation.errors,
                     timestamp: new Date().toISOString()
@@ -178,8 +186,9 @@ export const finalizeReceipt = onCall(
             finalReceiptData.validationStatus = validation.warnings.length > 0 ? 'warning' : 'passed';
             finalReceiptData.hasErrors = false;
 
-            // 5. Update batches collection with final status
-            await db.collection('batches').doc(callerUid).set({
+            // 5. Update business silo activity with final status
+            await db.collection('businesses').doc(businessId).collection('activity').doc(callerUid).set({
+                lastAction: 'receipt_finalized',
                 status: 'complete',
                 lastFileProcessed: pendingReceipt.fileName,
                 receiptData: finalReceiptData,
@@ -187,26 +196,29 @@ export const finalizeReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 6. Update user statistics using transaction to prevent race conditions
-            const userRef = db.collection('users').doc(callerUid);
+            // 6. Update business statistics using transaction (The Silo Rule)
+            const businessRef = db.collection('businesses').doc(businessId);
             await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+                const businessDoc = await transaction.get(businessRef);
+                const currentStats = businessDoc.exists ? (businessDoc.data()?.stats || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
                 
-                transaction.set(userRef, {
-                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                    totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
-                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1), // Decrement pending count
-                    lastUpdated: new Date().toISOString(),
-                    lastReceiptProcessed: pendingReceipt.fileName,
-                    lastReceiptTimestamp: new Date().toISOString()
+                transaction.set(businessRef, {
+                    stats: {
+                        totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                        totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                        lastReceiptAt: new Date().toISOString()
+                    }
                 }, { merge: true });
             });
 
-            // 7. Remove from pending_receipts collection
-            await pendingReceiptRef.delete();
+            // 7. Mark as complete in silo (don't delete, just update status)
+            await pendingReceiptRef.update({
+                status: 'complete',
+                ...finalReceiptData,
+                finalizedAt: new Date().toISOString()
+            });
 
-            console.log(`Receipt finalized successfully. Receipt ID: ${receiptId}`);
+            console.log(`Receipt finalized successfully in silo. Receipt ID: ${receiptId}`);
 
             // Phase 3.3: Log successful finalization
             await logInfo('finalizeReceipt', `Receipt finalized successfully: ${receiptId}`, {

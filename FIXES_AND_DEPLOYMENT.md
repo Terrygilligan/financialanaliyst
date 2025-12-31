@@ -38,7 +38,7 @@ The Cloud Functions are returning **404 errors** because they haven't been deplo
 cd functions
 npm run build
 cd ..
-firebase deploy --only functions:provisionNewBusiness,functions:getBusinessDetails,functions:updateBusinessSettings,functions:addAuthorizedUser --project=financialanaliyst
+firebase deploy --only functions:provisionNewBusiness,functions:getBusinessDetails,functions:updateBusinessSettings,functions:addAuthorizedUser --project=<YOUR_PROJECT_ID>
 ```
 
 ### After Deployment

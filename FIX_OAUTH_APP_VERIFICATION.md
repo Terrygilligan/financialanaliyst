@@ -6,7 +6,7 @@ Google is showing: "app_notverified" - This means your OAuth app needs to be con
 ## Solution: Configure OAuth Consent Screen
 
 ### Step 1: Go to OAuth Consent Screen
-1. Open: https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+1. Open: https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 2. Or: Google Cloud Console > APIs & Services > OAuth consent screen
 
 ### Step 2: Configure App Information
@@ -57,7 +57,7 @@ Google is showing: "app_notverified" - This means your OAuth app needs to be con
 Check:
 - ✅ Your email is in test users list
 - ✅ Scopes are added (Drive, Sheets)
-- ✅ OAuth client ID is correct: `622000096460-lg45lavoa57dvh31qrai4mbtshck73vq.apps.googleusercontent.com`
+- ✅ OAuth client ID is correct: `<YOUR_PROJECT_NUMBER>-lg45lavoa57dvh31qrai4mbtshck73vq.apps.googleusercontent.com`
 - ✅ App is in "Testing" mode (not "In production")
 
 ---

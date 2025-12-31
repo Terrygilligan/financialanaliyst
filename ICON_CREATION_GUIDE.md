@@ -39,7 +39,7 @@ For quick testing, you can use simple colored squares:
 
 1. Deploy to Firebase Hosting:
    ```bash
-   firebase deploy --only hosting --project financialanaliyst
+   firebase deploy --only hosting --project <YOUR_PROJECT_ID>
    ```
 
 2. Test on mobile:

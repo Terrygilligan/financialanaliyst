@@ -16,7 +16,7 @@ Since you don't have Shared Drive access (requires Google Workspace), we'll crea
 1. **Right-click** the folder → **"Share"**
 2. In the "Add people and groups" field, enter:
    ```
-   financial-output@financialanaliyst.iam.gserviceaccount.com
+   <SERVICE_ACCOUNT_EMAIL>
    ```
 3. Set role to: **"Editor"**
 4. **Uncheck** "Notify people" (service accounts don't need email notifications)

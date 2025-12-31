@@ -5,7 +5,7 @@
 Open a terminal in the project directory and run:
 
 ```bash
-cd c:\Users\terry\Desktop\financialanaliyst
+cd c:\Users\terry\Desktop\<YOUR_PROJECT_ID>
 firebase emulators:start
 ```
 

@@ -74,7 +74,7 @@ async function testSheetCreation() {
             
             if (error.code === 403) {
                 console.log('   🔧 SOLUTION: Enable Google Drive API');
-                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst\n');
+                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>\n');
             }
             throw error; // Don't continue if Drive API fails
         }
@@ -146,9 +146,9 @@ async function testSheetCreation() {
             
             if (error.code === 403 || error.message.includes('permission')) {
                 console.log('   1. ✅ Enable Google Drive API:');
-                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst\n');
+                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>\n');
                 console.log('   2. ✅ Verify service account has Editor/Owner role:');
-                console.log('      https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst');
+                console.log('      https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>');
                 console.log(`      Look for: ${serviceAccountEmail}\n`);
                 console.log('   3. ⏳ Wait 2-5 minutes for permissions to propagate\n');
                 console.log('   4. 🔄 Redeploy functions after enabling API:');
@@ -156,7 +156,7 @@ async function testSheetCreation() {
                 console.log('      firebase deploy --only functions\n');
             } else if (error.message.includes('not enabled')) {
                 console.log('   → Google Drive API is NOT enabled');
-                console.log('   → Enable it: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst\n');
+                console.log('   → Enable it: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>\n');
             } else {
                 console.log('   → Check Cloud Function logs for more details');
                 console.log('   → Verify service account JSON key is correct\n');

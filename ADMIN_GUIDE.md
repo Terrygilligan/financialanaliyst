@@ -399,7 +399,7 @@ Must match exactly:
 - Column F: `Entity` (Phase 1.1)
 
 #### Service Account Access
-- Service Account email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- Service Account email: `<SERVICE_ACCOUNT_EMAIL>`
 - Must have "Editor" access to the Sheet
 - Verify sharing in Google Sheets
 

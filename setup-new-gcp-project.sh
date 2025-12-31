@@ -3,7 +3,7 @@
 # Setup New Google Cloud Project Script
 # Creates a new GCP project with the correct name and enables necessary APIs
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 PROJECT_NAME="AI Financial Analyst"
 BILLING_ACCOUNT_ID=""
 

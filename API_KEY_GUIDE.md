@@ -46,7 +46,7 @@ Since your browser keys are restricted and may not include Generative Language A
 ### Step 4: Redeploy Function
 ```bash
 cd functions
-firebase deploy --only functions --project financialanaliyst
+firebase deploy --only functions --project <YOUR_PROJECT_ID>
 ```
 
 ## Alternative: Edit Existing Browser Key

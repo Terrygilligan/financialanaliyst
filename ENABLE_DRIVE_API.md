@@ -9,7 +9,7 @@
 ### Step 1: Enable Google Drive API
 
 1. **Go to Google Cloud Console APIs:**
-   - Direct link: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+   - Direct link: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → APIs & Services → Library → Search "Google Drive API"
 
 2. **Enable the API:**

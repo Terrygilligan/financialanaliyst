@@ -54,11 +54,11 @@ After deploying, test on mobile:
 
 2. **Deploy Changes**:
    ```bash
-   firebase deploy --only hosting --project financialanaliyst
+   firebase deploy --only hosting --project <YOUR_PROJECT_ID>
    ```
 
 3. **Test on Mobile Device**:
-   - Visit: https://financialanaliyst.web.app
+   - Visit: https://<YOUR_PROJECT_ID>.web.app
    - Try installing as PWA
    - Test all functionality
 

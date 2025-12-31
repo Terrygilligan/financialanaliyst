@@ -4,7 +4,7 @@
 
 param(
     [string]$BillingAccountId = "",
-    [string]$ProjectId = "financialanaliyst"
+    [string]$ProjectId = "<YOUR_PROJECT_ID>"
 )
 
 $PROJECT_ID = $ProjectId
@@ -52,9 +52,9 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "  - Owned by a different organization" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "Suggested alternatives:" -ForegroundColor Cyan
-        Write-Host "  - financialanaliyst-app" -ForegroundColor Gray
-        Write-Host "  - financialanaliyst-prod" -ForegroundColor Gray
-        Write-Host "  - financialanaliyst-2025" -ForegroundColor Gray
+        Write-Host "  - <YOUR_PROJECT_ID>-app" -ForegroundColor Gray
+        Write-Host "  - <YOUR_PROJECT_ID>-prod" -ForegroundColor Gray
+        Write-Host "  - <YOUR_PROJECT_ID>-2025" -ForegroundColor Gray
         Write-Host ""
         Write-Host "Run with: .\setup-new-gcp-project.ps1 -BillingAccountId '$BILLING_ACCOUNT_ID' -ProjectId 'ALTERNATIVE_ID'" -ForegroundColor Yellow
         exit 1

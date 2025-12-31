@@ -2,15 +2,17 @@
 // Supports both Live and Emulator modes
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyDlGMS8HRrA7lqulewzRi0hMvMH2WMrW-U",
-    authDomain: "financialanaliyst.firebaseapp.com",
-    projectId: "financialanaliyst",
-    storageBucket: "financialanaliyst.firebasestorage.app",
-    messagingSenderId: "622000096460",
-    appId: "1:622000096460:web:5fcd5535f0be72fe63ae69",
-    measurementId: "G-LBQ23HW263",
+    apiKey: "<YOUR_API_KEY>",
+    authDomain: "<YOUR_PROJECT_ID>.firebaseapp.com",
+    projectId: "<YOUR_PROJECT_ID>",
+    storageBucket: "<YOUR_PROJECT_ID>.firebasestorage.app",
+    messagingSenderId: "<YOUR_SENDER_ID>",
+    appId: "<YOUR_APP_ID>",
+    measurementId: "<YOUR_MEASUREMENT_ID>",
     // Google OAuth Client ID for Drive/Sheets API access
-    oauthClientId: "622000096460-lg45lavoa57dvh31qrai4mbtshck73vq.apps.googleusercontent.com"
+    oauthClientId: "<YOUR_OAUTH_CLIENT_ID>",
+    // Builder.io Public API Key (Space ID)
+    builderApiKey: "<YOUR_BUILDER_API_KEY>"
 };
 
 /**

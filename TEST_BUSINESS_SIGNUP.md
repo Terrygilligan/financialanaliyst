@@ -49,7 +49,7 @@ You should see:
 
 ### Error: 403 Access Denied
 - **Fix**: Make sure your email is in test users list
-- **URL**: https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+- **URL**: https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 
 ### Error: Function not found
 - **Fix**: Make sure emulators are running

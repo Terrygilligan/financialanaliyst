@@ -15,7 +15,7 @@ export const createNewGoogleSheet = onCall(
   { 
     region: "us-central1",
     // Add this to use the custom service account
-    serviceAccount: "financial-output@financialanaliyst.iam.gserviceaccount.com"
+    serviceAccount: "<SERVICE_ACCOUNT_EMAIL>"
   },
   async (request) => {
     // ... function code
@@ -46,7 +46,7 @@ This should work regardless of the function's runtime identity.
 
 To see who Google thinks is calling:
 
-1. Go to: https://console.cloud.google.com/logs/query?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/logs/query?project=<YOUR_PROJECT_ID>
 2. Filter: `protoPayload.status.code="7"` (Permission Denied)
 3. Look for `principalEmail` in the log entry
 4. This tells you which identity is actually making the call
@@ -55,8 +55,8 @@ To see who Google thinks is calling:
 
 If the function is using the default Compute Engine service account:
 
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find: `622000096460-compute@developer.gserviceaccount.com` (or similar)
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find: `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com` (or similar)
 3. Grant it **Editor** or **Owner** role
 4. This allows the function runtime to create resources
 

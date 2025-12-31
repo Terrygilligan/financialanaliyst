@@ -1,7 +1,7 @@
 # Setup Service Account Roles Script (PowerShell)
 # Creates the service account (if needed) and grants necessary IAM roles
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 $SERVICE_ACCOUNT_NAME = "backend-sa"
 $SERVICE_ACCOUNT_EMAIL = "$SERVICE_ACCOUNT_NAME@${PROJECT_ID}.iam.gserviceaccount.com"
 

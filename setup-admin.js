@@ -12,7 +12,7 @@ const admin = require('firebase-admin');
 // Or set GOOGLE_APPLICATION_CREDENTIALS environment variable
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  projectId: 'financialanaliyst'
+  projectId: '<YOUR_PROJECT_ID>'
 });
 
 const db = admin.firestore();

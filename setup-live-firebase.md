@@ -16,7 +16,7 @@ For apps that heavily use **Google Sign-In** and **Google Drive/Sheets API**, te
 
 Your Firebase project needs to allow `localhost` for Google Sign-In:
 
-1. Go to [Firebase Console](https://console.firebase.google.com/project/financialanaliyst/authentication/settings)
+1. Go to [Firebase Console](https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/authentication/settings)
 2. Navigate to **Authentication** → **Settings** → **Authorized domains**
 3. Ensure `localhost` is in the list (it should be there by default)
 4. If not, click **Add domain** and add `localhost`
@@ -130,5 +130,5 @@ location.reload();
 ---
 
 **Last Updated:** December 2025  
-**Project:** financialanaliyst
+**Project:** <YOUR_PROJECT_ID>
 

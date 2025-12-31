@@ -8,7 +8,7 @@
    - `GEMINI_API_KEY`
 
 2. ✅ **Google Sheet Shared** with Service Account
-   - Service Account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Service Account: `<SERVICE_ACCOUNT_EMAIL>`
    - Permission: Editor ✅
 
 3. ✅ **Sheet Headers Verified**
@@ -23,7 +23,7 @@
 
 ### Step 1: Upload a Test Receipt
 
-1. **Open your app**: https://financialanaliyst.web.app
+1. **Open your app**: https://<YOUR_PROJECT_ID>.web.app
 2. **Login** (if not already)
 3. **Upload a receipt image**:
    - Click "Choose File" or drag-and-drop
@@ -34,7 +34,7 @@
 
 **Check Function Logs:**
 ```bash
-firebase functions:log --project financialanaliyst
+firebase functions:log --project <YOUR_PROJECT_ID>
 ```
 
 **Look for:**
@@ -53,7 +53,7 @@ firebase functions:log --project financialanaliyst
 
 ### Step 3: Verify Google Sheet
 
-1. **Open your Sheet**: https://docs.google.com/spreadsheets/d/1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos/edit
+1. **Open your Sheet**: https://docs.google.com/spreadsheets/d/<YOUR_SHEET_ID>/edit
 2. **Check for new row** below the headers
 3. **Verify data**:
    - Vendor Name (Column A)

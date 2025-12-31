@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Setup Cloud Environment Script
-# Sets up GCP project, service accounts, APIs, and permissions for financialanaliyst
+# Sets up GCP project, service accounts, APIs, and permissions for <YOUR_PROJECT_ID>
 
 set -e  # Exit on error
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 SERVICE_ACCOUNT_NAME="backend-provisioner"
 SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 

@@ -7,7 +7,7 @@ The error **"The caller does not have permission"** when calling `sheets.spreads
 ## Why This Happens
 
 When you call `spreadsheets.create`:
-- The new sheet is created **in the service account's Drive** (owned by `financial-output@financialanaliyst.iam.gserviceaccount.com`)
+- The new sheet is created **in the service account's Drive** (owned by `<SERVICE_ACCOUNT_EMAIL>`)
 - **No additional sharing is needed for creation**—the service account always has permission to create files in its own Drive
 - The error occurs because **Google Drive API must be enabled separately** from Sheets API
 
@@ -27,7 +27,7 @@ The **Drive API must be separately enabled** because `spreadsheets.create` uses 
 ### Step 1: Enable Google Drive API
 
 1. **Go to Google Cloud Console**:
-   - Direct link: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+   - Direct link: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → APIs & Services → Library → Search "Google Drive API"
 
 2. **Enable the API**:
@@ -51,8 +51,8 @@ This will:
 ### Step 3: Check Service Account Permissions
 
 Verify the service account has Editor/Owner role:
-- https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-- Look for: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+- Look for: `<SERVICE_ACCOUNT_EMAIL>`
 - Should have: **Editor** or **Owner** role
 
 ### Step 4: Rebuild and Redeploy Functions
@@ -72,8 +72,8 @@ firebase deploy --only functions
    ```
 
 2. **Look for your debug lines**:
-   - `[Sheet Operations] Using service account: financial-output@...`
-   - `[Sheet Operations] Auth client project: financialanaliyst`
+   - `[Sheet Operations] Using service account: `<SERVICE_ACCOUNT_EMAIL>``
+   - `[Sheet Operations] Auth client project: <YOUR_PROJECT_ID>`
    - Any inner Google API error details
 
 3. **Try creating a sheet** via admin UI:
@@ -132,7 +132,7 @@ Once Drive API is enabled:
 ### Check 1: Service Account Drive Quota
 - Service accounts have limited Drive storage (~15GB shared)
 - If quota exceeded, creation fails with 403
-- Check: https://console.cloud.google.com/iam-admin/serviceaccounts?project=financialanaliyst
+- Check: https://console.cloud.google.com/iam-admin/serviceaccounts?project=<YOUR_PROJECT_ID>
 
 ### Check 2: Propagation Delay
 - Wait 5-10 minutes after enabling API

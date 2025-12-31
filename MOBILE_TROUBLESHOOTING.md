@@ -5,7 +5,7 @@
 ### 1. Page Not Loading
 
 **Check:**
-- Is the URL correct? `https://financialanaliyst.web.app`
+- Is the URL correct? `https://<YOUR_PROJECT_ID>.web.app`
 - Is your mobile device connected to the internet?
 - Try refreshing the page
 - Clear browser cache
@@ -44,11 +44,11 @@
 
 ### Option 1: Direct URL
 1. Open mobile browser
-2. Go to: `https://financialanaliyst.web.app`
+2. Go to: `https://<YOUR_PROJECT_ID>.web.app`
 3. Should redirect to login page if not authenticated
 
 ### Option 2: QR Code
-Generate a QR code for: `https://financialanaliyst.web.app`
+Generate a QR code for: `https://<YOUR_PROJECT_ID>.web.app`
 
 ### Option 3: Add to Home Screen
 1. Open the app in mobile browser
@@ -84,4 +84,4 @@ Generate a QR code for: `https://financialanaliyst.web.app`
 
 ---
 
-**Try accessing**: https://financialanaliyst.web.app on your mobile device
+**Try accessing**: https://<YOUR_PROJECT_ID>.web.app on your mobile device

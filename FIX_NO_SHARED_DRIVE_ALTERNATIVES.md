@@ -22,7 +22,7 @@ Have the service account create files in **your personal Google Drive** instead 
    - Create a new folder: "Financial Analyst Sheets"
    - Share it with the service account:
      - Right-click folder → Share
-     - Add: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+     - Add: `<SERVICE_ACCOUNT_EMAIL>`
      - Role: Editor
      - Uncheck "Notify people" (service accounts don't need emails)
 

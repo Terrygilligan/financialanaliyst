@@ -17,7 +17,7 @@ Service accounts have **0 GB storage quota** in their own Drive. They cannot cre
 2. **Create or find a folder** (e.g., "Financial Analyst Businesses")
 3. **Right-click** → **"Share"**
 4. **Add service account** as Editor:
-   - Email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Email: `<SERVICE_ACCOUNT_EMAIL>`
    - Role: **Editor**
    - **Uncheck** "Notify people"
 5. **Click "Share"**
@@ -29,7 +29,7 @@ Service accounts have **0 GB storage quota** in their own Drive. They cannot cre
    ```
    https://drive.google.com/drive/folders/FOLDER_ID_HERE
    ```
-   Example: `1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg`
+   Example: `<YOUR_FOLDER_ID>`
 
 ### Step 3: Add to Environment Variables
 
@@ -42,12 +42,12 @@ GOOGLE_DRIVE_FOLDER_ID=your-folder-id-here
 
 **Example:**
 ```env
-GOOGLE_DRIVE_FOLDER_ID=1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg
+GOOGLE_DRIVE_FOLDER_ID=<YOUR_FOLDER_ID>
 ```
 
 ### Step 4: Enable Google Drive API
 
-1. **Go to**: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+1. **Go to**: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
 2. **Click "Enable"**
 3. **Wait 1-2 minutes** for propagation
 
@@ -90,7 +90,7 @@ Get-Content .env | Select-String "GOOGLE_DRIVE_FOLDER_ID"
 **Still getting permission error?**
 
 1. **Verify folder is shared**: Check folder sharing settings in Google Drive
-2. **Check service account email**: Must be exactly `financial-output@financialanaliyst.iam.gserviceaccount.com`
+2. **Check service account email**: Must be exactly `<SERVICE_ACCOUNT_EMAIL>`
 3. **Verify Drive API is enabled**: Check Google Cloud Console
 4. **Check emulator logs**: Look for detailed error messages in the terminal running `firebase emulators:start`
 

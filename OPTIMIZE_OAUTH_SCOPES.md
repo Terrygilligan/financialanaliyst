@@ -65,7 +65,7 @@ Created `firestore.rules` with proper security:
 
 You may need to **remove** the full `drive` scope from your OAuth consent screen:
 
-1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 2. Click "Data Access" or "Scopes"
 3. Remove `https://www.googleapis.com/auth/drive` (the restricted one)
 4. Keep:
@@ -74,7 +74,7 @@ You may need to **remove** the full `drive` scope from your OAuth consent screen
 
 ### 2. Deploy Firestore Rules
 
-1. Go to: https://console.firebase.google.com/project/financialanaliyst/firestore/rules
+1. Go to: https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/firestore/rules
 2. Copy contents of `firestore.rules`
 3. Paste into Firebase Console
 4. Click **Publish**

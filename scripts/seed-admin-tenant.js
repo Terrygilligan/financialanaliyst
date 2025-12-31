@@ -5,7 +5,7 @@ const admin = require('firebase-admin');
 
 // Initialize Firebase Admin (Uses Application Default Credentials or GOOGLE_APPLICATION_CREDENTIALS)
 admin.initializeApp({
-  projectId: 'financialanaliyst'
+  projectId: '<YOUR_PROJECT_ID>'
 });
 
 const auth = admin.auth();

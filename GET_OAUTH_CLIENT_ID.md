@@ -7,7 +7,7 @@ The OAuth token from Firebase Auth (`credentialFromResult`) is not the actual Go
 
 ### Method 1: Firebase Console
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: `financialanaliyst`
+2. Select your project: `<YOUR_PROJECT_ID>`
 3. Go to **Project Settings** (gear icon)
 4. Scroll to **Your apps** section
 5. Find your **Web app** configuration
@@ -15,7 +15,7 @@ The OAuth token from Firebase Auth (`credentialFromResult`) is not the actual Go
 
 ### Method 2: Google Cloud Console
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select project: `financialanaliyst`
+2. Select project: `<YOUR_PROJECT_ID>`
 3. Go to **APIs & Services** > **Credentials**
 4. Find **OAuth 2.0 Client IDs**
 5. Look for the **Web client** (usually named like "Web client (auto created by Google Service)")

@@ -57,12 +57,20 @@ export const createUser = onCall({ region: "us-central1" }, async (request) => {
         });
 
         // 6. Create a user profile document within the business's silo
-        await db.collection("users").doc(userRecord.uid).set({
+        await db.collection("businesses").doc(businessId).collection("users").doc(userRecord.uid).set({
             email,
             displayName: displayName || businessName,
             businessId,
             role: 'admin',
             createdAt: FieldValue.serverTimestamp()
+        });
+
+        // Also update legacy top-level users collection for backward compatibility/lookup (optional)
+        await db.collection("users").doc(userRecord.uid).set({
+            email,
+            businessId,
+            role: 'admin',
+            updatedAt: FieldValue.serverTimestamp()
         });
 
         return {

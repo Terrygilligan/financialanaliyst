@@ -1,8 +1,8 @@
 # Revert Project Name Script
-# Replaces "financialanaliyst" with "financialanaliyst" throughout the codebase
+# Replaces "<YOUR_PROJECT_ID>" with "<YOUR_PROJECT_ID>" throughout the codebase
 
-$oldName = "financialanaliyst"
-$newName = "financialanaliyst"
+$oldName = "<YOUR_PROJECT_ID>"
+$newName = "<YOUR_PROJECT_ID>"
 $rootDir = $PSScriptRoot
 $filesChanged = 0
 $replacementsCount = 0

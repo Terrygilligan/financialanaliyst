@@ -4,7 +4,7 @@
 
 The Google Sheet has been successfully shared with the Service Account:
 
-- **Service Account**: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- **Service Account**: `<SERVICE_ACCOUNT_EMAIL>`
 - **Permission**: **Editor** (Bewerker) ✅
 - **Access Level**: Restricted (Beperkt) ✅
 
@@ -26,7 +26,7 @@ Before deploying, we need to verify the Sheet headers match the expected format.
 
 ### How to Verify:
 
-1. Open the Google Sheet: https://docs.google.com/spreadsheets/d/1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos/edit
+1. Open the Google Sheet: https://docs.google.com/spreadsheets/d/<YOUR_SHEET_ID>/edit
 2. Check Row 1 (the header row)
 3. Ensure the headers match exactly (case-sensitive)
 

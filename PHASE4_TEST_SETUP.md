@@ -61,7 +61,7 @@ For each business, you need to:
    - Business C: "Business C Receipts"
 
 2. **Share with service account**:
-   - Email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Email: `<SERVICE_ACCOUNT_EMAIL>`
    - Permission: Editor
 
 3. **Get Sheet IDs** from URLs:
@@ -89,7 +89,7 @@ Create `update-sheet-ids.js`:
 
 ```javascript
 const admin = require('firebase-admin');
-admin.initializeApp({ projectId: 'financialanaliyst' });
+admin.initializeApp({ projectId: '<YOUR_PROJECT_ID>' });
 const db = admin.firestore();
 
 const sheetIds = {

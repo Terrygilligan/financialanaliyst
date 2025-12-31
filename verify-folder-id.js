@@ -11,18 +11,18 @@ console.log('\n🔍 Verifying Google Drive Folder ID...\n');
 if (!folderId) {
     console.error('❌ GOOGLE_DRIVE_FOLDER_ID not found in functions/.env');
     console.log('\n📝 Add this line to functions/.env:');
-    console.log('   GOOGLE_DRIVE_FOLDER_ID=1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg\n');
+    console.log('   GOOGLE_DRIVE_FOLDER_ID=<YOUR_FOLDER_ID>\n');
     process.exit(1);
 }
 
 console.log(`✅ Folder ID found: ${folderId}`);
-console.log(`   Expected: 1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg\n`);
+console.log(`   Expected: <YOUR_FOLDER_ID>\n`);
 
-if (folderId === '1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg') {
+if (folderId === '<YOUR_FOLDER_ID>') {
     console.log('✅ Folder ID matches!\n');
     console.log('📋 Next steps:');
     console.log('   1. Make sure the folder is shared with:');
-    console.log('      financial-output@financialanaliyst.iam.gserviceaccount.com');
+    console.log('      <SERVICE_ACCOUNT_EMAIL>');
     console.log('      Role: Editor\n');
     console.log('   2. Rebuild and deploy:');
     console.log('      cd functions');

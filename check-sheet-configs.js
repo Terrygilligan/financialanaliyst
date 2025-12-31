@@ -19,7 +19,7 @@ if (process.env.FIRESTORE_EMULATOR_HOST) {
 // Initialize Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
-    projectId: 'financialanaliyst'
+    projectId: '<YOUR_PROJECT_ID>'
   });
 }
 

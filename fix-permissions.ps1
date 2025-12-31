@@ -1,7 +1,7 @@
 # Fix Permissions Script (PowerShell)
 # Repairs IAM permissions for the backend service account
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 $SA_EMAIL = "backend-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 Write-Host "🛠️  Starting Repair for Project: $PROJECT_ID" -ForegroundColor Cyan

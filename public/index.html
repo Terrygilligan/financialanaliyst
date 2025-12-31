@@ -14,6 +14,8 @@
     <script src="translations.js?v=20251217"></script>
     <!-- PWA Install Prompt -->
     <script src="pwa-install.js?v=20251217" defer></script>
+    <!-- Builder.io Integration (Phase 4) -->
+    <script type="module" src="builder-init.js?v=20251231"></script>
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -69,6 +71,9 @@
         </header>
 
         <main id="main-content" style="display: none;">
+            <!-- Builder.io Dynamic Content -->
+            <builder-component name="TenantSelector" title="Current Enterprise Silo"></builder-component>
+
             <section class="upload-section">
                 <h2>Upload Receipt</h2>
                 <label for="file-input" class="upload-area" id="upload-area">

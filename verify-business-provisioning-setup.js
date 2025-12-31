@@ -95,7 +95,7 @@ async function verifySetup() {
             console.log('   Role: Editor');
         } else {
             console.log('   Check that Google Drive API is enabled:');
-            console.log('   https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst');
+            console.log('   https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>');
         }
         return false;
     }
@@ -119,7 +119,7 @@ async function verifySetup() {
     } catch (error) {
         console.error(`❌ Error accessing Sheets API:`, error.message);
         console.log('   Check that Google Sheets API is enabled:');
-        console.log('   https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst');
+        console.log('   https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>');
         return false;
     }
 

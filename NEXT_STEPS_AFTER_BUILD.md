@@ -26,13 +26,13 @@ Functions have been built successfully. The compiled JavaScript is now in `funct
 
 ### Enable Google Sheets API
 
-1. **Open this link**: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst
+1. **Open this link**: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>
 2. Click the **"Enable"** button
 3. Wait for it to enable (usually takes a few seconds)
 
 ### Enable Google Drive API
 
-1. **Open this link**: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+1. **Open this link**: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
 2. Click the **"Enable"** button
 3. Wait for it to enable (usually takes a few seconds)
 
@@ -42,16 +42,16 @@ Functions have been built successfully. The compiled JavaScript is now in `funct
 
 ## 🔐 Step 4: Grant Service Account Permissions
 
-1. **Open IAM page**: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. **Find the service account**: Look for `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. **Open IAM page**: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. **Find the service account**: Look for `<SERVICE_ACCOUNT_EMAIL>`
 3. **Click the pencil icon** (Edit) next to it
 4. **Click "+ ADD ANOTHER ROLE"**
 5. **Select "Editor"** from the dropdown
 6. **Click "Save"**
 
 **Alternative**: If you can't find the service account, you can also:
-- Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=financialanaliyst
-- Find `financial-output@financialanaliyst.iam.gserviceaccount.com`
+- Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=<YOUR_PROJECT_ID>
+- Find `<SERVICE_ACCOUNT_EMAIL>`
 - Click on it → Go to "Permissions" tab → Grant Editor role
 
 ---
@@ -64,11 +64,11 @@ Functions have been built successfully. The compiled JavaScript is now in `funct
 - Should see: `getBusinessDetails`, `provisionNewBusiness`, etc.
 
 ### Check APIs Are Enabled
-- Go to: https://console.cloud.google.com/apis/dashboard?project=financialanaliyst
+- Go to: https://console.cloud.google.com/apis/dashboard?project=<YOUR_PROJECT_ID>
 - Should see both "Google Sheets API" and "Google Drive API" listed and enabled
 
 ### Check Service Account Permissions
-- Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
+- Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
 - Find service account → Should have "Editor" role
 
 ---

@@ -11,7 +11,7 @@ When you see the error in the console, it provides a direct link to create the i
 ## Manual Method
 
 1. **Go to Firebase Console**:
-   - https://console.firebase.google.com/project/financialanaliyst/firestore/indexes
+   - https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/firestore/indexes
 
 2. **Click "Create Index"**
 
@@ -30,7 +30,7 @@ When you see the error in the console, it provides a direct link to create the i
 
 The error message in the console should provide a link like:
 ```
-https://console.firebase.google.com/v1/r/project/financialanaliyst/firestore/indexes?create_composite=...
+https://console.firebase.google.com/v1/r/project/<YOUR_PROJECT_ID>/firestore/indexes?create_composite=...
 ```
 
 Click that link and it will pre-fill everything!

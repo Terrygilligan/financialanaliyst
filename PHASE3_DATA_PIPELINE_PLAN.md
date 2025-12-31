@@ -76,13 +76,13 @@ firebase functions:secrets:set GEMINI_API_KEY
 ```bash
 # Create secrets
 echo -n '{"type":"service_account",...}' | gcloud secrets create sheets-service-account-key --data-file=-
-echo -n '1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos' | gcloud secrets create google-sheet-id --data-file=-
+echo -n '<YOUR_SHEET_ID>' | gcloud secrets create google-sheet-id --data-file=-
 ```
 
 2. Grant access to Cloud Function service account:
 ```bash
 gcloud secrets add-iam-policy-binding sheets-service-account-key \
-  --member="serviceAccount:financialanaliyst@appspot.gserviceaccount.com" \
+  --member="serviceAccount:<YOUR_PROJECT_ID>@appspot.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 ```
 
@@ -108,7 +108,7 @@ The Sheet must have these exact headers in Row 1:
 - Column E: `Timestamp`
 
 **Action:**
-- [ ] Open Google Sheet: `https://docs.google.com/spreadsheets/d/1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos/edit`
+- [ ] Open Google Sheet: `https://docs.google.com/spreadsheets/d/<YOUR_SHEET_ID>/edit`
 - [ ] Verify headers match exactly (case-sensitive)
 - [ ] If headers don't match, update them or update code in `sheets.ts`
 
@@ -116,13 +116,13 @@ The Sheet must have these exact headers in Row 1:
 **Critical Step!**
 
 1. **Find Service Account Email:**
-   - From `.env` file: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - From `.env` file: `<SERVICE_ACCOUNT_EMAIL>`
    - Or check in Google Cloud Console → IAM & Admin → Service Accounts
 
 2. **Share the Sheet:**
    - Open the Google Sheet
    - Click **Share** button (top right)
-   - Add email: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Add email: `<SERVICE_ACCOUNT_EMAIL>`
    - Set permission: **Editor**
    - Click **Send** (uncheck "Notify people" - it's a service account)
 
@@ -228,12 +228,12 @@ await db.collection('batches').doc(userId).set({
    ```bash
    cd functions
    npm run build
-   firebase deploy --only functions --project financialanaliyst
+   firebase deploy --only functions --project <YOUR_PROJECT_ID>
    ```
 
 2. **Upload Test Receipt:**
    - Use the web app to upload a test receipt
-   - Monitor function logs: `firebase functions:log --project financialanaliyst`
+   - Monitor function logs: `firebase functions:log --project <YOUR_PROJECT_ID>`
 
 3. **Verify Data Flow:**
    - [ ] Check Firestore: `/batches/{userId}` document updated
@@ -273,17 +273,17 @@ await db.collection('batches').doc(userId).set({
 
 ### Service Account Email
 ```
-financial-output@financialanaliyst.iam.gserviceaccount.com
+<SERVICE_ACCOUNT_EMAIL>
 ```
 
 ### Google Sheet ID
 ```
-1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos
+<YOUR_SHEET_ID>
 ```
 
 ### Sheet URL
 ```
-https://docs.google.com/spreadsheets/d/1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos/edit
+https://docs.google.com/spreadsheets/d/<YOUR_SHEET_ID>/edit
 ```
 
 ### Expected Headers (Row 1)

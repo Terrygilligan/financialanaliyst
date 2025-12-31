@@ -3,7 +3,7 @@
 # Verify Permissions Script
 # Checks if service account has correct permissions and can access resources
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 SA_EMAIL="backend-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 echo "🔍 Verifying permissions for: $SA_EMAIL"

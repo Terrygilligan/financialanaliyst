@@ -123,8 +123,8 @@ export const analyzeReceiptUpload = onObjectFinalized(
         receiptData.processedBy = 'system';
         receiptData.timestamp = new Date().toISOString();
 
-        // 4.5. Look up entity for user
-        const entityName = await lookupEntityForUser(userId);
+        // 4.5. Look up entity for user within business silo
+        const entityName = await lookupEntityForUser(userId, businessId || 'global');
         receiptData.entity = entityName;
 
         // 4.6. Currency conversion
@@ -191,20 +191,24 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 console.log(`Receipt stored as pending in silo: businesses/${businessId}/receipts/${receiptId}`);
             }
         } else {
-            // Default Multi-Tenant Workflow: Finalize statistics only
-            console.log(`Finalizing silo statistics.`);
-            const userRef = db.collection('users').doc(userId);
-            await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
-                
-                transaction.set(userRef, {
-                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                    totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-            });
-            console.log(`Analysis complete for ${fileName}. Firestore silo updated.`);
+            // Default Multi-Tenant Workflow: Finalize statistics within the business silo
+            console.log(`Finalizing silo statistics for business: ${businessId}`);
+            if (businessId) {
+                const businessRef = db.collection('businesses').doc(businessId);
+                await db.runTransaction(async (transaction) => {
+                    const businessDoc = await transaction.get(businessRef);
+                    const currentStats = businessDoc.exists ? (businessDoc.data()?.stats || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+                    
+                    transaction.set(businessRef, {
+                        stats: {
+                            totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+                            lastReceiptAt: new Date().toISOString()
+                        }
+                    }, { merge: true });
+                });
+            }
+            console.log(`Analysis complete for ${fileName}. Firestore silo statistics updated.`);
         }
 
     } catch (error) {
@@ -229,11 +233,13 @@ export const analyzeReceiptUpload = onObjectFinalized(
                     .collection('receipts').doc(receiptId).set({
                 status: 'error',
                 userId: userIdForError,
+                driverId: userIdForError,
                 errorMessage: (error as Error).message,
                 timestamp: new Date().toISOString()
             }, { merge: true });
         } else {
-            // Fallback for non-tenant paths or if businessId is unknown
+            // Fallback for non-tenant paths (deprecated but kept for absolute safety)
+            console.warn(`Logging error to legacy batches collection for path: ${filePath}`);
             await db.collection('batches').doc(userIdForError).set({
                 status: 'error',
                 errorFile: filePath,

@@ -61,7 +61,7 @@ This script checks:
 
 ```bash
 # Windows PowerShell
-Invoke-WebRequest -Method DELETE -Uri "http://localhost:8080/emulator/v1/projects/financialanaliyst/databases/(default)/documents"
+Invoke-WebRequest -Method DELETE -Uri "http://localhost:8080/emulator/v1/projects/<YOUR_PROJECT_ID>/databases/(default)/documents"
 
 # Linux/Mac/Git Bash
 ./clear-emulator.sh
@@ -71,7 +71,7 @@ Invoke-WebRequest -Method DELETE -Uri "http://localhost:8080/emulator/v1/project
 
 ```bash
 # Windows PowerShell
-Invoke-WebRequest -Method DELETE -Uri "http://localhost:8080/emulator/v1/projects/financialanaliyst/databases/(default)/documents/businesses"
+Invoke-WebRequest -Method DELETE -Uri "http://localhost:8080/emulator/v1/projects/<YOUR_PROJECT_ID>/databases/(default)/documents/businesses"
 
 # Linux/Mac/Git Bash
 ./clear-emulator.sh 8080 businesses
@@ -84,8 +84,8 @@ Test if your service account can access a Google Sheet before running the emulat
 ```bash
 # Replace [SHEET_ID] with your actual Google Sheet ID
 gcloud drive files describe [SHEET_ID] \
-    --impersonate-service-account=backend-sa@financialanaliyst.iam.gserviceaccount.com \
-    --project=financialanaliyst
+    --impersonate-service-account=backend-sa@<YOUR_PROJECT_ID>.iam.gserviceaccount.com \
+    --project=<YOUR_PROJECT_ID>
 ```
 
 **If it works:** You'll see JSON file metadata. Permissions are correct! ✅  
@@ -103,27 +103,27 @@ gcloud services enable \
     cloudfunctions.googleapis.com \
     secretmanager.googleapis.com \
     iam.googleapis.com \
-    --project=financialanaliyst
+    --project=<YOUR_PROJECT_ID>
 ```
 
 ### Grant IAM Roles
 
 ```bash
-SA_EMAIL="backend-sa@financialanaliyst.iam.gserviceaccount.com"
+SA_EMAIL="backend-sa@<YOUR_PROJECT_ID>.iam.gserviceaccount.com"
 
-gcloud projects add-iam-policy-binding financialanaliyst \
+gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
     --member="serviceAccount:$SA_EMAIL" \
     --role="roles/secretmanager.secretAccessor"
 
-gcloud projects add-iam-policy-binding financialanaliyst \
+gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
     --member="serviceAccount:$SA_EMAIL" \
     --role="roles/iam.serviceAccountTokenCreator"
 
-gcloud projects add-iam-policy-binding financialanaliyst \
+gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
     --member="serviceAccount:$SA_EMAIL" \
     --role="roles/run.invoker"
 
-gcloud projects add-iam-policy-binding financialanaliyst \
+gcloud projects add-iam-policy-binding <YOUR_PROJECT_ID> \
     --member="serviceAccount:$SA_EMAIL" \
     --role="roles/datastore.user"
 ```
@@ -132,8 +132,8 @@ gcloud projects add-iam-policy-binding financialanaliyst \
 
 ```bash
 gcloud iam service-accounts keys create ./functions/service-account-key.json \
-    --iam-account=backend-sa@financialanaliyst.iam.gserviceaccount.com \
-    --project=financialanaliyst
+    --iam-account=backend-sa@<YOUR_PROJECT_ID>.iam.gserviceaccount.com \
+    --project=<YOUR_PROJECT_ID>
 ```
 
 ### Set Environment Variable
@@ -165,7 +165,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/functions/service-account-key.json
 3. **Check if the sheet is shared:**
    - Open your Google Sheet
    - Click "Share"
-   - Add: `backend-sa@financialanaliyst.iam.gserviceaccount.com`
+   - Add: `backend-sa@<YOUR_PROJECT_ID>.iam.gserviceaccount.com`
    - Grant "Editor" role
 
 ### "Service account not found"
@@ -179,7 +179,7 @@ Run the setup script:
 
 Enable it manually:
 ```bash
-gcloud services enable [API_NAME] --project=financialanaliyst
+gcloud services enable [API_NAME] --project=<YOUR_PROJECT_ID>
 ```
 
 Or run the fix script which enables all required APIs.
@@ -232,6 +232,6 @@ Or run the fix script which enables all required APIs.
 ---
 
 **Last Updated:** December 2025  
-**Project:** financialanaliyst  
-**Service Account:** backend-sa@financialanaliyst.iam.gserviceaccount.com
+**Project:** <YOUR_PROJECT_ID>  
+**Service Account:** backend-sa@<YOUR_PROJECT_ID>.iam.gserviceaccount.com
 

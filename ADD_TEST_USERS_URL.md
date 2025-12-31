@@ -5,7 +5,7 @@
 **Click this link to add test users:**
 
 ```
-https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 ```
 
 ---
@@ -42,7 +42,7 @@ Go back to http://localhost:5000/business-signup.html and try again.
 
 **Bookmark this URL for easy access:**
 ```
-https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 ```
 
 ---
@@ -52,7 +52,7 @@ https://console.cloud.google.com/apis/credentials/consent?project=financialanali
 If the direct link doesn't work, navigate manually:
 
 1. Go to: https://console.cloud.google.com
-2. Select project: **financialanaliyst**
+2. Select project: **<YOUR_PROJECT_ID>**
 3. Click: **APIs & Services** (left sidebar)
 4. Click: **OAuth consent screen**
 5. Scroll to: **Test users** section

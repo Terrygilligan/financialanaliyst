@@ -24,13 +24,15 @@ export interface ErrorLogEntry {
     errorMessage: string;
     errorStack?: string;
     userId?: string;
+    businessId?: string;
     receiptId?: string;
     fileName?: string;
     context?: Record<string, any>;
 }
 
 /**
- * Log an error to the Firestore /error_logs collection.
+ * Log an error to the Firestore /error_logs collection within a business silo.
+ * If no businessId is provided, it falls back to a global top-level collection.
  * 
  * This function provides centralized error logging for audit trail and debugging.
  * 
@@ -45,8 +47,14 @@ export async function logError(entry: ErrorLogEntry): Promise<void> {
             serverTimestamp: new Date().toISOString()
         };
 
-        // Store in /error_logs collection
-        await db.collection('error_logs').add(logEntry);
+        // Store in appropriate collection based on businessId (The Silo Rule)
+        if (entry.businessId) {
+            await db.collection('businesses').doc(entry.businessId)
+                    .collection('error_logs').add(logEntry);
+        } else {
+            // Fallback for global or bootstrap errors
+            await db.collection('error_logs').add(logEntry);
+        }
 
         // Also log to console for Cloud Functions logs
         const logLevel = entry.severity === ErrorSeverity.CRITICAL || entry.severity === ErrorSeverity.ERROR

@@ -10,7 +10,7 @@ Since your app is in "Testing" mode, you need to add your email as a test user.
 ### Step 1: Go to Google Cloud Console
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Navigate to: **APIs & Services** → **OAuth consent screen**
 
 ### Step 2: Add Test Users

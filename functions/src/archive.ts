@@ -46,10 +46,16 @@ export const archiveData = onCall(
             throw new Error(`Failed to verify admin status: ${(error as Error).message}`);
         }
 
-        const { archiveBefore, dryRun = false } = request.data || {};
+        const { archiveBefore, dryRun = false, businessId: targetBusinessId } = request.data || {};
 
         if (!archiveBefore) {
             throw new Error("archiveBefore date is required (ISO format)");
+        }
+
+        // Get businessId from admin's auth token (The Silo Rule)
+        const businessId = targetBusinessId || request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: Admin not associated with a business silo");
         }
 
         const archiveDate = new Date(archiveBefore);
@@ -57,74 +63,63 @@ export const archiveData = onCall(
             throw new Error("Invalid date format. Use ISO format (e.g., '2024-01-01T00:00:00Z')");
         }
 
-        console.log(`Starting archive process. Archive before: ${archiveDate.toISOString()}, Dry run: ${dryRun}`);
+        console.log(`Starting archive process for silo ${businessId}. Archive before: ${archiveDate.toISOString()}, Dry run: ${dryRun}`);
 
         const archiveSummary = {
-            archivedBatches: 0,
+            archivedReceipts: 0,
             errors: [] as string[],
             dryRun
         };
 
         try {
-            // Archive old batches
-            const batchesSnapshot = await db.collection('batches').get();
+            // Archive old receipts from the business silo
+            const receiptsSnapshot = await db.collection('businesses').doc(businessId)
+                                             .collection('receipts')
+                                             .where('timestamp', '<', archiveDate.toISOString())
+                                             .get();
+            
             let currentBatch = db.batch();
-            let operationCount = 0; // Track operations, not documents (each doc = 2 ops: set + delete)
-            const MAX_BATCH_OPERATIONS = 500; // Firestore batch limit
+            let operationCount = 0;
+            const MAX_BATCH_OPERATIONS = 500;
 
-            // Use for...of instead of forEach to properly handle async operations
-            for (const doc of batchesSnapshot.docs) {
-                const data = doc.data();
-                const timestamp = data.timestamp ? new Date(data.timestamp) : null;
+            for (const doc of receiptsSnapshot.docs) {
+                if (!dryRun) {
+                    // Move to archive collection within silo
+                    const archiveRef = db.collection('businesses').doc(businessId)
+                                         .collection('archive_receipts').doc(doc.id);
+                    currentBatch.set(archiveRef, {
+                        ...doc.data(),
+                        archivedAt: new Date().toISOString(),
+                        archivedBy: callerUid
+                    });
 
-                if (timestamp && timestamp < archiveDate) {
+                    // Delete from active collection
+                    currentBatch.delete(doc.ref);
+                    operationCount += 2;
+                }
+                archiveSummary.archivedReceipts++;
+
+                if (operationCount >= MAX_BATCH_OPERATIONS) {
                     if (!dryRun) {
-                        // Move to archive collection (operation 1)
-                        const archiveRef = db.collection('archive_batches').doc(doc.id);
-                        currentBatch.set(archiveRef, {
-                            ...data,
-                            archivedAt: new Date().toISOString(),
-                            archivedBy: callerUid
-                        });
-
-                        // Delete from active collection (operation 2)
-                        currentBatch.delete(doc.ref);
-                        operationCount += 2; // Each document = 2 operations
+                        await currentBatch.commit();
+                        currentBatch = db.batch();
                     }
-                    archiveSummary.archivedBatches++;
-
-                    // Commit when approaching Firestore's 500-operation limit
-                    // We commit at 500 to stay within limit (each doc = 2 ops, so 250 docs max)
-                    if (operationCount >= MAX_BATCH_OPERATIONS) {
-                        if (!dryRun) {
-                            await currentBatch.commit();
-                            // Create a new batch for the next set of operations
-                            currentBatch = db.batch();
-                        }
-                        operationCount = 0;
-                    }
+                    operationCount = 0;
                 }
             }
 
-            // Commit remaining batches
             if (operationCount > 0 && !dryRun) {
                 await currentBatch.commit();
             }
 
-            // Note: Receipts are stored in /batches/{userId} with receiptData embedded,
-            // so archiving batches also archives the receipt data. A separate /receipts
-            // collection does not exist in the current implementation. If individual
-            // receipt archiving is needed in the future, receipts should first be stored
-            // in a dedicated /receipts collection.
-
-            console.log(`Archive process complete. Summary:`, archiveSummary);
+            console.log(`Archive process complete for silo ${businessId}. Summary:`, archiveSummary);
 
             return {
                 success: true,
                 summary: archiveSummary,
                 message: dryRun 
-                    ? `Dry run complete. Would archive ${archiveSummary.archivedBatches} batches (receipt data is embedded in batches).`
-                    : `Archived ${archiveSummary.archivedBatches} batches (receipt data is embedded in batches).`
+                    ? `Dry run complete. Would archive ${archiveSummary.archivedReceipts} receipts in silo ${businessId}.`
+                    : `Archived ${archiveSummary.archivedReceipts} receipts in silo ${businessId}.`
             };
         } catch (error) {
             console.error('Error during archive process:', error);

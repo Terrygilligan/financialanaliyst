@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ **Service Account Verified**: `financial-output@financialanaliyst.iam.gserviceaccount.com`  
+✅ **Service Account Verified**: `<SERVICE_ACCOUNT_EMAIL>`  
 ✅ **Code Uses Explicit Credentials**: Not using ADC, using credentials from env var  
 ✅ **APIs Enabled**: Google Sheets API and Google Drive API  
 ✅ **IAM Role**: Owner role granted  
@@ -13,7 +13,7 @@
 The most important step is to see **which identity Google thinks is calling**:
 
 1. **Go to Cloud Logs**:
-   - https://console.cloud.google.com/logs/query?project=financialanaliyst
+   - https://console.cloud.google.com/logs/query?project=<YOUR_PROJECT_ID>
 
 2. **Filter for the error**:
    ```
@@ -28,13 +28,13 @@ The most important step is to see **which identity Google thinks is calling**:
    ```
 
 4. **Look for `principalEmail`** in the log entry:
-   - If it shows: `financial-output@financialanaliyst.iam.gserviceaccount.com` → Permissions not propagated yet
-   - If it shows: `622000096460-compute@developer.gserviceaccount.com` → Default Compute Engine SA needs Editor role
+   - If it shows: `<SERVICE_ACCOUNT_EMAIL>` → Permissions not propagated yet
+   - If it shows: `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com` → Default Compute Engine SA needs Editor role
    - If it shows: Your personal email → Wrong credentials being used
 
 ## Solutions Based on Logs
 
-### If principalEmail = financial-output@...
+### If principalEmail = `<SERVICE_ACCOUNT_EMAIL>`
 
 **Solution**: Wait longer (20-30 minutes) or verify:
 1. Google Drive API is enabled for this service account's project
@@ -44,8 +44,8 @@ The most important step is to see **which identity Google thinks is calling**:
 ### If principalEmail = compute@developer...
 
 **Solution**: Grant Editor role to default Compute Engine SA:
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find: `622000096460-compute@developer.gserviceaccount.com`
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find: `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com`
 3. Grant **Editor** role
 4. Wait 5-10 minutes
 
@@ -64,14 +64,14 @@ The code in `sheet-operations.ts` now includes logging:
 
 **After next deployment**, check logs for:
 ```
-[Sheet Operations] Using service account: financial-output@...
+[Sheet Operations] Using service account: `<SERVICE_ACCOUNT_EMAIL>`
 ```
 
 ## Quick Workaround
 
 While diagnosing, use **"Use Existing Sheet"** option:
 1. Manually create a Google Sheet
-2. Share with: `financial-output@financialanaliyst.iam.gserviceaccount.com` (Editor)
+2. Share with: `<SERVICE_ACCOUNT_EMAIL>` (Editor)
 3. Use the Sheet ID in admin UI
 4. This bypasses the creation permission issue
 

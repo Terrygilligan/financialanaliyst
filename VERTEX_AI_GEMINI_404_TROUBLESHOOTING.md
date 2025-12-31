@@ -13,7 +13,7 @@ This document details the complete troubleshooting process for resolving a persi
 {
   "error": {
     "code": 404,
-    "message": "Publisher Model `projects/financialanaliyst/locations/us-central1/publishers/google/models/gemini-1.5-flash` was not found or your project does not have access to it. Please ensure you are using a valid model version.",
+    "message": "Publisher Model `projects/<YOUR_PROJECT_ID>/locations/us-central1/publishers/google/models/gemini-1.5-flash` was not found or your project does not have access to it. Please ensure you are using a valid model version.",
     "status": "NOT_FOUND"
   }
 }
@@ -21,7 +21,7 @@ This document details the complete troubleshooting process for resolving a persi
 
 ### Context
 
-- **Project**: `financialanaliyst`
+- **Project**: `<YOUR_PROJECT_ID>`
 - **Location**: `us-central1`
 - **Original Model**: `gemini-1.5-flash`
 - **Authentication Method**: Service Account (Application Default Credentials)
@@ -86,7 +86,7 @@ This document details the complete troubleshooting process for resolving a persi
 
 **Steps**:
 1. Navigate to **IAM & Admin** → **IAM** in Google Cloud Console
-2. Find the service account: `622000096460-compute@developer.gserviceaccount.com` (Default compute service account)
+2. Find the service account: `<YOUR_PROJECT_NUMBER>-compute@developer.gserviceaccount.com` (Default compute service account)
 3. Click **Edit** (pencil icon)
 4. Click **Add Another Role**
 5. Select **Vertex AI User** (`roles/aiplatform.user`)
@@ -166,14 +166,14 @@ const MODEL_NAME = "gemini-2.5-flash";  // Changed from "gemini-1.5-flash"
 
 3. **Deploy Updated Configuration**:
    ```bash
-   firebase deploy --only hosting --project financialanaliyst
+   firebase deploy --only hosting --project <YOUR_PROJECT_ID>
    ```
 
 4. **Secure the New Key**:
    - In Google Cloud Console → **Credentials**
    - Click on the new browser key
    - Under **Application restrictions**, select **HTTP referrers (web sites)**
-   - Add your domain: `https://financialanaliyst.web.app/*`
+   - Add your domain: `https://<YOUR_PROJECT_ID>.web.app/*`
    - Click **Save**
 
 5. **Delete Old Key**:
@@ -262,17 +262,17 @@ npm run build
 
 ### Deploy Functions
 ```bash
-firebase deploy --only functions --project financialanaliyst
+firebase deploy --only functions --project <YOUR_PROJECT_ID>
 ```
 
 ### Deploy Hosting (after key rotation)
 ```bash
-firebase deploy --only hosting --project financialanaliyst
+firebase deploy --only hosting --project <YOUR_PROJECT_ID>
 ```
 
 ### View Logs
 ```bash
-firebase functions:log --project financialanaliyst --only analyzeReceiptUpload
+firebase functions:log --project <YOUR_PROJECT_ID> --only analyzeReceiptUpload
 ```
 
 ---
@@ -322,7 +322,7 @@ After implementing all fixes, verify:
 
 **Solution**: Check function logs for detailed error messages:
 ```bash
-firebase functions:log --project financialanaliyst --only analyzeReceiptUpload
+firebase functions:log --project <YOUR_PROJECT_ID> --only analyzeReceiptUpload
 ```
 
 ---

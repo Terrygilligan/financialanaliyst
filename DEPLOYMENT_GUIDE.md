@@ -6,7 +6,7 @@ This guide covers deploying the Financial Analyst application to Firebase produc
 
 1. **Firebase CLI installed**: `npm install -g firebase-tools`
 2. **Logged in to Firebase**: `firebase login`
-3. **Project selected**: `firebase use financialanaliyst` (or your project ID)
+3. **Project selected**: `firebase use <YOUR_PROJECT_ID>` (or your project ID)
 
 ## Pre-Deployment Checklist
 
@@ -87,7 +87,7 @@ firebase deploy
 
 ### 1. Test Business Signup
 
-1. Visit your hosting URL: `https://financialanaliyst.web.app/business-signup.html`
+1. Visit your hosting URL: `https://<YOUR_PROJECT_ID>.web.app/business-signup.html`
 2. Create a test business
 3. Verify:
    - Google Drive folder created

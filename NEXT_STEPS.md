@@ -11,7 +11,7 @@
 **Important**: You need to share your Google Sheet with this email address:
 
 ```
-financial-output@financialanaliyst.iam.gserviceaccount.com
+<SERVICE_ACCOUNT_EMAIL>
 ```
 
 ## 🎯 Next Steps: Create and Configure Google Sheet
@@ -42,7 +42,7 @@ In the first row, add these exact headers:
 1. Click the **Share** button (top right corner)
 2. In the "Add people and groups" field, paste:
    ```
-   financial-output@financialanaliyst.iam.gserviceaccount.com
+   <SERVICE_ACCOUNT_EMAIL>
    ```
 3. Make sure the permission is set to **Editor** (not Viewer)
 4. **Uncheck** "Notify people" (Service Accounts don't have email)
@@ -73,7 +73,7 @@ In the first row, add these exact headers:
 
 - [ ] Google Sheet created
 - [ ] Headers added (Row 1): Vendor Name, Date, Total Amount, Category, Timestamp
-- [ ] Sheet shared with: `financial-output@financialanaliyst.iam.gserviceaccount.com` (Editor access)
+- [ ] Sheet shared with: `<SERVICE_ACCOUNT_EMAIL>` (Editor access)
 - [ ] Sheet ID copied from URL
 - [ ] Sheet ID added to `functions/.env`
 
@@ -89,7 +89,7 @@ After you've added the Sheet ID to `.env`, your backend will be fully configured
 
 **Service Account Email** (for sharing Sheet):
 ```
-financial-output@financialanaliyst.iam.gserviceaccount.com
+<SERVICE_ACCOUNT_EMAIL>
 ```
 
 **Current .env Status**:

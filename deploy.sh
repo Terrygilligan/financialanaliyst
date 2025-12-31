@@ -5,7 +5,7 @@
 
 set -e  # Exit on error
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 # Deploy all business management functions
 FUNCTION_NAMES="provisionNewBusiness getBusinessDetails updateBusinessSettings addAuthorizedUser"
 

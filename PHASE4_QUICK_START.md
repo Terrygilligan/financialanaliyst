@@ -172,7 +172,7 @@ Users cannot see or modify sheet configurations.
 1. ✅ Ensure Phase 1-3 are complete and deployed
 2. ✅ Have admin access to Firebase Console
 3. ✅ Have multiple test Google Sheets ready
-4. ✅ Share all sheets with service account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+4. ✅ Share all sheets with service account: `<SERVICE_ACCOUNT_EMAIL>`
 
 ### During Implementation:
 1. ⚠️ Test thoroughly with real receipts

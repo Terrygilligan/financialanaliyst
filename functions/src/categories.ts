@@ -20,14 +20,16 @@ export interface CategoryInfo {
 }
 
 /**
- * Get all categories from Firestore.
+ * Get all categories from Firestore for a specific business.
  * Falls back to default categories if none exist.
  * 
+ * @param businessId - The business silo ID
  * @returns Array of category information
  */
-export async function getAllCategories(): Promise<CategoryInfo[]> {
+export async function getAllCategories(businessId: string): Promise<CategoryInfo[]> {
     try {
-        const categoriesSnapshot = await db.collection('categories').orderBy('name').get();
+        const categoriesSnapshot = await db.collection('businesses').doc(businessId)
+                                         .collection('categories').orderBy('name').get();
         
         if (categoriesSnapshot.empty) {
             // Return default categories if none exist
@@ -74,7 +76,11 @@ export const getCategories = onCall(
     },
     async (request) => {
         try {
-            const categories = await getAllCategories();
+            const businessId = request.auth?.token?.businessId;
+            if (!businessId) {
+                throw new Error("Unauthorized: User not associated with a business silo");
+            }
+            const categories = await getAllCategories(businessId);
             return {
                 success: true,
                 categories: categories
@@ -89,7 +95,7 @@ export const getCategories = onCall(
 /**
  * Cloud Function: Create Category
  * 
- * Creates a new category. Admin only.
+ * Creates a new category within a business silo. Admin only.
  */
 export const createCategory = onCall(
     {
@@ -100,6 +106,11 @@ export const createCategory = onCall(
         const callerUid = request.auth?.uid;
         if (!callerUid) {
             throw new Error("Unauthorized: Authentication required");
+        }
+
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: User not associated with a business silo");
         }
 
         try {
@@ -122,15 +133,15 @@ export const createCategory = onCall(
         }
 
         try {
-            // Check if category with same name already exists
-            const existingCategories = await getAllCategories();
+            // Check if category with same name already exists in this silo
+            const existingCategories = await getAllCategories(businessId);
             const nameLower = name.trim().toLowerCase();
             if (existingCategories.some(cat => cat.name.toLowerCase() === nameLower)) {
                 throw new Error("Category with this name already exists");
             }
 
-            // Create new category
-            const categoryRef = db.collection('categories').doc();
+            // Create new category in silo
+            const categoryRef = db.collection('businesses').doc(businessId).collection('categories').doc();
             await categoryRef.set({
                 name: name.trim(),
                 description: description?.trim() || '',
@@ -160,7 +171,7 @@ export const createCategory = onCall(
 /**
  * Cloud Function: Update Category
  * 
- * Updates an existing category. Admin only.
+ * Updates an existing category within a business silo. Admin only.
  */
 export const updateCategory = onCall(
     {
@@ -171,6 +182,11 @@ export const updateCategory = onCall(
         const callerUid = request.auth?.uid;
         if (!callerUid) {
             throw new Error("Unauthorized: Authentication required");
+        }
+
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: User not associated with a business silo");
         }
 
         try {
@@ -197,17 +213,17 @@ export const updateCategory = onCall(
         }
 
         try {
-            const categoryRef = db.collection('categories').doc(categoryId);
+            const categoryRef = db.collection('businesses').doc(businessId).collection('categories').doc(categoryId);
             const categoryDoc = await categoryRef.get();
 
             if (!categoryDoc.exists) {
-                throw new Error("Category not found");
+                throw new Error("Category not found in your business silo");
             }
 
             const updateData: Partial<CategoryInfo> = {};
             if (name) {
-                // Check if new name conflicts with existing category
-                const existingCategories = await getAllCategories();
+                // Check if new name conflicts with existing category in this silo
+                const existingCategories = await getAllCategories(businessId);
                 const nameLower = name.trim().toLowerCase();
                 if (existingCategories.some(cat => cat.id !== categoryId && cat.name.toLowerCase() === nameLower)) {
                     throw new Error("Category with this name already exists");
@@ -234,7 +250,7 @@ export const updateCategory = onCall(
 /**
  * Cloud Function: Delete Category
  * 
- * Deletes a category. Admin only. Cannot delete default categories.
+ * Deletes a category within a business silo. Admin only. Cannot delete default categories.
  */
 export const deleteCategory = onCall(
     {
@@ -245,6 +261,11 @@ export const deleteCategory = onCall(
         const callerUid = request.auth?.uid;
         if (!callerUid) {
             throw new Error("Unauthorized: Authentication required");
+        }
+
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: User not associated with a business silo");
         }
 
         try {
@@ -267,11 +288,11 @@ export const deleteCategory = onCall(
         }
 
         try {
-            const categoryRef = db.collection('categories').doc(categoryId);
+            const categoryRef = db.collection('businesses').doc(businessId).collection('categories').doc(categoryId);
             const categoryDoc = await categoryRef.get();
 
             if (!categoryDoc.exists) {
-                throw new Error("Category not found");
+                throw new Error("Category not found in your business silo");
             }
 
             const categoryData = categoryDoc.data() as CategoryInfo;

@@ -28,7 +28,7 @@ Go to [Google Cloud Console - APIs & Services](https://console.cloud.google.com/
 
 Go to [IAM & Admin - Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts):
 
-1. Find your service account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. Find your service account: `<SERVICE_ACCOUNT_EMAIL>`
 2. Click on it
 3. Go to **"Permissions"** tab
 4. Click **"Grant Access"** or **"Add Principal"**
@@ -41,7 +41,7 @@ Go to [IAM & Admin - Service Accounts](https://console.cloud.google.com/iam-admi
 Check that your service account key has:
 - ✅ Valid JSON format
 - ✅ All required fields: `type`, `project_id`, `private_key_id`, `private_key`, `client_email`, `client_id`, `auth_uri`, `token_uri`, `auth_provider_x509_cert_url`, `client_x509_cert_url`
-- ✅ Correct `project_id`: `financialanaliyst`
+- ✅ Correct `project_id`: `<YOUR_PROJECT_ID>`
 
 ### 4. Check Environment Variable
 
@@ -133,7 +133,7 @@ After fixing permissions, test by:
    ```
 
 2. **Verify service account email**:
-   - Should be: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Should be: `<SERVICE_ACCOUNT_EMAIL>`
    - Check in Cloud Console → IAM & Admin → Service Accounts
 
 3. **Test with a simple script**:

@@ -2,21 +2,21 @@
 
 ## Error Message
 ```
-Cloud Firestore API has not been used in project financialanaliyst before or it is disabled.
+Cloud Firestore API has not been used in project <YOUR_PROJECT_ID> before or it is disabled.
 ```
 
 ## Quick Fix
 
 ### Option 1: Direct Link (Easiest)
 Click this link to enable Firestore API:
-👉 **[Enable Firestore API](https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=financialanaliyst)**
+👉 **[Enable Firestore API](https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=<YOUR_PROJECT_ID>)**
 
 Then click **"Enable"** button.
 
 ### Option 2: Manual Steps
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Navigate to **APIs & Services** → **Library**
 4. Search for **"Cloud Firestore API"**
 5. Click on it and click **"Enable"**
@@ -24,7 +24,7 @@ Then click **"Enable"** button.
 ### Option 3: Via Firebase Console
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Go to **Firestore Database**
 4. Click **"Create database"** if you haven't created one yet
 5. Choose **"Start in test mode"** (we'll update security rules later)

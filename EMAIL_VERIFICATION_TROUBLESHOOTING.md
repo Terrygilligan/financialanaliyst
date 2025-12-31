@@ -14,7 +14,7 @@
 
 #### Check Firebase Authentication Settings:
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Go to **Authentication** → **Templates** tab
 4. Check if **Email address verification** template exists
 5. If not, it should be created automatically, but you can customize it

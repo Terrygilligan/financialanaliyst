@@ -28,7 +28,7 @@ All functions deployed successfully to `us-central1`:
 - **Updated styles.css** - UI styling
 - **Updated admin.html** - Added navigation
 
-**Live URL**: https://financialanaliyst.web.app/admin-sheets.html
+**Live URL**: https://<YOUR_PROJECT_ID>.web.app/admin-sheets.html
 
 ---
 
@@ -37,7 +37,7 @@ All functions deployed successfully to `us-central1`:
 ### Phase 1: Setup Default Sheet Configuration
 
 #### Step 1: Go to Firebase Console
-1. Open: https://console.firebase.google.com/project/financialanaliyst/firestore
+1. Open: https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/firestore
 2. Navigate to **Firestore Database**
 
 #### Step 2: Create Default Sheet Config
@@ -73,7 +73,7 @@ updatedAt           | timestamp | (click "Set to current time")
 ### Phase 2: Test Admin Sheet Management UI
 
 #### Test 2.1: Access Admin Dashboard
-1. Navigate to: https://financialanaliyst.web.app/admin.html
+1. Navigate to: https://<YOUR_PROJECT_ID>.web.app/admin.html
 2. ✅ Verify you see **"Sheet Management"** link in navigation
 3. Click **Sheet Management**
 
@@ -151,7 +151,7 @@ updatedAt           | timestamp | (click "Set to current time")
 
 #### Test 4.1: Upload Receipt (User with Assignment)
 1. **Log in** as a user who was assigned to "Test Sheet A"
-2. Navigate to: https://financialanaliyst.web.app
+2. Navigate to: https://<YOUR_PROJECT_ID>.web.app
 3. **Upload a receipt** (any image)
 4. ✅ Verify the receipt is processed
 5. **Open "Test Sheet A"** (the one you assigned to this user)
@@ -159,7 +159,7 @@ updatedAt           | timestamp | (click "Set to current time")
 
 #### Test 4.2: Upload Receipt (User without Assignment)
 1. **Log in** as a different user (not assigned to any specific sheet)
-2. Navigate to: https://financialanaliyst.web.app
+2. Navigate to: https://<YOUR_PROJECT_ID>.web.app
 3. **Upload a receipt**
 4. ✅ Verify the receipt is processed
 5. **Open the "Default Sheet"**
@@ -242,7 +242,7 @@ Collection: batches
 ### Sheet Health Check Fails
 - Verify the Google Sheet ID is correct
 - Make sure the sheet is shared with:
-  - `financial-output@financialanaliyst.iam.gserviceaccount.com`
+  - `<SERVICE_ACCOUNT_EMAIL>`
 - Check that the service account has Editor permissions
 
 ### Receipt Goes to Wrong Sheet

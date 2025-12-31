@@ -160,7 +160,7 @@ saveSheetConfig(e)
 ## 🔐 **Security & Permissions**
 
 ### Service Account
-**Email**: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+**Email**: `<SERVICE_ACCOUNT_EMAIL>`
 
 **Permissions**:
 - ✅ Full access to Drive API (create, share files)
@@ -231,7 +231,7 @@ Both Cloud Functions verify admin status:
 **Verification**:
 - Open the Google Sheet
 - Click "Share" button
-- Should see: `financial-output@financialanaliyst.iam.gserviceaccount.com` (Editor)
+- Should see: `<SERVICE_ACCOUNT_EMAIL>` (Editor)
 
 ### Test Case 3: Error Handling (Not Owner)
 
@@ -306,7 +306,7 @@ No new collections. Uses existing:
 ✅ firebase deploy --only hosting
    - 25 files uploaded
    - Cache version: v7-phase4-ui
-   - Hosting URL: https://financialanaliyst.web.app
+   - Hosting URL: https://<YOUR_PROJECT_ID>.web.app
 ```
 
 ---

@@ -11,7 +11,7 @@ This guide explains how to set up admin access for the Admin Dashboard feature.
 ### Step 1: Create Admin Collection in Firestore
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Click **Firestore Database** in the left menu
 4. Click **Start collection** (if Firestore is empty) or click **Add collection**
 5. Collection ID: `admins`

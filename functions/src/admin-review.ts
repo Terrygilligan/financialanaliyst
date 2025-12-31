@@ -51,13 +51,20 @@ export const adminApproveReceipt = onCall(
             throw new Error("receiptId is required");
         }
 
+        // Get businessId from admin's auth token
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: Admin not associated with a business silo");
+        }
+
         try {
-            // 1. Get the pending receipt
-            const pendingReceiptRef = db.collection('pending_receipts').doc(receiptId);
+            // 1. Get the pending receipt from the business silo
+            const pendingReceiptRef = db.collection('businesses').doc(businessId)
+                                         .collection('receipts').doc(receiptId);
             const pendingReceiptDoc = await pendingReceiptRef.get();
 
             if (!pendingReceiptDoc.exists) {
-                throw new Error("Pending receipt not found");
+                throw new Error("Pending receipt not found in your business silo");
             }
 
             const pendingReceipt = pendingReceiptDoc.data();
@@ -154,8 +161,9 @@ export const adminApproveReceipt = onCall(
             finalReceiptData.validationStatus = !validation.isValid ? 'admin_override' : validation.warnings.length > 0 ? 'warning' : 'passed';
             finalReceiptData.hasErrors = false;
 
-            // 4. Update batches collection with final status
-            await db.collection('batches').doc(userId).set({
+            // 4. Update business silo activity log
+            await db.collection('businesses').doc(businessId).collection('activity').doc(userId).set({
+                lastAction: 'admin_approved',
                 status: 'complete',
                 lastFileProcessed: pendingReceipt.fileName,
                 receiptData: finalReceiptData,
@@ -166,26 +174,32 @@ export const adminApproveReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 5. Update user statistics using transaction to prevent race conditions
-            const userRef = db.collection('users').doc(userId);
+            // 5. Update business statistics using transaction (The Silo Rule)
+            const businessRef = db.collection('businesses').doc(businessId);
             await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 }) : { totalReceipts: 0, totalAmount: 0, pendingReceipts: 0 };
+                const businessDoc = await transaction.get(businessRef);
+                const currentStats = businessDoc.exists ? (businessDoc.data()?.stats || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
                 
-                transaction.set(userRef, {
-                    totalReceipts: (currentStats.totalReceipts || 0) + 1,
-                    totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
-                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                    lastUpdated: new Date().toISOString(),
-                    lastReceiptProcessed: pendingReceipt.fileName,
-                    lastReceiptTimestamp: new Date().toISOString()
+                transaction.set(businessRef, {
+                    stats: {
+                        totalReceipts: (currentStats.totalReceipts || 0) + 1,
+                        totalAmount: (currentStats.totalAmount || 0) + (finalReceiptData.totalAmount || 0),
+                        lastReceiptAt: new Date().toISOString()
+                    }
                 }, { merge: true });
             });
 
-            // 6. Remove from pending_receipts collection
-            await pendingReceiptRef.delete();
+            // 6. Mark as complete in silo
+            await pendingReceiptRef.update({
+                status: 'complete',
+                ...finalReceiptData,
+                adminApproved: true,
+                approvedBy: callerUid,
+                approvedAt: new Date().toISOString(),
+                adminNotes: adminNotes || ''
+            });
 
-            console.log(`Receipt approved by admin ${callerUid}. Receipt ID: ${receiptId}`);
+            console.log(`Receipt approved by admin ${callerUid} in silo ${businessId}. Receipt ID: ${receiptId}`);
 
             // Phase 3.3: Log admin approval
             await logInfo('adminApproveReceipt', `Receipt approved by admin: ${receiptId}`, {
@@ -260,13 +274,20 @@ export const adminRejectReceipt = onCall(
             throw new Error("adminNotes is required for rejection");
         }
 
+        // Get businessId from admin's auth token
+        const businessId = request.auth?.token?.businessId;
+        if (!businessId) {
+            throw new Error("Unauthorized: Admin not associated with a business silo");
+        }
+
         try {
-            // 1. Get the pending receipt
-            const pendingReceiptRef = db.collection('pending_receipts').doc(receiptId);
+            // 1. Get the pending receipt from the business silo
+            const pendingReceiptRef = db.collection('businesses').doc(businessId)
+                                         .collection('receipts').doc(receiptId);
             const pendingReceiptDoc = await pendingReceiptRef.get();
 
             if (!pendingReceiptDoc.exists) {
-                throw new Error("Pending receipt not found");
+                throw new Error("Pending receipt not found in your business silo");
             }
 
             const pendingReceipt = pendingReceiptDoc.data();
@@ -276,17 +297,17 @@ export const adminRejectReceipt = onCall(
                 throw new Error("Receipt does not have an associated user");
             }
 
-            // 2. Move to rejected_receipts collection for record keeping
-            await db.collection('rejected_receipts').doc(receiptId).set({
-                ...pendingReceipt,
+            // 2. Mark as rejected in the silo
+            await pendingReceiptRef.update({
                 status: 'rejected',
                 rejectedBy: callerUid,
                 rejectedAt: new Date().toISOString(),
                 adminNotes: adminNotes
             });
 
-            // 3. Update batches collection
-            await db.collection('batches').doc(userId).set({
+            // 3. Update business silo activity log
+            await db.collection('businesses').doc(businessId).collection('activity').doc(userId).set({
+                lastAction: 'admin_rejected',
                 status: 'rejected',
                 lastFileProcessed: pendingReceipt.fileName,
                 rejectedBy: callerUid,
@@ -295,22 +316,7 @@ export const adminRejectReceipt = onCall(
                 timestamp: new Date().toISOString()
             }, { merge: true });
 
-            // 4. Update user statistics using transaction to prevent race conditions
-            const userRef = db.collection('users').doc(userId);
-            await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-                const currentStats = userDoc.exists ? (userDoc.data() || { pendingReceipts: 0 }) : { pendingReceipts: 0 };
-                
-                transaction.set(userRef, {
-                    pendingReceipts: Math.max(0, (currentStats.pendingReceipts || 0) - 1),
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-            });
-
-            // 5. Remove from pending_receipts collection
-            await pendingReceiptRef.delete();
-
-            console.log(`Receipt rejected by admin ${callerUid}. Receipt ID: ${receiptId}. Reason: ${adminNotes}`);
+            console.log(`Receipt rejected by admin ${callerUid} in silo ${businessId}. Receipt ID: ${receiptId}. Reason: ${adminNotes}`);
 
             // Phase 3.3: Log admin rejection
             await logInfo('adminRejectReceipt', `Receipt rejected by admin: ${receiptId}`, {

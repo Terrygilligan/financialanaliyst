@@ -268,7 +268,7 @@ function Show-PRInstructions {
     Write-Info "Current branch: $currentBranch"
     Write-Info ""
     Write-Info "To create a Pull Request:"
-    Write-Info "1. Go to: https://github.com/Terrygilligan/financialanaliyst"
+    Write-Info "1. Go to: https://github.com/Terrygilligan/<YOUR_PROJECT_ID>"
     Write-Info "2. Click 'Pull Requests' → 'New Pull Request'"
     Write-Info "3. Base: main ← Compare: $currentBranch"
     Write-Info "4. Fill in title and description"

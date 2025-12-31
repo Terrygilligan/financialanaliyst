@@ -21,11 +21,11 @@ try {
     console.log(`Project ID: ${credentials.project_id}`);
     console.log(`Type: ${credentials.type}`);
     console.log(`\n✅ This is the service account that should have Owner/Editor role in IAM`);
-    console.log(`   Expected: financial-output@financialanaliyst.iam.gserviceaccount.com\n`);
+    console.log(`   Expected: <SERVICE_ACCOUNT_EMAIL>\n`);
     
-    if (credentials.client_email !== 'financial-output@financialanaliyst.iam.gserviceaccount.com') {
+    if (credentials.client_email !== '<SERVICE_ACCOUNT_EMAIL>') {
         console.log('⚠️  WARNING: Service account email does not match expected!');
-        console.log(`   Expected: financial-output@financialanaliyst.iam.gserviceaccount.com`);
+        console.log(`   Expected: <SERVICE_ACCOUNT_EMAIL>`);
         console.log(`   Found: ${credentials.client_email}`);
         console.log(`\n   Make sure you granted permissions to: ${credentials.client_email}\n`);
     } else {

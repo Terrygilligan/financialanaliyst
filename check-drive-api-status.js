@@ -57,15 +57,15 @@ async function checkDriveAPI() {
             if (error.code === 403) {
                 console.log('🔧 Troubleshooting Steps:');
                 console.log('   1. Verify Google Drive API is enabled:');
-                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst\n');
+                console.log('      https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>\n');
                 console.log('   2. Verify service account has Editor role in IAM:');
-                console.log('      https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst\n');
+                console.log('      https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>\n');
                 console.log('   3. Wait 2-3 minutes for permissions to propagate\n');
                 console.log('   4. Check if service account email is correct:');
                 console.log(`      ${credentials.client_email}\n`);
             } else if (error.message.includes('not enabled')) {
                 console.log('🔧 Solution: Enable Google Drive API');
-                console.log('   https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst\n');
+                console.log('   https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>\n');
             }
         }
 

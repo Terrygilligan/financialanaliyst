@@ -73,7 +73,7 @@ GOOGLE_SHEET_ID=your-test-sheet-id
 
 For testing Google Sign-In locally, add test users:
 
-1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 2. Click **"Test users"** tab
 3. Add your email address
 4. Save
@@ -199,7 +199,7 @@ Once local testing works:
 
 1. **Deploy to production**: `.\deploy.ps1` or `firebase deploy --only functions`
 2. **Test in production**: Use live Firebase (remove `?emulator=true`)
-3. **Monitor logs**: `firebase functions:log --project=financialanaliyst`
+3. **Monitor logs**: `firebase functions:log --project=<YOUR_PROJECT_ID>`
 
 ---
 

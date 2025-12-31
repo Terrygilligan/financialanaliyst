@@ -1070,7 +1070,7 @@ async function verifySheet() {
             resultDiv.innerHTML = `
                 <p>❌ Sheet verification failed</p>
                 <p>Error: ${health.errorMessage || 'Unknown error'}</p>
-                <p>Make sure the sheet is shared with: financial-output@financialanaliyst.iam.gserviceaccount.com</p>
+                <p>Make sure the sheet is shared with: <SERVICE_ACCOUNT_EMAIL></p>
             `;
         }
     } catch (error) {
@@ -1496,7 +1496,7 @@ firebase deploy --only hosting
 ```json
 {
   "name": "Default Sheet",
-  "sheetId": "1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos",
+  "sheetId": "<YOUR_SHEET_ID>",
   "isDefault": true,
   "createdAt": "2025-01-01T00:00:00Z",
   "createdBy": "admin",

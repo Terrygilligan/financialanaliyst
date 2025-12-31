@@ -10,7 +10,7 @@
 - ✅ Latest commit: `f52562c - Fix: Add cache-busting and fix currency metadata bugs`
 
 ### Environment Configuration
-- [ ] Firebase project: `financialanaliyst`
+- [ ] Firebase project: `<YOUR_PROJECT_ID>`
 - [ ] Google Sheets API enabled
 - [ ] Service account has Editor access to sheets
 - [ ] Environment variables set in Functions config:
@@ -32,7 +32,7 @@
 
 ### Step 1: Build Functions
 ```powershell
-cd C:\Users\terry\Desktop\financialanaliyst\functions
+cd C:\Users\terry\Desktop\<YOUR_PROJECT_ID>\functions
 npm run build
 cd ..
 ```

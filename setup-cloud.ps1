@@ -1,7 +1,7 @@
 # Setup Cloud Environment Script (PowerShell)
-# Sets up GCP project, service accounts, APIs, and permissions for financialanaliyst
+# Sets up GCP project, service accounts, APIs, and permissions for <YOUR_PROJECT_ID>
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 $SERVICE_ACCOUNT_NAME = "backend-provisioner"
 $SERVICE_ACCOUNT_EMAIL = "$SERVICE_ACCOUNT_NAME@${PROJECT_ID}.iam.gserviceaccount.com"
 

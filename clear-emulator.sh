@@ -3,7 +3,7 @@
 # Clear Emulator Data Script
 # Clears Firestore data from the running emulator
 
-PROJECT_ID="financialanaliyst"
+PROJECT_ID="<YOUR_PROJECT_ID>"
 EMULATOR_PORT="${1:-8080}"  # Default to 8080, or use first argument
 BASE_URL="http://localhost:${EMULATOR_PORT}/emulator/v1/projects/${PROJECT_ID}/databases/(default)"
 

@@ -1,7 +1,7 @@
 # Deployment Script for provisionNewBusiness Function (PowerShell)
 # Enables required APIs and deploys the function to Firebase
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 # Deploy all business management functions
 $FUNCTION_NAMES = @("provisionNewBusiness", "getBusinessDetails", "updateBusinessSettings", "addAuthorizedUser")
 

@@ -12,7 +12,7 @@ This means your API key has restrictions that are blocking the Generative Langua
 ### Option 1: Check API Key Restrictions (Most Likely Issue)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Navigate to **APIs & Services** → **Credentials**
 4. Find your API key (the one starting with `AIzaSy...`)
 5. Click on it to edit
@@ -32,7 +32,7 @@ This means your API key has restrictions that are blocking the Generative Langua
    ```
 5. Redeploy the function:
    ```bash
-   firebase deploy --only functions --project financialanaliyst
+   firebase deploy --only functions --project <YOUR_PROJECT_ID>
    ```
 
 ### Option 3: Use Vertex AI Instead (More Secure for Production)
@@ -55,7 +55,7 @@ The function reads it from environment variables when deployed.
 1. **Wait 1-2 minutes** for changes to propagate
 2. **Redeploy function** (if you changed the API key):
    ```bash
-   firebase deploy --only functions --project financialanaliyst
+   firebase deploy --only functions --project <YOUR_PROJECT_ID>
    ```
 3. **Try uploading a receipt again**
 

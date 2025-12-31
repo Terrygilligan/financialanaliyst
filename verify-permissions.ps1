@@ -1,7 +1,7 @@
 # Verify Permissions Script (PowerShell)
 # Checks if service account has correct permissions and can access resources
 
-$PROJECT_ID = "financialanaliyst"
+$PROJECT_ID = "<YOUR_PROJECT_ID>"
 $SA_EMAIL = "backend-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 
 Write-Host "Verifying permissions for: $SA_EMAIL" -ForegroundColor Cyan

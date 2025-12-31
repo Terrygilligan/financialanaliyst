@@ -25,7 +25,7 @@ npm run build
 cd ..
 
 # 2. Deploy all business management functions
-firebase deploy --only functions:provisionNewBusiness,functions:getBusinessDetails,functions:updateBusinessSettings,functions:addAuthorizedUser --project=financialanaliyst
+firebase deploy --only functions:provisionNewBusiness,functions:getBusinessDetails,functions:updateBusinessSettings,functions:addAuthorizedUser --project=<YOUR_PROJECT_ID>
 ```
 
 ## What Gets Deployed
@@ -39,7 +39,7 @@ firebase deploy --only functions:provisionNewBusiness,functions:getBusinessDetai
 
 After deployment, check the logs:
 ```bash
-firebase functions:log --project=financialanaliyst
+firebase functions:log --project=<YOUR_PROJECT_ID>
 ```
 
 Then test the business signup page - the 404 errors should be resolved.

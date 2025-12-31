@@ -45,15 +45,15 @@ firebase emulators:start
 #### Option A: Enable APIs and Grant Permissions (Recommended)
 
 1. **Enable Google Sheets API**:
-   - Go to: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst
+   - Go to: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>
    - Click **"Enable"**
 
 2. **Enable Google Drive API**:
-   - Go to: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+   - Go to: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
    - Click **"Enable"**
 
 3. **Grant Service Account Permissions**:
-   - Service Account: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Service Account: `<SERVICE_ACCOUNT_EMAIL>`
    - Grant roles:
      - **Editor** or **Owner** on the project
      - Or specific roles: `roles/drive.file` and `roles/spreadsheets.editor`
@@ -97,8 +97,8 @@ GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
 
 ### 4. Check Service Account Permissions
 
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find: `<SERVICE_ACCOUNT_EMAIL>`
 3. Check roles - should have Editor or Owner
 
 ---
@@ -119,11 +119,11 @@ firebase emulators:start
 ```
 
 ### Step 3: Enable Google APIs
-1. Enable Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=financialanaliyst
-2. Enable Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+1. Enable Sheets API: https://console.cloud.google.com/apis/library/sheets.googleapis.com?project=<YOUR_PROJECT_ID>
+2. Enable Drive API: https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
 
 ### Step 4: Grant Service Account Permissions
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
 2. Find service account
 3. Grant **Editor** role
 

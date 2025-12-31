@@ -4,8 +4,8 @@
 
 The verification script confirms everything is set up correctly:
 
-- ✅ Service Account Key: `financial-output@financialanaliyst.iam.gserviceaccount.com`
-- ✅ Folder ID: `1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg`
+- ✅ Service Account Key: `<SERVICE_ACCOUNT_EMAIL>`
+- ✅ Folder ID: `<YOUR_FOLDER_ID>`
 - ✅ Folder accessible: "Financial Analyst Sheets"
 - ✅ Service account has access to folder
 - ✅ Can edit folder (good for creating subfolders)
@@ -61,7 +61,7 @@ The emulator should automatically load `functions/.env`. To verify:
    - ✅ Already verified: Folder is shared with service account
    - ✅ Already verified: Service account has Editor role
    - **Solution**: Make sure Google Drive API is enabled:
-     - https://console.cloud.google.com/apis/library/drive.googleapis.com?project=financialanaliyst
+     - https://console.cloud.google.com/apis/library/drive.googleapis.com?project=<YOUR_PROJECT_ID>
      - Click "Enable" if not already enabled
 
 2. **Functions not found (404)**
@@ -75,7 +75,7 @@ The emulator should automatically load `functions/.env`. To verify:
 
 ## 📝 What Changed
 
-1. ✅ Fixed project ID spelling (confirmed: `financialanaliyst` with 'i')
+1. ✅ Fixed project ID spelling (confirmed: `<YOUR_PROJECT_ID>` with 'i')
 2. ✅ Removed OAuth access token request (no popup blocking)
 3. ✅ Simplified signup flow (uses Service Account on backend)
 4. ✅ Verified all configuration is correct
@@ -86,7 +86,7 @@ When you sign up:
 1. User signs in with Google (ID token)
 2. Frontend calls `provisionNewBusiness` Cloud Function
 3. Backend uses Service Account to:
-   - Create folder in shared Drive folder (`1G7eq1KyH4cnvTPT4huBqph_b_rPo3Xwg`)
+   - Create folder in shared Drive folder (`<YOUR_FOLDER_ID>`)
    - Create Google Sheet inside that folder
    - Share folder/sheet with the bookkeeper
 4. Business document created in Firestore

@@ -7,7 +7,7 @@ This error means Firebase Storage security rules are blocking file uploads. You 
 ## Quick Fix: Update Storage Rules
 
 1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **financialanaliyst**
+2. Select your project: **<YOUR_PROJECT_ID>**
 3. Click **Storage** in the left menu
 4. Click the **Rules** tab
 5. Replace the existing rules with:

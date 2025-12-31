@@ -9,7 +9,7 @@ The Google Sheet isn't updating because **environment variables are not availabl
 ### Method 1: Google Cloud Console (Easiest)
 
 1. **Go to Cloud Functions**:
-   - Visit: https://console.cloud.google.com/functions/list?project=financialanaliyst
+   - Visit: https://console.cloud.google.com/functions/list?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → Cloud Functions → analyzeReceiptUpload
 
 2. **Edit the Function**:
@@ -45,7 +45,7 @@ gcloud functions deploy analyzeReceiptUpload \
   --gen2 \
   --runtime=nodejs20 \
   --region=us-central1 \
-  --set-env-vars GOOGLE_SHEET_ID=1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos \
+  --set-env-vars GOOGLE_SHEET_ID=<YOUR_SHEET_ID> \
   --set-env-vars GEMINI_API_KEY=your-api-key-here \
   --set-env-vars GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY='{"type":"service_account",...}'
 ```
@@ -59,7 +59,7 @@ After setting environment variables:
 1. **Upload a test receipt** via the web app
 2. **Check function logs**:
    ```bash
-   firebase functions:log --project financialanaliyst
+   firebase functions:log --project <YOUR_PROJECT_ID>
    ```
    Look for:
    - ✅ "Receipt data successfully written to Google Sheet"
@@ -71,9 +71,9 @@ After setting environment variables:
 
 ## 📝 Quick Reference
 
-**Service Account Email**: `financial-output@financialanaliyst.iam.gserviceaccount.com`  
-**Sheet ID**: `1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos`  
-**Sheet URL**: https://docs.google.com/spreadsheets/d/1gc-R5cKCOVFnnC0EsVJ_OIDXP-PIQ_pWcssr-HJujos/edit
+**Service Account Email**: `<SERVICE_ACCOUNT_EMAIL>`  
+**Sheet ID**: `<YOUR_SHEET_ID>`  
+**Sheet URL**: https://docs.google.com/spreadsheets/d/<YOUR_SHEET_ID>/edit
 
 ---
 

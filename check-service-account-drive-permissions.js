@@ -127,7 +127,7 @@ async function checkPermissions() {
                 console.log('   The service account can READ but cannot CREATE files.\n');
                 console.log('   SOLUTION OPTIONS:');
                 console.log('   1. Grant "Editor" or "Owner" role to service account in IAM');
-                console.log('      https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst');
+                console.log('      https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>');
                 console.log('   2. Check if service account has Drive API quota restrictions');
                 console.log('   3. Verify the service account is not in a restricted organization\n');
             }

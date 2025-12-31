@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             }
                             
-                            const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/financialanaliyst.firebasestorage.app/files/main/${filePath}`;
+                            const storageUrl = `https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/storage/<YOUR_PROJECT_ID>.firebasestorage.app/files/main/${filePath}`;
                             
                             return `
                                 <tr>
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             errorLogsContainer.innerHTML = errors.map(error => {
                 const filePath = `receipts/${error.userId}/${error.fileName}`;
-                const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/${filePath}`;
+                const storageUrl = `https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/storage/${filePath}`;
                 
                 return `
                 <div class="error-log-item">

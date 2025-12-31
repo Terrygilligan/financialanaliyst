@@ -12,7 +12,7 @@
 
 ### 2. Add Test User in Google Cloud Console
 
-1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/apis/credentials/consent?project=<YOUR_PROJECT_ID>
 2. Make sure you're logged in with the correct Google account (the project owner)
 3. Scroll down to **"Test users"** section
 4. Click **"+ ADD USERS"**
@@ -39,7 +39,7 @@ Sometimes cached OAuth data causes issues:
 1. Clear browser cache and cookies for:
    - `localhost:5000`
    - `accounts.google.com`
-   - `financialanaliyst.firebaseapp.com`
+   - `<YOUR_PROJECT_ID>.firebaseapp.com`
 2. Try in an incognito/private window
 
 ### 5. Verify Email Format
@@ -82,7 +82,7 @@ Make sure you have:
 ### Option 3: Verify OAuth Client ID
 
 The error shows:
-- `client_id: 622000096460-lg45lavoa57dvh31qrai4mbtshck73vq.apps.googleusercontent.com`
+- `client_id: <YOUR_PROJECT_NUMBER>-lg45lavoa57dvh31qrai4mbtshck73vq.apps.googleusercontent.com`
 
 Make sure this matches your Firebase project's OAuth client ID:
 1. Go to Firebase Console → Project Settings → General

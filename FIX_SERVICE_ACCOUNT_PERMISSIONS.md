@@ -10,7 +10,7 @@ Failed to create Google Sheet: The caller does not have permission
 ### Step 1: Enable Required APIs
 
 1. **Go to Google Cloud Console APIs & Services:**
-   - Visit: https://console.cloud.google.com/apis/library?project=financialanaliyst
+   - Visit: https://console.cloud.google.com/apis/library?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → APIs & Services → Library
 
 2. **Enable Google Sheets API:**
@@ -28,17 +28,17 @@ Failed to create Google Sheet: The caller does not have permission
 ### Step 2: Grant Service Account Permissions
 
 1. **Go to IAM & Admin → Service Accounts:**
-   - Visit: https://console.cloud.google.com/iam-admin/serviceaccounts?project=financialanaliyst
+   - Visit: https://console.cloud.google.com/iam-admin/serviceaccounts?project=<YOUR_PROJECT_ID>
    - Or: Google Cloud Console → IAM & Admin → Service Accounts
 
 2. **Find Your Service Account:**
-   - Look for: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - Look for: `<SERVICE_ACCOUNT_EMAIL>`
    - Click on it
 
 3. **Grant Permissions:**
    - Click **"Permissions"** tab
    - Click **"Grant Access"** or **"Add Principal"**
-   - In the "New principals" field, enter: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+   - In the "New principals" field, enter: `<SERVICE_ACCOUNT_EMAIL>`
    - Select these roles:
      - ✅ **Service Account User** (if not already present)
      - ✅ **Editor** (or **Owner** for full access)
@@ -55,7 +55,7 @@ Failed to create Google Sheet: The caller does not have permission
 2. **Verify Key Format:**
    - Should be valid JSON
    - Should contain: `client_email`, `private_key`, `project_id`
-   - `project_id` should be: `financialanaliyst`
+   - `project_id` should be: `<YOUR_PROJECT_ID>`
 
 ### Step 4: Test the Fix
 
@@ -84,7 +84,7 @@ Run this in your browser console on the admin-sheets page:
 Or check via command line:
 ```powershell
 # List enabled APIs (requires gcloud CLI)
-gcloud services list --enabled --project=financialanaliyst | findstr "sheets\|drive"
+gcloud services list --enabled --project=<YOUR_PROJECT_ID> | findstr "sheets\|drive"
 ```
 
 ## 🔍 Verification Checklist
@@ -132,8 +132,8 @@ If you're in a Google Workspace domain:
 
 ## 📝 Quick Reference
 
-**Service Account Email:** `financial-output@financialanaliyst.iam.gserviceaccount.com`  
-**Project ID:** `financialanaliyst`  
+**Service Account Email:** `<SERVICE_ACCOUNT_EMAIL>`  
+**Project ID:** `<YOUR_PROJECT_ID>`  
 **Required APIs:** Google Sheets API, Google Drive API  
 **Required Role:** Editor or Owner
 

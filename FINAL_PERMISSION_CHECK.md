@@ -16,8 +16,8 @@ Google Cloud IAM changes can take 5-10 minutes to fully propagate. If you just a
 
 ### Solution 2: Grant Owner Role (Temporary Test)
 To rule out permission issues:
-1. Go to: https://console.cloud.google.com/iam-admin/iam?project=financialanaliyst
-2. Find: `financial-output@financialanaliyst.iam.gserviceaccount.com`
+1. Go to: https://console.cloud.google.com/iam-admin/iam?project=<YOUR_PROJECT_ID>
+2. Find: `<SERVICE_ACCOUNT_EMAIL>`
 3. Click pencil icon (✏️)
 4. Change role from "Editor" to **"Owner"**
 5. Save
@@ -27,19 +27,19 @@ To rule out permission issues:
 If Owner works, then Editor might need additional permissions.
 
 ### Solution 3: Check API Quotas
-1. Go to: https://console.cloud.google.com/apis/api/drive.googleapis.com/quotas?project=financialanaliyst
+1. Go to: https://console.cloud.google.com/apis/api/drive.googleapis.com/quotas?project=<YOUR_PROJECT_ID>
 2. Check if any quotas are exceeded
 3. Look for rate limits
 
 ### Solution 4: Verify Service Account Key
 Make sure the service account key in `functions/.env` matches the service account with Editor role:
-- Email should be: `financial-output@financialanaliyst.iam.gserviceaccount.com`
-- Project ID should be: `financialanaliyst`
+- Email should be: `<SERVICE_ACCOUNT_EMAIL>`
+- Project ID should be: `<YOUR_PROJECT_ID>`
 
 ### Solution 5: Use Existing Sheet (Workaround)
 If creation continues to fail:
 1. Manually create a Google Sheet
-2. Share with: `financial-output@financialanaliyst.iam.gserviceaccount.com` (Editor access)
+2. Share with: `<SERVICE_ACCOUNT_EMAIL>` (Editor access)
 3. Use "Use Existing Sheet" option in admin UI
 4. Enter the Sheet ID
 

@@ -112,11 +112,11 @@ async function verifyPermissions() {
 
         console.log('\n📋 Summary:');
         console.log('   If you see errors above, follow these steps:');
-        console.log('   1. Go to: https://console.cloud.google.com/apis/library?project=financialanaliyst');
+        console.log('   1. Go to: https://console.cloud.google.com/apis/library?project=<YOUR_PROJECT_ID>');
         console.log('   2. Enable: Google Sheets API');
         console.log('   3. Enable: Google Drive API');
-        console.log('   4. Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=financialanaliyst');
-        console.log('   5. Find: financial-output@financialanaliyst.iam.gserviceaccount.com');
+        console.log('   4. Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=<YOUR_PROJECT_ID>');
+        console.log('   5. Find: <SERVICE_ACCOUNT_EMAIL>');
         console.log('   6. Grant: Editor or Owner role');
         console.log('   7. Restart Firebase emulators');
         console.log('\n');
