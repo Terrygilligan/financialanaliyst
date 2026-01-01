@@ -7,6 +7,7 @@ dotenv.config();
 
 import { onObjectFinalized } from "firebase-functions/v2/storage";
 import { onCall } from "firebase-functions/v2/https";
+import * as functions from 'firebase-functions';
 import { getStorage } from "firebase-admin/storage";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -263,3 +264,94 @@ export const removeAdminClaim = onCall(
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.
+
+// --- SuperAdmin Functions ---
+
+/**
+ * Throws an error if the caller is not a super_admin.
+ */
+const ensureSuperAdmin = (context: any) => {
+    if (context.auth?.token?.role !== 'super_admin') {
+        throw new functions.https.HttpsError(
+            'permission-denied',
+            'You must be a super admin to perform this action.'
+        );
+    }
+};
+
+/**
+ * Sets a user's role and business ID.
+ */
+export const setRole = onCall(async (data, context) => {
+    ensureSuperAdmin(context);
+
+    const { uid, role, businessId } = data;
+    await auth.setCustomUserClaims(uid, { role, businessId });
+    await db.collection('users').doc(uid).set({
+        role,
+        businessId,
+    }, { merge: true });
+
+    return { message: `Successfully set role to ${role} for user ${uid}` };
+});
+
+/**
+ * Lists all users.
+ */
+export const listUsers = onCall(async (data, context) => {
+    ensureSuperAdmin(context);
+
+    const listUsersResult = await auth.listUsers();
+    const users = await Promise.all(
+        listUsersResult.users.map(async (userRecord) => {
+            const userDoc = await db.collection('users').doc(userRecord.uid).get();
+            const { role, businessId } = userDoc.data() || {};
+            return {
+                uid: userRecord.uid,
+                email: userRecord.email,
+                displayName: userRecord.displayName,
+                disabled: userRecord.disabled,
+                role,
+                businessId,
+            };
+        })
+    );
+
+    return users;
+});
+
+/**
+ * Gets a user by email.
+ */
+export const getUserByEmail = onCall(async (data, context) => {
+    ensureSuperAdmin(context);
+
+    const { email } = data;
+    const userRecord = await auth.getUserByEmail(email);
+    const userDoc = await db.collection('users').doc(userRecord.uid).get();
+    const { role, businessId } = userDoc.data() || {};
+
+    return {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        displayName: userRecord.displayName,
+        disabled: userRecord.disabled,
+        role,
+        businessId,
+    };
+});
+
+/**
+ * Revokes a user's access by disabling their account.
+ */
+export const revokeAccess = onCall(async (data, context) => {
+    ensureSuperAdmin(context);
+
+    const { uid } = data;
+    await auth.updateUser(uid, { disabled: true });
+    await db.collection('users').doc(uid).set({
+        status: 'revoked'
+    }, { merge: true });
+
+    return { message: `Successfully revoked access for user ${uid}` };
+});

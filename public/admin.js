@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const functionsModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
     
     const { signOut, onAuthStateChanged } = authModule;
+    const { httpsCallable } = functionsModule;
     const { 
         doc, 
         getDoc, 
@@ -502,8 +504,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <td>${user.lastActivity ? new Date(user.lastActivity).toLocaleString() : 'N/A'}</td>
                                 <td><span class="file-status ${user.status}">${user.status}</span></td>
                                 <td>
-                                    <button class="btn-small btn-secondary" onclick="disableUser('${user.userId}')" title="Disable user account">
-                                        Disable
+                                    <button class="btn-small btn-danger" onclick="revokeUserAccess('${user.userId}')" title="Revoke user access">
+                                        Revoke
+                                    </button>
+                                    <button class="btn-small btn-primary" onclick="openSetRoleModal('${user.userId}', '${user.role || ''}', '${user.businessId || ''}')" title="Set user role">
+                                        Set Role
                                     </button>
                                 </td>
                             </tr>
@@ -514,18 +519,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
     
-    // Disable user account (placeholder - requires Cloud Function)
-    window.disableUser = async function(userId) {
-        if (!confirm(`Are you sure you want to disable user ${userId.substring(0, 8)}...?`)) {
+    // Cloud Functions
+    const revokeAccess = httpsCallable(window.firebase.functions, 'revokeAccess');
+    const setRole = httpsCallable(window.firebase.functions, 'setRole');
+
+    window.revokeUserAccess = async function(uid) {
+        if (!confirm(`Are you sure you want to revoke access for user ${uid.substring(0, 8)}...? This action is irreversible.`)) {
             return;
         }
-        
-        // TODO: Implement Cloud Function to disable user
-        alert('User disable functionality requires a Cloud Function. This is a placeholder.');
-        console.log('Would disable user:', userId);
+
+        try {
+            await revokeAccess({ uid });
+            alert('User access revoked successfully.');
+            await loadUsers(); // Refresh the user list
+        } catch (error) {
+            console.error('Error revoking user access:', error);
+            alert('Error revoking user access: ' + error.message);
+        }
+    }
+
+    window.openSetRoleModal = function(uid, currentRole, currentBusinessId) {
+        const modal = document.getElementById('set-role-modal');
+        if (modal) {
+            document.getElementById('modal-user-id').textContent = uid;
+            document.getElementById('role-select').value = currentRole || 'user';
+            document.getElementById('business-id-input').value = currentBusinessId || '';
+            modal.style.display = 'block';
+        }
     }
 
     // Event listeners
+
+    // Modal listeners
+    const modal = document.getElementById('set-role-modal');
+    const closeBtn = modal?.querySelector('.close-btn');
+    const saveRoleBtn = document.getElementById('save-role-btn');
+
+    closeBtn?.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    saveRoleBtn?.addEventListener('click', async () => {
+        const uid = document.getElementById('modal-user-id').textContent;
+        const role = document.getElementById('role-select').value;
+        const businessId = document.getElementById('business-id-input').value;
+
+        try {
+            await setRole({ uid, role, businessId });
+            alert('User role updated successfully.');
+            modal.style.display = 'none';
+            await loadUsers(); // Refresh the user list
+        } catch (error) {
+            console.error('Error setting user role:', error);
+            alert('Error setting user role: ' + error.message);
+        }
+    });
+
     searchReceipts?.addEventListener('input', () => {
         displayReceipts(allReceiptsData);
     });

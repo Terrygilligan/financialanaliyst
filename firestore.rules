@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for roles
+    function isSuperAdmin() {
+      return request.auth.token.role == "super_admin";
+    }
+
+    function isAdmin() {
+      return request.auth.token.role == "admin";
+    }
+
+    // Secure the businesses collection
+    match /businesses/{bid} {
+      // SuperAdmins can read and write business-wide settings
+      allow read, write: if isSuperAdmin();
+
+      // Admins and users of a specific business can read their own business document
+      allow get: if request.auth.token.businessId == bid;
+    }
+
+    // All other collections should enforce businessId matching
+    match /businesses/{bid}/{collection}/{docId} {
+      allow read, write: if request.auth.token.businessId == bid;
+    }
+
+    // Example of a more specific rule for a subcollection
+    match /businesses/{bid}/receipts/{receiptId} {
+        // Only users of this business can access their receipts
+        allow read, write: if request.auth.token.businessId == bid;
+    }
+
+    // Batches should be user-specific, but let's also enforce business logic if applicable
+    match /batches/{userId} {
+        allow read, write: if request.auth.uid == userId;
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+        // SuperAdmins can manage any user document
+        allow read, write: if isSuperAdmin();
+
+        // Users can read their own document
+        allow read: if request.auth.uid == userId;
+    }
+  }
+}
