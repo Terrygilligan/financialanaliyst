@@ -12,142 +12,27 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { firebaseConfig } from './firebase-config.js';
         
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
         // Make available globally
-        window.firebase = { app, auth, db, googleProvider };
+        window.firebase = { app, auth, googleProvider };
     </script>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .login-header h1 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-        .login-header p {
-            color: var(--text-secondary);
-        }
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .login-form input {
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .login-form input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        .password-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-input-wrapper input {
-            padding-right: 45px;
-            width: 100%;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            transition: color 0.2s;
-        }
-        .password-toggle:hover {
-            color: var(--text-primary);
-        }
-        .password-toggle svg {
-            pointer-events: none;
-        }
-        .verification-message {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 12px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        .verification-message p {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: none;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .back-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>🔐 Secure Business Login</h1>
-            <p>Log into your business silo</p>
-        </div>
-
-        <div id="error-message" class="error-message"></div>
-        <div id="verification-message" class="verification-message" style="display: none;"></div>
-
-        <div id="tenant-selector" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-            <label style="display: block; font-size: 11px; color: #6c757d; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">🏢 Business Context</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="business-code-input" placeholder="Business ID (Optional)" style="flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;">
-                <button type="button" id="set-tenant-btn" style="padding: 8px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Apply</button>
+<body class="login-body">
+    <div class="container" style="max-width: 420px;">
+        <header>
+            <h1>💰 AI Financial Analyst</h1>
+        </header>
+        <div class="login-container">
+            <div class="login-header">
+                <h2>Sign in to continue</h2>
             </div>
-            <p style="margin-top: 8px; font-size: 10px; color: #6c757d;">Leave blank for auto-detection via email.</p>
-        </div>
+            <div class="error-message" id="error-message"></div>
 
         <form id="login-form" class="login-form">
             <input type="email" id="email-input" placeholder="Email" required>
@@ -164,12 +49,9 @@
                     </svg>
                 </button>
             </div>
-            <div style="text-align: right; margin-top: -10px; margin-bottom: 10px;">
-                <a href="forgot-password.html" class="btn-link" style="font-size: 12px; text-decoration: none;">Forgot password?</a>
-            </div>
             <button type="submit" class="btn-primary">Login</button>
             <div class="divider">
-                <span>or use legacy methods</span>
+                <span>or</span>
             </div>
             <button type="button" id="google-login-btn" class="btn-google">
                 <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
@@ -178,7 +60,7 @@
                     <path fill="#FBBC05" d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.712s.102-1.172.282-1.712V4.956H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.044l3.007-2.332z"/>
                     <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.956L3.964 7.288C4.672 5.163 6.656 3.58 9 3.58z"/>
                 </svg>
-                Continue with Google (Legacy)
+                Continue with Google
             </button>
             <button type="button" id="signup-toggle" class="btn-link">Don't have an account? Sign up</button>
         </form>
@@ -216,12 +98,8 @@
             </button>
             <button type="button" id="login-toggle" class="btn-link">Already have an account? Login</button>
         </form>
-
-        <div class="back-link">
-            <a href="index.html">← Back to home</a>
-        </div>
     </div>
 
-    <script type="module" src="login.js?v=20251231-2"></script>
+    <script type="module" src="login.js"></script>
 </body>
 </html>

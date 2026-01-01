@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification</title>
+    <script src="auth-bypass.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFunctions } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js';
+        import { firebaseConfig } from './firebase-config.js';
+        const app = initializeApp(firebaseConfig);
+        window.firebase = {
+            app,
+            db: getFirestore(app),
+            functions: getFunctions(app)
+        };
+    </script>
+</head>
+<body style="background-color: var(--bg-secondary);">
+    <div id="test-container"></div>
+    <script type="module">
+        if (window.mockUser) {
+            if (window.mockUser.isAdmin) {
+                fetch('admin.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        document.getElementById('test-container').append(doc.querySelector('main'));
+                        const adminScript = document.createElement('script');
+                        adminScript.src = 'admin.js';
+                        adminScript.type = 'module';
+                        document.body.appendChild(adminScript);
+                    });
+            } else {
+                fetch('index.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        document.getElementById('test-container').append(doc.querySelector('main'));
+                        const appScript = document.createElement('script');
+                        appScript.src = 'app.js';
+                        appScript.type = 'module';
+                        document.body.appendChild(appScript);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>

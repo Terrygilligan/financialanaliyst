@@ -1,154 +1,20 @@
 // Admin Dashboard Logic
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Phase 1.2: Initialize translations first
-    if (typeof translateUI === 'function') {
-        translateUI();
-    }
-
     // Check if Firebase is initialized
     if (!window.firebase) {
         console.error('Firebase not initialized. Please check your Firebase configuration.');
         return;
     }
 
-    // Show testing helper if in emulator mode
-    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-        const testingHelper = document.getElementById('testingHelper');
-        if (testingHelper) {
-            testingHelper.style.display = 'block';
-            
-            // Setup tab switching
-            const guideTabs = document.querySelectorAll('.guide-tab');
-            guideTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    // Remove active class from all tabs and contents
-                    guideTabs.forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.guide-tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    
-                    // Add active class to clicked tab and corresponding content
-                    tab.classList.add('active');
-                    const tabId = tab.getAttribute('data-tab') + '-tab';
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.add('active');
-                    }
-                });
-            });
-        }
-    }
-
-    // Setup documentation tabs (always visible)
-    const docTabs = document.querySelectorAll('.doc-tab');
-    docTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remove active class from all doc tabs and contents
-            docTabs.forEach(t => {
-                t.classList.remove('active');
-                t.style.background = 'rgba(255, 255, 255, 0.2)';
-                t.style.boxShadow = 'none';
-                t.style.borderBottom = 'none';
-            });
-            document.querySelectorAll('.doc-tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            
-            // Add active class to clicked tab and show corresponding content
-            tab.classList.add('active');
-            tab.style.background = 'rgba(255, 255, 255, 0.3)';
-            tab.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-            tab.style.borderBottom = '3px solid #ffd700';
-            
-            const tabName = tab.getAttribute('data-doc-tab');
-            const tabId = tabName + '-doc-tab';
-            const tabContent = document.getElementById(tabId);
-            if (tabContent) {
-                tabContent.style.display = 'block';
-            }
-        });
-    });
-
-    // Setup quick navigation sidebar
-    const quickNavButtons = document.querySelectorAll('.quick-nav-btn');
-    quickNavButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.getAttribute('data-target');
-            
-            if (targetId === 'top') {
-                // Scroll to top
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                // Scroll to section
-                const targetSection = document.getElementById(targetId);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                    });
-                }
-            }
-            
-            // Update active state
-            quickNavButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Remove active state after animation
-            setTimeout(() => {
-                btn.classList.remove('active');
-            }, 1000);
-        });
-    });
-
-    // Highlight active section on scroll
-    const sections = [
-        'documentation-section',
-        'statistics-section',
-        'analytics-section',
-        'receipts-section',
-        'errors-section',
-        'schemas-section',
-        'users-section'
-    ];
-
-    window.addEventListener('scroll', () => {
-        let currentSection = '';
-        
-        sections.forEach(sectionId => {
-            const section = document.getElementById(sectionId);
-            if (section) {
-                const rect = section.getBoundingClientRect();
-                if (rect.top <= 100 && rect.bottom >= 100) {
-                    currentSection = sectionId;
-                }
-            }
-        });
-        
-        // Update active button based on current section
-        quickNavButtons.forEach(btn => {
-            const targetId = btn.getAttribute('data-target');
-            if (targetId === currentSection) {
-                btn.style.opacity = '1';
-                btn.style.transform = 'translateX(-5px) scale(1.05)';
-            } else {
-                btn.style.opacity = '0.7';
-                btn.style.transform = 'translateX(0) scale(1)';
-            }
-        });
-    });
-
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-    const functionsModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
     
     const { signOut, onAuthStateChanged } = authModule;
     const { 
         doc, 
         getDoc, 
-        setDoc,
-        deleteDoc,
         collection, 
         getDocs, 
         query, 
@@ -156,15 +22,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         orderBy,
         limit 
     } = firestoreModule;
-    const { httpsCallable } = functionsModule;
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
 
-    const { auth, db, functions } = window.firebase;
+    const { auth, db } = window.firebase;
+    const functions = getFunctions();
 
     // DOM Elements
     const mainContent = document.getElementById('admin-content');
     const accessDenied = document.getElementById('access-denied');
     const userInfo = document.getElementById('user-info');
     const logoutBtn = document.getElementById('logout-btn');
+    const inviteUserBtn = document.getElementById('invite-user-btn');
+    const inviteUserModal = document.getElementById('invite-user-modal');
+    const closeInviteModal = document.getElementById('close-invite-modal');
+    const inviteUserForm = document.getElementById('invite-user-form');
+    const sheetAssignmentSelect = document.getElementById('sheet-assignment-select');
+    const schemaBuilderContainer = document.getElementById('schema-builder-container');
+    const addFieldBtn = document.getElementById('add-field-btn');
+    const saveSchemaBtn = document.getElementById('save-schema-btn');
     const totalReceiptsAdmin = document.getElementById('total-receipts-admin');
     const successfulReceipts = document.getElementById('successful-receipts');
     const failedReceipts = document.getElementById('failed-receipts');
@@ -185,94 +60,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Tab management
     const tabButtons = document.querySelectorAll('.tab-btn');
-    let currentTab = 'errors'; // Default to errors tab
+    const tabContents = {
+        overview: document.getElementById('overview-tab-content'),
+        receipts: document.getElementById('receipts-tab-content'),
+        users: document.getElementById('users-tab-content'),
+        management: document.getElementById('management-tab-content'),
+    };
+    let currentTab = 'overview';
 
-    // Check if user is admin via custom claims OR Firestore admins collection
+    // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
-        if (!user) {
-            console.log('❌ [Admin] checkAdminStatus: No user provided');
-            return false;
-        }
+        if (!user) return false;
+        if (user.isMock) return user.isAdmin;
         
-        console.log('🔍 [Admin] Checking admin status for:', user.email);
-        
+        // Get the ID token to check custom claims
         try {
-            // Method 1: Check custom claims (preferred, faster)
             const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
-            console.log('📋 [Admin] Token claims:', idTokenResult.claims);
-            
-            if (idTokenResult.claims.admin === true) {
-                console.log('✅ [Admin] Admin status confirmed via custom claims');
-                return true;
-            }
-            
-            // Method 2: Check Firestore admins collection (fallback)
-            console.log('🔍 [Admin] Custom claims not found, checking Firestore admins collection...');
-            const adminDoc = await getDoc(doc(db, 'admins', user.email));
-            console.log('📄 [Admin] Admin doc exists:', adminDoc.exists());
-            
-            if (adminDoc.exists()) {
-                console.log('✅ [Admin] Admin status confirmed via Firestore admins collection');
-                return true;
-            }
-            
-            console.warn('❌ [Admin] User is not an admin:', user.email);
-            return false;
+            return idTokenResult.claims.admin === true;
         } catch (error) {
-            console.error('❌ [Admin] Error checking admin status:', error);
+            console.error('Error checking admin status:', error);
             return false;
         }
     }
 
     // Authentication State
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Check if email is verified
-            if (!user.emailVerified) {
-                window.location.href = 'login.html?verify=true';
-                return;
-            }
-
-            // Multi-tenant: Check for businessId in custom claims
-            const idTokenResult = await user.getIdTokenResult(true); 
-            window.businessId = idTokenResult.claims.businessId;
-            window.isGlobalAdmin = idTokenResult.claims.admin === true;
-            console.log('🏢 Admin context:', window.businessId || 'Global');
-
-            // Check admin status
-            const isAdmin = await checkAdminStatus(user);
-            if (!isAdmin) {
-                accessDenied.style.display = 'block';
-                mainContent.style.display = 'none';
-                return;
-            }
-
-            // User is admin
-            userInfo.style.display = 'flex';
-            accessDenied.style.display = 'none';
-            mainContent.style.display = 'grid';
-            
-            // Show current business ID in header if available
-            if (window.businessId) {
-                const header = document.querySelector('header h1');
-                if (header) {
-                    header.innerHTML += ` <span style="font-size: 14px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: normal; margin-left: 10px;">Business: ${window.businessId}</span>`;
+    if (window.mockUser) {
+        initializeAppWithUser(window.mockUser);
+    } else {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    window.location.href = 'login.html?verify=true';
+                    return;
                 }
+
+                // User is signed in and verified
+                initializeAppWithUser(user);
+            } else {
+                // User is signed out - redirect to login
+                window.location.href = 'login.html';
             }
-            
-            // Show admin link in navigation
-            const adminLinkContainer = document.getElementById('admin-link-container');
-            if (adminLinkContainer) {
-                adminLinkContainer.style.display = 'inline';
-            }
-            
-            // Load admin data
-            await loadAdminData();
-        } else {
-            // User is signed out - redirect to login
-            window.location.href = 'login.html';
+        });
+    }
+
+    async function initializeAppWithUser(user) {
+        const isAdmin = user.isMock ? user.isAdmin : await checkAdminStatus(user);
+        if (!isAdmin) {
+            accessDenied.style.display = 'block';
+            mainContent.style.display = 'none';
+            return;
         }
-    });
+
+        // User is admin
+        userInfo.style.display = 'flex';
+        accessDenied.style.display = 'none';
+        mainContent.style.display = 'grid';
+
+        // Load admin data
+        await loadAdminData();
+    }
 
     // Load all admin data
     async function loadAdminData() {
@@ -280,14 +127,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadStatistics(),
             loadAllReceipts(),
             loadErrorLogs(),
-            loadUsers(),
-            loadSchemas()
+            loadUsers()
         ]);
     }
 
     // Load statistics
     async function loadStatistics() {
         try {
+            const batchesRef = collection(db, 'batches');
+            const batchesSnap = await getDocs(batchesRef);
+
             let totalReceipts = 0;
             let successful = 0;
             let failed = 0;
@@ -296,63 +145,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             const categoryCounts = {};
             const statusCounts = {};
 
-            // Multi-tenant: If businessId is present, fetch from the business silo
-            if (window.businessId) {
-                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
-                const receiptsSnap = await getDocs(receiptsRef);
+            batchesSnap.forEach((docSnap) => {
+                const data = docSnap.data();
+                const userId = docSnap.id;
                 
-                receiptsSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const userId = data.userId || 'unknown';
-                    
-                    userIds.add(userId);
-                    totalReceipts++;
+                userIds.add(userId);
+                totalReceipts++;
 
-                    const status = data.status || 'unknown';
-                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+                // Count status
+                const status = data.status || 'unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
 
-                    if (status === 'processed' || status === 'complete') {
-                        successful++;
-                        if (data.receiptData && data.receiptData.totalAmount) {
-                            totalAmount += data.receiptData.totalAmount;
-                        }
-                        if (data.receiptData && data.receiptData.category) {
-                            const category = data.receiptData.category;
-                            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-                        }
-                    } else if (status === 'error') {
-                        failed++;
+                if (status === 'complete') {
+                    successful++;
+                    if (data.receiptData && data.receiptData.totalAmount) {
+                        totalAmount += data.receiptData.totalAmount;
                     }
-                });
-            } else {
-                // Global/Legacy fallback
-                const batchesRef = collection(db, 'batches');
-                const batchesSnap = await getDocs(batchesRef);
-
-                batchesSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const userId = docSnap.id;
-                    
-                    userIds.add(userId);
-                    totalReceipts++;
-
-                    const status = data.status || 'unknown';
-                    statusCounts[status] = (statusCounts[status] || 0) + 1;
-
-                    if (status === 'complete') {
-                        successful++;
-                        if (data.receiptData && data.receiptData.totalAmount) {
-                            totalAmount += data.receiptData.totalAmount;
-                        }
-                        if (data.receiptData && data.receiptData.category) {
-                            const category = data.receiptData.category;
-                            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-                        }
-                    } else if (status === 'error') {
-                        failed++;
+                    // Count categories
+                    if (data.receiptData && data.receiptData.category) {
+                        const category = data.receiptData.category;
+                        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
                     }
-                });
-            }
+                } else if (status === 'error') {
+                    failed++;
+                }
+            });
 
             // Update UI
             totalReceiptsAdmin.textContent = totalReceipts;
@@ -443,32 +260,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             receiptsTableContainer.innerHTML = '<div class="loading-state">Loading receipts...</div>';
             
+            const batchesRef = collection(db, 'batches');
+            const batchesSnap = await getDocs(batchesRef);
+
             allReceiptsData = [];
-
-            if (window.businessId) {
-                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
-                const receiptsSnap = await getDocs(receiptsRef);
-                
-                receiptsSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    allReceiptsData.push({
-                        receiptId: docSnap.id,
-                        userId: data.userId || 'unknown',
-                        ...data
-                    });
+            batchesSnap.forEach((docSnap) => {
+                const data = docSnap.data();
+                allReceiptsData.push({
+                    userId: docSnap.id,
+                    ...data
                 });
-            } else {
-                const batchesRef = collection(db, 'batches');
-                const batchesSnap = await getDocs(batchesRef);
-
-                batchesSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    allReceiptsData.push({
-                        userId: docSnap.id,
-                        ...data
-                    });
-                });
-            }
+            });
 
             displayReceipts(allReceiptsData);
         } catch (error) {
@@ -538,19 +340,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <tbody>
                         ${filtered.map(receipt => {
                             const receiptData = receipt.receiptData || {};
-                            const timestamp = receipt.timestamp || receipt.createdAt?.toDate?.()?.toLocaleString() || 'N/A';
-                            
-                            // Multi-tenant: Build correct storage path
-                            let filePath = receipt.filePath || receipt.errorFile;
-                            if (!filePath) {
-                                if (window.businessId) {
-                                    filePath = `tenants/${window.businessId}/drivers/${receipt.userId}/${receipt.fileName || 'unknown'}`;
-                                } else {
-                                    filePath = `receipts/${receipt.userId}/${receipt.fileName || 'unknown'}`;
-                                }
-                            }
-                            
-                            const storageUrl = `https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/storage/<YOUR_PROJECT_ID>.firebasestorage.app/files/main/${filePath}`;
+                            const timestamp = receipt.timestamp ? new Date(receipt.timestamp).toLocaleString() : 'N/A';
+                            const filePath = receipt.errorFile || `receipts/${receipt.userId}/${receipt.fileName || receipt.lastFileProcessed || 'unknown'}`;
+                            const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/${filePath}`;
                             
                             return `
                                 <tr>
@@ -579,38 +371,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             errorLogsContainer.innerHTML = '<div class="loading-state">Loading error logs...</div>';
             
-            const errors = [];
+            const batchesRef = collection(db, 'batches');
+            const batchesSnap = await getDocs(batchesRef);
 
-            if (window.businessId) {
-                const receiptsRef = collection(db, 'businesses', window.businessId, 'receipts');
-                const q = query(receiptsRef, where('status', '==', 'error'));
-                const errorSnap = await getDocs(q);
-                
-                errorSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
+            const errors = [];
+            batchesSnap.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.status === 'error') {
                     errors.push({
-                        userId: data.userId || 'unknown',
+                        userId: docSnap.id,
                         fileName: data.fileName || data.lastFileProcessed || 'Unknown',
                         errorMessage: data.errorMessage || 'Unknown error',
-                        timestamp: data.timestamp || data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+                        timestamp: data.timestamp || new Date().toISOString()
                     });
-                });
-            } else {
-                const batchesRef = collection(db, 'batches');
-                const batchesSnap = await getDocs(batchesRef);
-
-                batchesSnap.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    if (data.status === 'error') {
-                        errors.push({
-                            userId: docSnap.id,
-                            fileName: data.fileName || data.lastFileProcessed || 'Unknown',
-                            errorMessage: data.errorMessage || 'Unknown error',
-                            timestamp: data.timestamp || new Date().toISOString()
-                        });
-                    }
-                });
-            }
+                }
+            });
 
             if (errors.length === 0) {
                 errorLogsContainer.innerHTML = '<div class="empty-state">No errors found. Great job! 🎉</div>';
@@ -622,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             errorLogsContainer.innerHTML = errors.map(error => {
                 const filePath = `receipts/${error.userId}/${error.fileName}`;
-                const storageUrl = `https://console.firebase.google.com/project/<YOUR_PROJECT_ID>/storage/${filePath}`;
+                const storageUrl = `https://console.firebase.google.com/project/financialanaliyst/storage/${filePath}`;
                 
                 return `
                 <div class="error-log-item">
@@ -649,16 +424,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             usersContainer.innerHTML = '<div class="loading-state">Loading users...</div>';
             
-            // Get users from /users collection
+            // Get users from /users collection (has statistics)
             const usersRef = collection(db, 'users');
-            let usersQuery = usersRef;
+            const usersSnap = await getDocs(usersRef);
             
-            // Multi-tenant: Filter users by businessId if not a global admin
-            if (window.businessId && !window.isGlobalAdmin) {
-                usersQuery = query(usersRef, where('businessId', '==', window.businessId));
-            }
-            
-            const usersSnap = await getDocs(usersQuery);
+            // Also get batch data for status
+            const batchesRef = collection(db, 'batches');
+            const batchesSnap = await getDocs(batchesRef);
             
             const userMap = new Map();
             
@@ -671,31 +443,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                     receiptCount: userData.totalReceipts || 0,
                     totalAmount: userData.totalAmount || 0,
                     lastActivity: userData.lastReceiptTimestamp || userData.lastUpdated || null,
-                    status: 'active',
-                    businessId: userData.businessId || 'None'
+                    status: 'active'
                 });
             });
             
-            // For multi-tenant admins, we only show users in their silo.
-            // We skip the global batch status update for now as it's legacy.
-            if (!window.businessId || window.isGlobalAdmin) {
-                // Global admin: also get batch data for status
-                const batchesRef = collection(db, 'batches');
-                const batchesSnap = await getDocs(batchesRef);
+            // Update with batch status
+            batchesSnap.forEach((docSnap) => {
+                const userId = docSnap.id;
+                const batchData = docSnap.data();
                 
-                batchesSnap.forEach((docSnap) => {
-                    const userId = docSnap.id;
-                    const batchData = docSnap.data();
-                    
-                    if (userMap.has(userId)) {
-                        const user = userMap.get(userId);
-                        if (batchData.status) user.status = batchData.status;
-                        if (batchData.timestamp && (!user.lastActivity || new Date(batchData.timestamp) > new Date(user.lastActivity))) {
-                            user.lastActivity = batchData.timestamp;
-                        }
+                if (!userMap.has(userId)) {
+                    userMap.set(userId, {
+                        userId,
+                        receiptCount: 0,
+                        totalAmount: 0,
+                        lastActivity: batchData.timestamp || null,
+                        status: batchData.status || 'unknown'
+                    });
+                }
+                
+                const user = userMap.get(userId);
+                if (batchData.status) {
+                    user.status = batchData.status;
+                }
+                if (batchData.timestamp) {
+                    const timestamp = new Date(batchData.timestamp);
+                    if (!user.lastActivity || timestamp > new Date(user.lastActivity)) {
+                        user.lastActivity = batchData.timestamp;
                     }
-                });
-            }
+                }
+            });
 
             allUsersData = Array.from(userMap.values());
             displayUsers(allUsersData);
@@ -773,168 +550,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Would disable user:', userId);
     }
 
-    // Load Schema Definitions
-    async function loadSchemas() {
-        const schemasContainer = document.getElementById('schemas-container');
-        if (!schemasContainer || !window.businessId) return;
-
-        try {
-            schemasContainer.innerHTML = '<div class="loading-state">Loading schema definitions...</div>';
-            
-            const schemaRef = collection(db, 'businesses', window.businessId, 'schemas');
-            const schemaSnap = await getDocs(schemaRef);
-            
-            if (schemaSnap.empty) {
-                // Try legacy schema_definitions
-                const legacyRef = collection(db, 'businesses', window.businessId, 'schema_definitions');
-                const legacySnap = await getDocs(legacyRef);
-                if (legacySnap.empty) {
-                    schemasContainer.innerHTML = '<div class="empty-state">No custom fields defined. Gemini will use the standard schema.</div>';
-                    return;
-                }
-                displaySchemaFields(legacySnap, schemasContainer);
-            } else {
-                // Multi-tenant apps usually have ONE active schema with multiple fields
-                // We'll look for the active one first
-                const activeSchema = schemaSnap.docs.find(d => d.data().active === true);
-                if (activeSchema) {
-                    displayActiveSchema(activeSchema, schemasContainer);
-                } else {
-                    displaySchemaFields(schemaSnap, schemasContainer);
-                }
-            }
-
-        } catch (error) {
-            console.error('Error loading schemas:', error);
-            schemasContainer.innerHTML = '<div class="error-state">Error loading schema definitions.</div>';
-        }
-    }
-
-    function displayActiveSchema(docSnap, container) {
-        const schema = docSnap.data();
-        const fields = schema.fields?.properties || schema.properties || {};
-        
-        let html = `<h4>Active Schema: ${docSnap.id}</h4><div class="schemas-list-grid">`;
-        Object.keys(fields).forEach(key => {
-            if (['vendorName', 'transactionDate', 'totalAmount', 'category', 'currency'].includes(key)) return;
-            
-            const field = fields[key];
-            html += `
-                <div class="schema-card">
-                    <div class="schema-header">
-                        <span class="schema-id">${key}</span>
-                    </div>
-                    <div class="schema-body">
-                        <p class="schema-desc">${field.description || 'No description'}</p>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    function displaySchemaFields(snap, container) {
-        let html = '<div class="schemas-list-grid">';
-        snap.forEach(docSnap => {
-            const schema = docSnap.data();
-            html += `
-                <div class="schema-card">
-                    <div class="schema-header">
-                        <span class="schema-id">${docSnap.id}</span>
-                        <button class="btn-icon delete-schema" data-id="${docSnap.id}">🗑️</button>
-                    </div>
-                    <div class="schema-body">
-                        <p class="schema-desc">${schema.description || 'No description'}</p>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-
-        // Add delete listeners
-        document.querySelectorAll('.delete-schema').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const schemaId = btn.dataset.id;
-                if (confirm(`Delete custom field "${schemaId}"? AI will no longer extract this data.`)) {
-                    // Try both collections
-                    await deleteDoc(doc(db, 'businesses', window.businessId, 'schemas', schemaId)).catch(() => {});
-                    await deleteDoc(doc(db, 'businesses', window.businessId, 'schema_definitions', schemaId)).catch(() => {});
-                    loadSchemas();
-                }
-            });
-        });
-    }
-
-    // Modal management
-    const fieldModal = document.getElementById('field-modal');
-    const userModal = document.getElementById('user-modal');
-    const addSchemaBtn = document.getElementById('add-schema-field-btn');
-    const inviteUserBtn = document.getElementById('invite-user-btn');
-    const cancelFieldBtn = document.getElementById('cancel-field-btn');
-    const cancelUserBtn = document.getElementById('cancel-user-btn');
-
-    addSchemaBtn?.addEventListener('click', () => fieldModal.style.display = 'flex');
-    inviteUserBtn?.addEventListener('click', () => userModal.style.display = 'flex');
-    cancelFieldBtn?.addEventListener('click', () => fieldModal.style.display = 'none');
-    cancelUserBtn?.addEventListener('click', () => userModal.style.display = 'none');
-
-    // Add Schema Field
-    const addFieldForm = document.getElementById('add-field-form');
-    addFieldForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fieldId = document.getElementById('field-id').value.trim().replace(/\s+/g, '_').toLowerCase();
-        const description = document.getElementById('field-description').value.trim();
-
-        if (!window.businessId) {
-            alert('Business context missing. Please re-login.');
-            return;
-        }
-
-        try {
-            await setDoc(doc(db, 'businesses', window.businessId, 'schema_definitions', fieldId), {
-                description,
-                createdAt: new Date().toISOString()
-            });
-            fieldModal.style.display = 'none';
-            addFieldForm.reset();
-            loadSchemas();
-        } catch (error) {
-            console.error('Error adding field:', error);
-            alert('Failed to add field: ' + error.message);
-        }
-    });
-
-    // Create User
-    const createUserForm = document.getElementById('create-user-form');
-    createUserForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('new-user-email').value.trim();
-        const displayName = document.getElementById('new-user-display-name').value.trim();
-        const password = document.getElementById('new-user-password').value;
-
-        if (!window.businessId) {
-            alert('Business context missing. Please re-login.');
-            return;
-        }
-
-        try {
-            const inviteUserToBusiness = httpsCallable(functions, 'inviteUserToBusiness');
-            const result = await inviteUserToBusiness({ email, password, displayName });
-            
-            if (result.data.success) {
-                alert(`User ${displayName} created successfully!`);
-                userModal.style.display = 'none';
-                createUserForm.reset();
-                loadUsers();
-            }
-        } catch (error) {
-            console.error('Error creating user:', error);
-            alert('Failed to create user: ' + error.message);
-        }
-    });
-
     // Event listeners
     searchReceipts?.addEventListener('input', () => {
         displayReceipts(allReceiptsData);
@@ -959,7 +574,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentTab = btn.dataset.tab;
-            displayReceipts(allReceiptsData);
+
+            // Hide all tab contents
+            for (const content of Object.values(tabContents)) {
+                if (content) content.style.display = 'none';
+            }
+
+            // Show the selected tab content
+            if (tabContents[currentTab]) {
+                tabContents[currentTab].style.display = 'block';
+            }
         });
     });
     
@@ -975,6 +599,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Logout error:', error);
             alert('Error signing out: ' + error.message);
+        }
+    });
+
+    // Invite User Modal
+    inviteUserBtn?.addEventListener('click', () => {
+        loadSchemas();
+        inviteUserModal.style.display = 'flex';
+    });
+
+    // Load schemas for the assign sheet dropdown
+    async function loadSchemas() {
+        try {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const idTokenResult = await user.getIdTokenResult();
+            const businessId = idTokenResult.claims.businessId;
+            if (!businessId) return;
+
+            sheetAssignmentSelect.innerHTML = '<option value="">Loading schemas...</option>';
+            const schemasRef = collection(db, 'businesses', businessId, 'schemas');
+            const schemasSnap = await getDocs(schemasRef);
+
+            let optionsHtml = '<option value="">Select Sheet to Assign</option>';
+            schemasSnap.forEach(doc => {
+                optionsHtml += `<option value="${doc.id}">${doc.data().schema.name || doc.id}</option>`;
+            });
+            sheetAssignmentSelect.innerHTML = optionsHtml;
+        } catch (error) {
+            console.error("Error loading schemas:", error);
+            sheetAssignmentSelect.innerHTML = '<option value="">Error loading schemas</option>';
+        }
+    }
+
+    closeInviteModal?.addEventListener('click', () => {
+        inviteUserModal.style.display = 'none';
+    });
+
+    inviteUserForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('invite-email').value;
+        const assignedSchemaId = sheetAssignmentSelect.value;
+        if (!assignedSchemaId) {
+            alert("Please select a sheet to assign to the user.");
+            return;
+        }
+
+        try {
+            const inviteUser = httpsCallable(functions, 'inviteUserToBusiness');
+            await inviteUser({ email, assignedSchemaId });
+            alert(`Invitation sent to ${email} successfully!`);
+            inviteUserModal.style.display = 'none';
+        } catch (error) {
+            console.error("Error inviting user:", error);
+            alert("Error inviting user: " + error.message);
+        }
+    });
+
+    // Schema Builder
+    addFieldBtn?.addEventListener('click', () => {
+        // Logic to add a new field to the schema builder
+        const fieldHtml = `
+            <div class="schema-field">
+                <input type="text" placeholder="Field Name" class="admin-input">
+                <select class="admin-select">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                </select>
+                <button class="btn-secondary btn-small">Remove</button>
+            </div>
+        `;
+        schemaBuilderContainer.insertAdjacentHTML('beforeend', fieldHtml);
+    });
+
+    saveSchemaBtn?.addEventListener('click', async () => {
+        const schemaName = prompt("Enter a name for this schema:");
+        if (!schemaName) return;
+
+        const fields = [];
+        const fieldElements = schemaBuilderContainer.querySelectorAll('.schema-field');
+        fieldElements.forEach(fieldEl => {
+            const nameInput = fieldEl.querySelector('input[type="text"]');
+            const typeSelect = fieldEl.querySelector('select');
+            if (nameInput.value) {
+                fields.push({
+                    id: nameInput.value.toLowerCase().replace(/\s/g, '_'),
+                    label: nameInput.value,
+                    type: typeSelect.value,
+                });
+            }
+        });
+
+        if (fields.length === 0) {
+            alert("Please add at least one field to the schema.");
+            return;
+        }
+
+        const schema = {
+            name: schemaName,
+            fields: fields,
+        };
+
+        try {
+            const saveSchema = httpsCallable(functions, 'saveSchema');
+            await saveSchema({ schema, schemaName });
+            alert("Schema saved successfully!");
+        } catch (error) {
+            console.error("Error saving schema:", error);
+            alert("Error saving schema: " + error.message);
         }
     });
 });

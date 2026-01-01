@@ -1,115 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ============================================
-    // USER DATA COLLECTIONS
-    // ============================================
-    
-    // Batches - Receipt processing status per user
-    match /batches/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Users - User statistics and profile data
-    match /users/{userId} {
-      allow read: if request.auth != null && 
-        (request.auth.uid == userId || request.auth.token.businessId == resource.data.businessId);
-      // Users can write their own data, admins can write for system updates
-      allow write: if request.auth != null && 
-        (request.auth.uid == userId || 
-         request.auth.token.admin == true ||
-         (request.auth.token.role == 'admin' && request.auth.token.businessId == resource.data.businessId) ||
-         (request.auth.token.role == 'bookkeeper' && request.auth.token.businessId == resource.data.businessId));
-    }
-    
-    // ============================================
-    // BUSINESS COLLECTIONS (Multi-Tenant SaaS)
-    // ============================================
-    
-    // Businesses - Business data with Drive/Sheet IDs
     match /businesses/{businessId} {
-      // Users can only access their own business silo
-      allow read, write: if request.auth != null && request.auth.token.businessId == businessId;
-      
-      // Receipts silo within the business
-      match /receipts/{receiptId} {
-        allow read, write: if request.auth != null && request.auth.token.businessId == businessId;
+      // Allow read/write access only if the user's businessId matches the document's businessId
+      allow read, write: if request.auth.token.businessId == businessId;
+
+      // Rules for the 'users' subcollection
+      match /users/{userId} {
+        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
       }
 
-      // Schema definitions silo
-      match /schema_definitions/{schemaId} {
-        allow read: if request.auth != null && request.auth.token.businessId == businessId;
-        allow write: if request.auth != null && 
-          request.auth.token.businessId == businessId && 
-          (request.auth.token.role == 'admin' || request.auth.token.role == 'bookkeeper');
+      // Rules for the 'schemas' subcollection
+      match /schemas/{schemaId} {
+        allow read: if request.auth.token.businessId == businessId;
+        allow write: if request.auth.token.admin == true;
       }
-    }
-    
-    // Business assignments - Links users to businesses
-    match /business_assignments/{userId} {
-      // Users can read their own assignment
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Only Cloud Functions (Admin SDK) can write
-      allow write: if false; // Disable client writes - only Admin SDK
-    }
-    
-    // ============================================
-    // ENTITY COLLECTIONS (Phase 4 - Legacy)
-    // ============================================
-    
-    // Entities - Entity definitions
-    match /entities/{entityId} {
-      // Only admins can read/write entities
-      allow read, write: if request.auth != null && request.auth.token.admin == true;
-    }
-    
-    // Entity assignments - Links users to entities
-    match /entity_assignments/{userId} {
-      // Users can read their own assignment
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Only Cloud Functions (Admin SDK) can write
-      allow write: if false; // Disable client writes - only Admin SDK
-    }
-    
-    // FX Cache - Currency exchange rate cache
-    match /fx_cache/{cacheId} {
-      // Only Cloud Functions can read/write
-      allow read, write: if false; // Disable client access - only Admin SDK
-    }
 
-    // User lookup table for account recovery (tenant-aware reset)
-    match /user_lookup/{email} {
-      // Allow unauthenticated read access ONLY to the specific document matching the email
-      // This is necessary to find the businessId before triggering password reset
-      allow get: if true; 
-      allow list: if false; // Prevent email enumeration
-      allow write: if false; // Only Cloud Functions can write
-    }
-    
-    // Archive batches - Archived batch data
-    match /archive_batches/{batchId} {
-      // Only admins can read archived batches
-      allow read: if request.auth != null && request.auth.token.admin == true;
-      // Only Cloud Functions can write
-      allow write: if false; // Disable client writes - only Admin SDK
-    }
-    
-    // ============================================
-    // ADMIN COLLECTIONS
-    // ============================================
-    
-    // Admins - Admin email addresses (legacy - for backward compatibility)
-    match /admins/{email} {
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-    }
-    
-    // Admin data - Admin-only data collection
-    match /admin_data/{document=**} {
-      allow read, write: if request.auth != null && request.auth.token.admin == true;
+      // Rules for the 'batches' subcollection
+      match /batches/{userId} {
+        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
+      }
     }
   }
 }

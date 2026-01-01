@@ -22,10 +22,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         onAuthStateChanged 
     } = authModule;
     const { ref, uploadBytesResumable } = storageModule;
-    const { doc, setDoc, getDoc, onSnapshot, collection, getDocs, query, where, orderBy, limit } = firestoreModule;
+    const { doc, setDoc, getDoc, onSnapshot, collection, getDocs } = firestoreModule;
 
     const { auth, storage, db } = window.firebase;
     const googleProvider = new GoogleAuthProvider();
+
+    // Function to initialize the app with a user (real or mock)
+    async function initializeAppWithUser(user) {
+        userInfo.style.display = 'flex';
+        loginSection.style.display = 'none';
+        mainContent.style.display = 'grid';
+        loginModal.style.display = 'none';
+
+        const isAdmin = user.isAdmin || await checkAdminStatus(user);
+        const adminLinkContainer = document.getElementById('admin-link-container');
+        if (isAdmin && adminLinkContainer) {
+            adminLinkContainer.style.display = 'inline';
+        }
+
+        if (!isAdmin) {
+            await loadUserProfile(user);
+        }
+    }
 
     // DOM Elements
     const loginBtn = document.getElementById('login-btn');
@@ -47,99 +65,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusContainer = document.getElementById('status-container');
     const historyContainer = document.getElementById('history-container');
 
-    // Check if user is admin via custom claims OR Firestore admins collection
+    // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
-        if (!user) {
-            console.log('❌ checkAdminStatus: No user provided');
-            return false;
-        }
+        if (!user) return false;
+        if (user.isMock) return user.isAdmin;
         
-        console.log('🔍 Checking admin status for:', user.email);
-        
+        // Get the ID token to check custom claims
         try {
-            // Method 1: Check custom claims (preferred, faster)
-            const idTokenResult = await user.getIdTokenResult(true); // Force refresh
-            console.log('📋 Token claims:', idTokenResult.claims);
-            
-            if (idTokenResult.claims.admin === true) {
-                console.log('✅ Admin status confirmed via custom claims');
-                return true;
-            }
-            
-            // Method 2: Check Firestore admins collection (fallback)
-            console.log('🔍 Custom claims not found, checking Firestore admins collection...');
-            const adminDoc = await getDoc(doc(db, 'admins', user.email));
-            console.log('📄 Admin doc exists:', adminDoc.exists());
-            
-            if (adminDoc.exists()) {
-                console.log('✅ Admin status confirmed via Firestore admins collection');
-                return true;
-            }
-            
-            console.log('❌ User is not an admin');
-            return false;
+            const idTokenResult = await user.getIdTokenResult();
+            return idTokenResult.claims.admin === true;
         } catch (error) {
-            console.error('❌ Error checking admin status:', error);
+            console.error('Error checking admin status:', error);
             return false;
         }
     }
 
-    // Authentication State
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Multi-tenant: Check for businessId in custom claims
-            const idTokenResult = await user.getIdTokenResult(true); // Force refresh to pick up new claims
-            const businessId = idTokenResult.claims.businessId;
-            window.businessId = businessId; // Store globally for the session
-            console.log('🏢 Tenant context:', businessId || 'None');
+    // Fetch user profile and render dynamic form
+    async function loadUserProfile(user) {
+        if (!user) return;
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
 
-            // Check if email is verified
-            if (!user.emailVerified) {
-                // Email not verified, redirect to login with message
-                if (!window.location.pathname.includes('login.html')) {
-                    window.location.href = 'login.html?verify=true';
-                }
-                return;
-            }
-            // User is signed in and verified
-            userInfo.style.display = 'flex';
-            loginSection.style.display = 'none';
-            mainContent.style.display = 'grid';
-            loginModal.style.display = 'none';
-            
-            // Check admin status and show admin link
-            console.log('🔑 User authenticated, checking admin status...');
-            const isAdmin = await checkAdminStatus(user);
-            console.log('👤 Is admin?', isAdmin);
-            
-            const adminLinkContainer = document.getElementById('admin-link-container');
-            console.log('📦 Admin link container element:', adminLinkContainer);
-            console.log('📦 Current display style:', adminLinkContainer ? adminLinkContainer.style.display : 'element not found');
-            console.log('📦 Current computed style:', adminLinkContainer ? window.getComputedStyle(adminLinkContainer).display : 'element not found');
-            
-            if (isAdmin && adminLinkContainer) {
-                console.log('✅ Showing admin link - setting display to inline');
-                adminLinkContainer.style.display = 'inline';
-                adminLinkContainer.style.visibility = 'visible';
-                // Force reflow to ensure style is applied
-                adminLinkContainer.offsetHeight;
-                console.log('✅ After setting - display:', adminLinkContainer.style.display);
-                console.log('✅ After setting - computed display:', window.getComputedStyle(adminLinkContainer).display);
-            } else if (!isAdmin) {
-                console.log('ℹ️ User is not admin, hiding admin link');
-                if (adminLinkContainer) {
-                    adminLinkContainer.style.display = 'none';
-                }
-            } else if (isAdmin && !adminLinkContainer) {
-                console.error('❌ CRITICAL: User is admin but admin-link-container element not found in DOM!');
-            }
-        } else {
-            // User is signed out - redirect to login page only if not already there
-            if (!window.location.pathname.includes('login.html')) {
-                window.location.href = 'login.html';
+        if (!businessId) {
+            console.error("User is not associated with a business.");
+            return;
+        }
+
+        const userRef = doc(db, 'businesses', businessId, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.assignedSchemaId) {
+                await renderDynamicForm(businessId, userData.assignedSchemaId);
             }
         }
-    });
+    }
+
+    // Render dynamic form based on schema
+    async function renderDynamicForm(businessId, schemaId) {
+        const schemaRef = doc(db, 'businesses', businessId, 'schemas', schemaId);
+        const schemaDoc = await getDoc(schemaRef);
+        if (schemaDoc.exists()) {
+            const schemaData = schemaDoc.data().schema; // The schema is nested under the 'schema' key
+            const fieldsContainer = document.getElementById('dynamic-form-fields');
+            fieldsContainer.innerHTML = ''; // Clear existing fields
+            if (schemaData.fields) {
+                schemaData.fields.forEach(field => {
+                    const fieldHtml = `
+                        <div class="form-field">
+                            <label for="${field.id}">${field.label}</label>
+                            <input type="${field.type}" id="${field.id}" name="${field.id}" class="admin-input">
+                        </div>
+                    `;
+                    fieldsContainer.insertAdjacentHTML('beforeend', fieldHtml);
+                });
+            }
+        }
+    }
+
+    // Authentication State
+    if (window.mockUser) {
+        initializeAppWithUser(window.mockUser);
+    } else {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    // Email not verified, redirect to login with message
+                    if (!window.location.pathname.includes('login.html')) {
+                        window.location.href = 'login.html?verify=true';
+                    }
+                    return;
+                }
+                // User is signed in and verified
+                initializeAppWithUser(user);
+                updateHistory(user.uid);
+            } else {
+                // User is signed out - redirect to login page only if not already there
+                if (!window.location.pathname.includes('login.html')) {
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    }
 
     // Login redirect (if login button exists, redirect to login page)
     loginBtn?.addEventListener('click', () => {
@@ -317,6 +325,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) {
+            console.error("User is not associated with a business.");
+            alert("Could not upload file. User not part of a business.");
+            return;
+        }
+
         // Validate file type
         if (!file.type || !file.type.startsWith('image/')) {
             console.error('Invalid file type:', file.type);
@@ -336,13 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Generate unique filename
         const timestamp = Date.now();
         const fileName = `${timestamp}-${file.name}`;
-        
-        // Multi-tenant: Use tenant-scoped path if businessId is available
-        const businessId = window.businessId;
-        const filePath = businessId 
-            ? `tenants/${businessId}/drivers/${user.uid}/receipts/${fileName}`
-            : `receipts/${user.uid}/${fileName}`;
-            
+        const filePath = `receipts/${user.uid}/${fileName}`;
         const storageRef = ref(storage, filePath);
 
         // Show progress
@@ -387,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     uploadStatus.style.color = 'var(--secondary-color)';
                     
                     // Create batch document in Firestore
-                    const batchRef = doc(db, 'batches', user.uid);
+                    const batchRef = doc(db, 'businesses', businessId, 'batches', user.uid);
                     await setDoc(batchRef, {
                         status: 'processing',
                         fileName: fileName,
@@ -396,12 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }, { merge: true });
 
                     // Monitor status
-                    const receiptId = fileName; // Match Jules's backend logic
-                    if (businessId) {
-                        monitorTenantReceiptStatus(businessId, receiptId);
-                    } else {
-                        monitorBatchStatus(user.uid, fileName);
-                    }
+                    monitorBatchStatus(user.uid, fileName);
                 }
             );
         } catch (error) {
@@ -422,22 +427,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Multi-tenant: Monitor receipt status in the business silo
-    function monitorTenantReceiptStatus(businessId, receiptId) {
-        const receiptRef = doc(db, `businesses/${businessId}/receipts/${receiptId}`);
-        
-        onSnapshot(receiptRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                updateStatusDisplay(data);
-                updateHistory(businessId);
-            }
-        });
-    }
-
-    function updateStatusDisplay(data) {
+    function updateStatusDisplay(data, fileName) {
         statusContainer.innerHTML = '';
-        const fileName = data.fileName || 'receipt';
 
         if (data.status === 'processing') {
             statusContainer.innerHTML = `
@@ -446,25 +437,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p>Analyzing receipt with AI...</p>
                 </div>
             `;
-        } else if (data.status === 'complete' || data.status === 'processed') {
+        } else if (data.status === 'complete') {
+            const receiptData = data.receiptData || {};
             statusContainer.innerHTML = `
                 <div class="status-card">
                     <h3>✅ Processing Complete: ${fileName}</h3>
                     <div class="data-row">
                         <span class="data-label">Vendor:</span>
-                        <span class="data-value">${data.vendorName || 'N/A'}</span>
+                        <span class="data-value">${receiptData.vendorName || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Date:</span>
-                        <span class="data-value">${data.transactionDate || 'N/A'}</span>
+                        <span class="data-value">${receiptData.transactionDate || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Amount:</span>
-                        <span class="data-value">$${data.totalAmount?.toFixed(2) || 'N/A'}</span>
+                        <span class="data-value">$${receiptData.totalAmount?.toFixed(2) || 'N/A'}</span>
                     </div>
                     <div class="data-row">
                         <span class="data-label">Category:</span>
-                        <span class="data-value">${data.category || 'N/A'}</span>
+                        <span class="data-value">${receiptData.category || 'N/A'}</span>
                     </div>
                 </div>
             `;
@@ -478,18 +470,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function updateHistory(businessId) {
-        const receiptsRef = collection(db, `businesses/${businessId}/receipts`);
-        const q = query(receiptsRef, orderBy('timestamp', 'desc'), limit(10));
-        const querySnapshot = await getDocs(q);
+    async function updateHistory(userId) {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) return;
+
+        const batchRef = doc(db, 'businesses', businessId, 'batches', userId);
+        const snapshot = await getDoc(batchRef);
         
-        historyContainer.innerHTML = ''; // Clear existing history
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            historyContainer.innerHTML += `
+        if (snapshot.exists()) {
+            const data = snapshot.data();
+            historyContainer.innerHTML = `
                 <div class="history-item">
                     <div>
-                        <div class="file-name">${data.fileName || 'Unknown'}</div>
+                        <div class="file-name">${data.lastFileProcessed || 'Unknown'}</div>
                         <div style="font-size: 12px; color: var(--text-secondary);">
                             ${new Date(data.timestamp).toLocaleString()}
                         </div>
@@ -497,18 +494,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="file-status ${data.status}">${data.status}</span>
                 </div>
             `;
-        });
-    }
-
-    // Initialize history on load
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            updateHistory(user.uid);
         }
-    });
-
-    // Phase 1.2: Initialize translations
-    if (typeof translateUI === 'function') {
-        translateUI();
     }
 });

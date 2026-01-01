@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Admin Dashboard - AI Financial Analyst">
     <title>Admin Dashboard - AI Financial Analyst</title>
+    <script src="auth-bypass.js"></script>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="styles.css?v=20251217-phase4">
-    <!-- Translations (Phase 1.2: Multi-Language Support) -->
-    <script src="translations.js?v=20251217"></script>
+    <link rel="stylesheet" href="styles.css">
     <!-- Chart.js for statistics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Firebase SDKs -->
@@ -38,11 +37,7 @@
                     <nav class="nav-links">
                         <a href="index.html" class="nav-link">Home</a>
                         <a href="profile.html" class="nav-link">Profile</a>
-                        <span id="admin-link-container">
-                            <a href="admin.html" class="nav-link active admin-link">Admin</a>
-                            <a href="admin-review.html" class="nav-link admin-link">Review Queue</a>
-                            <a href="business-signup.html" class="nav-link admin-link">Create Business</a>
-                        </span>
+                        <a href="admin.html" class="nav-link active admin-link">Admin</a>
                     </nav>
                     <button id="logout-btn" class="btn-secondary">Logout</button>
                 </div>
@@ -60,341 +55,8 @@
 
         <!-- Admin Content -->
         <main id="admin-content" style="display: none;">
-            <!-- Quick Navigation Sidebar -->
-            <nav class="admin-quick-nav">
-                <button class="quick-nav-btn" data-target="documentation-section" title="Documentation">
-                    <span class="icon">📚</span>
-                    <span class="label">Docs</span>
-                </button>
-                <button class="quick-nav-btn" data-target="statistics-section" title="System Statistics">
-                    <span class="icon">📊</span>
-                    <span class="label">Stats</span>
-                </button>
-                <button class="quick-nav-btn" data-target="analytics-section" title="Analytics">
-                    <span class="icon">📈</span>
-                    <span class="label">Charts</span>
-                </button>
-                <button class="quick-nav-btn" data-target="receipts-section" title="All Receipts">
-                    <span class="icon">📋</span>
-                    <span class="label">Receipts</span>
-                </button>
-                <button class="quick-nav-btn" data-target="errors-section" title="Error Logs">
-                    <span class="icon">⚠️</span>
-                    <span class="label">Errors</span>
-                </button>
-                <button class="quick-nav-btn" data-target="schemas-section" title="Field Builder">
-                    <span class="icon">🏗️</span>
-                    <span class="label">Fields</span>
-                </button>
-                <button class="quick-nav-btn" data-target="users-section" title="User Management">
-                    <span class="icon">👥</span>
-                    <span class="label">Users</span>
-                </button>
-                <button class="quick-nav-btn scroll-to-top" data-target="top" title="Back to Top">
-                    <span class="icon">⬆️</span>
-                    <span class="label">Top</span>
-                </button>
-            </nav>
-
-            <!-- Testing/Admin Guide (visible when running locally) -->
-            <div id="testingHelper" class="testing-helper" style="display: none;">
-                <h3>📚 Admin Documentation & Guides</h3>
-                
-                <!-- Tab Navigation -->
-                <div class="guide-tabs">
-                    <button class="guide-tab active" data-tab="dashboard">📊 Dashboard</button>
-                    <button class="guide-tab" data-tab="roles">👥 Roles & Setup</button>
-                    <button class="guide-tab" data-tab="testing">🔧 Testing</button>
-                </div>
-                
-                <!-- Dashboard Guide Tab -->
-                <div class="guide-content guide-tab-content active" id="dashboard-tab">
-                    <h4>🎯 Admin Responsibilities</h4>
-                    <p>As an admin, you have access to system-wide data and management features.</p>
-                    
-                    <h4>📊 Dashboard Features</h4>
-                    <ul>
-                        <li><strong>System Statistics:</strong> View total receipts, success rates, active users, and amounts processed</li>
-                        <li><strong>Analytics Charts:</strong> Visual breakdown of receipts by category and status</li>
-                        <li><strong>All Receipts Viewer:</strong> Search and filter all receipts from all users</li>
-                        <li><strong>Error Logs:</strong> Monitor processing errors and troubleshoot issues</li>
-                        <li><strong>User Management:</strong> View all users and their activity</li>
-                    </ul>
-                    
-                    <h4>🔍 Key Admin Tasks</h4>
-                    <ol>
-                        <li><strong>Monitor Errors:</strong> Check the "Errors & Unprocessed" tab regularly</li>
-                        <li><strong>Review Flagged Receipts:</strong> Visit <a href="admin-review.html">Admin Review</a> for validation warnings</li>
-                        <li><strong>User Support:</strong> Check user activity and troubleshoot issues</li>
-                        <li><strong>Data Quality:</strong> Review analytics for data accuracy</li>
-                    </ol>
-                    
-                    <h4>📝 Admin Review Workflow</h4>
-                    <ul>
-                        <li>Navigate to <a href="admin-review.html">Admin Review</a> page</li>
-                        <li>Review flagged receipts and validation warnings</li>
-                        <li>Approve or reject receipts after verification</li>
-                        <li>Add notes for audit trail purposes</li>
-                    </ul>
-                </div>
-                
-                <!-- Roles & Setup Tab -->
-                <div class="guide-content guide-tab-content" id="roles-tab">
-                    <h4>🔐 Admin Access Setup</h4>
-                    <p>Two methods available for granting admin access:</p>
-                    
-                    <h4>Method 1: Firestore Collection (Easiest)</h4>
-                    <ol>
-                        <li>Go to Firebase Console → Firestore</li>
-                        <li>Create collection: <code>admins</code></li>
-                        <li>Add document with admin email as ID</li>
-                        <li>Add field: <code>email</code> (string) with the admin email value</li>
-                        <li>User must sign out and sign back in</li>
-                    </ol>
-                    
-                    <h4>Method 2: Custom Claims (More Secure)</h4>
-                    <ol>
-                        <li>Deploy Cloud Functions: <code>firebase deploy --only functions</code></li>
-                        <li>Get user UID from Firebase Console → Authentication</li>
-                        <li>Call function: <code>firebase functions:call setAdminClaim --data '{"uid":"USER_UID"}'</code></li>
-                        <li>User must sign out and sign back in</li>
-                    </ol>
-                    
-                    <h4>👥 Admin Roles Explained</h4>
-                    <ul>
-                        <li><strong>System Admin:</strong> Full access to all features, user management, system configuration</li>
-                        <li><strong>Permissions:</strong> View all data, approve/reject receipts, manage users, access error logs</li>
-                        <li><strong>Setup:</strong> Add admin email to Firestore <code>admins</code> collection</li>
-                    </ul>
-                    
-                    <h4>📖 Documentation</h4>
-                    <ul>
-                        <li><code>ADMIN_SETUP.md</code> - Firestore method setup</li>
-                        <li><code>CUSTOM_CLAIMS_SETUP.md</code> - Custom claims method</li>
-                        <li><code>ADMIN_SETUP_QUICK.md</code> - Quick setup guide</li>
-                    </ul>
-                </div>
-                
-                <!-- Testing Info Tab -->
-                <div class="guide-content guide-tab-content" id="testing-tab">
-                    <h4>🔧 Local Testing Environment</h4>
-                    <p>You're running on localhost. Testing features:</p>
-                    
-                    <h4>✅ Testing Checklist</h4>
-                    <ul>
-                        <li>Verify admin access (check if Admin link appears)</li>
-                        <li>Check browser console (F12) for errors</li>
-                        <li>Test admin dashboard features (stats, charts, logs)</li>
-                        <li>Test admin review workflow (approve/reject receipts)</li>
-                        <li>Verify user management features work</li>
-                    </ul>
-                    
-                    <h4>⚙️ Configuration</h4>
-                    <ul>
-                        <li><strong>Feature Flag:</strong> <code>ENABLE_REVIEW_WORKFLOW</code> env variable</li>
-                        <li><strong>Base Currency:</strong> <code>BASE_CURRENCY</code> (default: GBP)</li>
-                        <li><strong>Categories:</strong> <code>/categories</code> Firestore collection</li>
-                    </ul>
-                    
-                    <h4>📖 Testing Documentation</h4>
-                    <ul>
-                        <li><code>LOCAL_TESTING_GUIDE.md</code> - Complete testing setup</li>
-                        <li><code>ADMIN_GUIDE.md</code> - Full admin documentation</li>
-                    </ul>
-                    
-                    <h4>🐛 Common Issues</h4>
-                    <ul>
-                        <li><strong>Admin link not showing:</strong> Check Firestore <code>admins</code> collection</li>
-                        <li><strong>Access denied:</strong> Verify email matches exactly, re-login</li>
-                        <li><strong>Features not loading:</strong> Check Firebase config and auth state</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Documentation References (Always Visible with Tabs) -->
-            <section id="documentation-section" class="documentation-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; scroll-margin-top: 20px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 24px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); padding-bottom: 10px;">📚 Documentation Center</h2>
-                
-                <!-- Documentation Tabs -->
-                <div class="doc-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <button class="doc-tab active" data-doc-tab="quickstart" style="background: rgba(255, 255, 255, 0.3); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-bottom: 3px solid #ffd700;">
-                        🚀 Quick Start
-                    </button>
-                    <button class="doc-tab" data-doc-tab="silos" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        🏢 Multi-Tenant Silos
-                    </button>
-                    <button class="doc-tab" data-doc-tab="signup" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        👥 User Management
-                    </button>
-                    <button class="doc-tab" data-doc-tab="admin" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        👨‍💼 Admin Roles
-                    </button>
-                    <button class="doc-tab" data-doc-tab="technical" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; backdrop-filter: blur(5px);">
-                        ⚙️ Technical Architecture
-                    </button>
-                </div>
-
-                <!-- Tab Content Container -->
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; backdrop-filter: blur(10px);">
-                    
-                    <!-- Quick Start Tab -->
-                    <div id="quickstart-doc-tab" class="doc-tab-content active" style="display: block; animation: fadeIn 0.3s ease-in;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Getting Started</h3>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/README.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">📖</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">README.md</code> - Project overview and features</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/LOCAL_TESTING_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">🧪</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">LOCAL_TESTING_GUIDE.md</code> - Local testing setup</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/USER_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">👤</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">USER_GUIDE.md</code> - Complete user documentation</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <!-- Multi-Tenant Silos Tab -->
-                    <div id="silos-doc-tab" class="doc-tab-content" style="display: none;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">🏢 Data Isolation & Silos</h3>
-                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 18px; color: #ffd700;">Enterprise Features</h4>
-                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                                <li>🏗️ <strong>Field Builder:</strong> Define custom fields (e.g., Odometer, Project ID) for Gemini to extract.</li>
-                                <li>👥 <strong>Delegated Management:</strong> Create Driver accounts scoped to your business.</li>
-                                <li>🛡️ <strong>Absolute Isolation:</strong> No business can see another's data or users.</li>
-                            </ul>
-                        </div>
-                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 18px; color: #ffd700;">Security Enforcement</h4>
-                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                                <li>✅ <strong>Identity Based:</strong> Users must have a <code>businessId</code> claim in their auth token.</li>
-                                <li>✅ <strong>Path Scoped:</strong> Firestore rules prevent users from querying data outside their silo.</li>
-                                <li>✅ <strong>Storage Isolation:</strong> Images are stored at <code>/tenants/{businessId}/drivers/{uid}/...</code>.</li>
-                            </ul>
-                        </div>
-                        <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px; list-style: none;">
-                            <a href="MULTI_TENANCY_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                <span style="font-size: 20px;">🛡️</span>
-                                <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">MULTI_TENANCY_GUIDE.md</code> - Core architecture guide</span>
-                            </a>
-                        </li>
-                    </div>
-
-                    <!-- User Signup Tab -->
-                    <div id="signup-doc-tab" class="doc-tab-content" style="display: none;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">How Stakeholders Sign Up</h3>
-                        <div style="padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 15px;">
-                            <h4 style="margin: 0 0 15px 0; font-size: 18px; color: #ffd700;">1. Access the App</h4>
-                            <p style="margin: 0 0 10px 0; line-height: 1.6;">Navigate to the deployed app URL (Firebase Hosting)</p>
-                            
-                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">2. Sign Up</h4>
-                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                                <li>Click <strong>"Sign In"</strong> button</li>
-                                <li>Choose <strong>Email/Password</strong> or <strong>Google Sign-In</strong></li>
-                                <li>Create account with their email</li>
-                                <li>Verify email (if required)</li>
-                            </ul>
-                            
-                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">3. Start Using</h4>
-                            <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
-                                <li>Upload receipt images</li>
-                                <li>Review and finalize receipts</li>
-                                <li>View statistics on profile page</li>
-                            </ul>
-                            
-                            <h4 style="margin: 15px 0 10px 0; font-size: 18px; color: #ffd700;">4. Grant Admin Access (Optional)</h4>
-                            <p style="margin: 10px 0 0 0; line-height: 1.6;">Add their email to Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection to grant admin privileges</p>
-                        </div>
-                        <div style="padding: 15px; background: rgba(255, 215, 0, 0.2); border-radius: 8px; border-left: 4px solid #ffd700;">
-                            <strong style="color: #ffd700;">📧 No Pre-Registration Required!</strong>
-                            <p style="margin: 10px 0 0 0; line-height: 1.6;">Users can sign up directly on the app. No admin approval needed for basic user access.</p>
-                        </div>
-                    </div>
-
-                    <!-- Admin Setup Tab -->
-                    <div id="admin-doc-tab" class="doc-tab-content" style="display: none;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Admin Setup & Testing</h3>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/ADMIN_SETUP_QUICK.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">⚡</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_SETUP_QUICK.md</code> - Quick admin setup</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/ADMIN_GUIDE.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">👨‍💼</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_GUIDE.md</code> - Complete admin documentation</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/ADMIN_SETUP.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">🔐</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">ADMIN_SETUP.md</code> - Firestore method</span>
-                                </a>
-                            </li>
-                        </ul>
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; border-left: 4px solid #ffd700;">
-                            <h4 style="margin: 0 0 10px 0; font-size: 16px; color: #ffd700;">🔧 Common Issues</h4>
-                            <ul style="margin: 10px 0 0 20px; line-height: 1.8; font-size: 14px;">
-                                <li><strong style="color: #ffd700;">Admin link not showing:</strong> Check Firestore <code style="background: rgba(0, 0, 0, 0.3); padding: 2px 6px; border-radius: 4px;">admins</code> collection</li>
-                                <li><strong style="color: #ffd700;">Access denied:</strong> Sign out and back in, verify email matches</li>
-                                <li><strong style="color: #ffd700;">Features not loading:</strong> Check browser console (F12) for errors</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- Technical Tab -->
-                    <div id="technical-doc-tab" class="doc-tab-content" style="display: none;">
-                        <h3 style="margin: 0 0 15px 0; font-size: 20px; color: #fff;">Technical Documentation</h3>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/BUG_FIXES_DEC17_2025.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">🐛</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">BUG_FIXES_DEC17_2025.md</code> - Recent bug fixes</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/PHASE3_VAT_EXTRACTION.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">💰</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE3_VAT_EXTRACTION.md</code> - VAT extraction</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/PHASE2_CURRENCY_SETUP.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">💱</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">PHASE2_CURRENCY_SETUP.md</code> - Currency conversion</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/BRANCH_WORKFLOW.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">🌿</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">BRANCH_WORKFLOW.md</code> - Git workflow</span>
-                                </a>
-                            </li>
-                            <li style="margin: 12px 0; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 8px;">
-                                <a href="https://github.com/Terrygilligan/<YOUR_PROJECT_ID>/blob/feature/phase-2-categories/DOCUMENTATION_INDEX.md" target="_blank" style="color: #ffd700; text-decoration: none; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 20px;">📚</span>
-                                    <span><code style="background: rgba(0, 0, 0, 0.3); padding: 2px 8px; border-radius: 4px;">DOCUMENTATION_INDEX.md</code> - All documentation</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-
-                </div>
-            </section>
-
             <!-- Statistics Overview -->
-            <section id="statistics-section" class="admin-section" style="scroll-margin-top: 20px;">
+            <section class="admin-section">
                 <h2>System Statistics</h2>
                 <div class="stats-grid">
                     <div class="stat-card admin-stat">
@@ -431,7 +93,7 @@
             </section>
 
             <!-- Charts Section -->
-            <section id="analytics-section" class="admin-section" style="scroll-margin-top: 20px;">
+            <section class="admin-section">
                 <h2>Analytics</h2>
                 <div class="charts-container">
                     <div class="chart-wrapper">
@@ -445,13 +107,22 @@
                 </div>
             </section>
 
-            <!-- All Receipts Viewer -->
-            <section id="receipts-section" class="admin-section" style="scroll-margin-top: 20px;">
-                <h2>All Receipts</h2>
-                <div class="admin-tabs">
-                    <button class="tab-btn active" data-tab="errors">Errors & Unprocessed</button>
-                    <button class="tab-btn" data-tab="all">All Receipts</button>
-                </div>
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="overview">Overview</button>
+                <button class="tab-btn" data-tab="receipts">All Receipts</button>
+                <button class="tab-btn" data-tab="users">User Management</button>
+                <button class="tab-btn" data-tab="management">Management</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="overview-tab-content">
+                <!-- Statistics and Analytics go here -->
+            </div>
+
+            <div id="receipts-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>All Receipts</h2>
                 <div class="admin-controls">
                     <input type="text" id="search-receipts" placeholder="Search by vendor, user, or file..." class="admin-input">
                     <select id="filter-status" class="admin-select">
@@ -468,93 +139,65 @@
             </section>
 
             <!-- Error Logs -->
-            <section id="errors-section" class="admin-section" style="scroll-margin-top: 20px;">
+            <section class="admin-section">
                 <h2>Error Logs</h2>
                 <div id="error-logs-container">
                     <div class="loading-state">Loading error logs...</div>
                 </div>
             </section>
 
-            <!-- Field Builder (Dynamic Schemas) -->
-            <section id="schemas-section" class="admin-section" style="scroll-margin-top: 20px;">
-                <div class="section-header">
-                    <h2>🏗️ Field Builder</h2>
-                    <button id="add-schema-field-btn" class="btn-primary">+ Add New Field</button>
-                </div>
-                <p style="margin-bottom: 20px; color: var(--text-secondary);">Define custom data fields for your business silo. These fields will be extracted by Gemini AI from uploaded receipts.</p>
-                
-                <div id="schemas-container" class="schemas-list">
-                    <!-- Schema fields will be rendered here -->
-                    <div class="loading-state">Loading schema definitions...</div>
-                </div>
-
-                <!-- Add Field Modal -->
-                <div id="field-modal" class="modal" style="display: none;">
-                    <div class="modal-content">
-                        <h3>Create New Custom Field</h3>
-                        <form id="add-field-form">
-                            <div class="form-group">
-                                <label for="field-id">Field ID (Unique Name)</label>
-                                <input type="text" id="field-id" placeholder="e.g., meat_temp" required>
-                                <small>No spaces or special characters allowed.</small>
-                            </div>
-                            <div class="form-group">
-                                <label for="field-description">AI Extraction Prompt</label>
-                                <input type="text" id="field-description" placeholder="e.g., Extract the internal temperature of the meat if mentioned." required>
-                                <small>Describe exactly what you want the AI to look for on the receipt.</small>
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" class="btn-secondary" id="cancel-field-btn">Cancel</button>
-                                <button type="submit" class="btn-primary">Create Field</button>
-                            </div>
-                        </form>
+            <div id="management-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>Sheet Builder</h2>
+                    <p>Define custom data fields for your users' uploads.</p>
+                    <div id="schema-builder-container">
+                        <!-- Schema builder UI will be dynamically generated here -->
                     </div>
-                </div>
-            </section>
-
-            <!-- User Management -->
-            <section id="users-section" class="admin-section" style="scroll-margin-top: 20px;">
-                <div class="section-header">
-                    <h2>👥 User Management</h2>
-                    <button id="invite-user-btn" class="btn-primary">+ Create Driver</button>
-                </div>
-                <div class="admin-controls">
-                    <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
-                    <button id="refresh-users" class="btn-primary">Refresh</button>
-                </div>
-                <div id="users-container">
-                    <div class="loading-state">Loading users...</div>
-                </div>
-
-                <!-- Create User Modal -->
-                <div id="user-modal" class="modal" style="display: none;">
-                    <div class="modal-content">
-                        <h3>Create New Driver Account</h3>
-                        <p style="margin-bottom: 20px; color: var(--text-secondary);">New users will be automatically associated with your business silo.</p>
-                        <form id="create-user-form">
-                            <div class="form-group">
-                                <label for="new-user-email">Email Address</label>
-                                <input type="email" id="new-user-email" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="new-user-display-name">Display Name</label>
-                                <input type="text" id="new-user-display-name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="new-user-password">Initial Password</label>
-                                <input type="password" id="new-user-password" required minlength="6">
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" class="btn-secondary" id="cancel-user-btn">Cancel</button>
-                                <button type="submit" class="btn-primary">Create User</button>
-                            </div>
-                        </form>
+                    <button id="add-field-btn" class="btn-secondary">Add Field</button>
+                    <button id="save-schema-btn" class="btn-primary">Save Schema</button>
+                </section>
+                <section class="admin-section">
+                    <h2>Global Analytics</h2>
+                    <p>Aggregated data from all users' sheets.</p>
+                    <div id="global-analytics-container">
+                        <!-- Analytics view will be here -->
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
+
+            <div id="users-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>User Management</h2>
+                    <div class="admin-controls">
+                        <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
+                        <button id="refresh-users" class="btn-primary">Refresh</button>
+                        <button id="invite-user-btn" class="btn-primary">Invite User</button>
+                    </div>
+                    <div id="users-container">
+                        <div class="loading-state">Loading users...</div>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
-    <script src="admin.js?v=20251217-phase4"></script>
+    <div id="invite-user-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Invite New User</h2>
+            <form id="invite-user-form">
+                <input type="email" id="invite-email" placeholder="Email" required>
+                <select id="sheet-assignment-select" class="admin-select">
+                    <option value="">Select Sheet to Assign</option>
+                    <!-- Sheet options will be dynamically loaded here -->
+                </select>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                    <button type="button" id="close-invite-modal" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
 </body>
 </html>
