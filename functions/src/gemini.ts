@@ -1,7 +1,8 @@
 // functions/src/gemini.ts
 
 import { VertexAI } from "@google-cloud/vertexai";
-import { ReceiptData, Category } from "./schema";
+import { ReceiptData, Category, RECEIPT_SCHEMA } from "./schema";
+import { getFirestore } from "firebase-admin/firestore";
 
 // Initialize Vertex AI client using service account (ADC). No API key required.
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
@@ -70,29 +71,29 @@ function getMimeType(filePath: string): string {
  */
 export async function extractReceiptData(
     imageBuffer: Buffer,
-    filePath: string
+    filePath: string,
+    businessId: string,
+    schemaId: string | null
 ): Promise<ReceiptData> {
     const generativeModel = getGenerativeModel();
+    const db = getFirestore();
+    let schema = RECEIPT_SCHEMA;
+
+    if (businessId && schemaId) {
+        const schemaRef = db.collection('businesses').doc(businessId).collection('schemas').doc(schemaId);
+        const schemaDoc = await schemaRef.get();
+        if (schemaDoc.exists) {
+            schema = schemaDoc.data()?.schema || RECEIPT_SCHEMA;
+        }
+    }
 
     // Convert image to base64
     const base64Image = bufferToBase64(imageBuffer);
     const mimeType = getMimeType(filePath);
 
-    // Construct the prompt with clear instructions
-    const prompt = `Analyze this receipt image and extract the following information as JSON:
-{
-  "vendorName": "The name of the store or business",
-  "transactionDate": "The purchase date in YYYY-MM-DD format",
-  "totalAmount": The final total including tax (as a number, no currency symbols),
-  "category": "One of: Maintenance, Cleaning Supplies, Utilities, Supplies, or Other"
-}
-
-Categories:
-- "Maintenance": Tools, hardware, repairs, equipment maintenance
-- "Cleaning Supplies": Cleaning products, detergents, paper towels, etc.
-- "Utilities": Electricity, water, gas, internet, phone bills
-- "Supplies": Office supplies, general business supplies
-- "Other": Anything that doesn't fit the above categories
+    // Construct the prompt with clear instructions based on the schema
+    const prompt = `Analyze this receipt image and extract the following information as JSON based on this schema:
+${JSON.stringify(schema, null, 2)}
 
 Be precise and extract only information that is clearly visible on the receipt.
 Return ONLY valid JSON, no other text.`;

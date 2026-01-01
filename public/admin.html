@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Admin Dashboard - AI Financial Analyst">
     <title>Admin Dashboard - AI Financial Analyst</title>
+    <script src="auth-bypass.js"></script>
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="styles.css">
     <!-- Chart.js for statistics -->
@@ -106,13 +107,22 @@
                 </div>
             </section>
 
-            <!-- All Receipts Viewer -->
-            <section class="admin-section">
-                <h2>All Receipts</h2>
-                <div class="admin-tabs">
-                    <button class="tab-btn active" data-tab="errors">Errors & Unprocessed</button>
-                    <button class="tab-btn" data-tab="all">All Receipts</button>
-                </div>
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="overview">Overview</button>
+                <button class="tab-btn" data-tab="receipts">All Receipts</button>
+                <button class="tab-btn" data-tab="users">User Management</button>
+                <button class="tab-btn" data-tab="management">Management</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="overview-tab-content">
+                <!-- Statistics and Analytics go here -->
+            </div>
+
+            <div id="receipts-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>All Receipts</h2>
                 <div class="admin-controls">
                     <input type="text" id="search-receipts" placeholder="Search by vendor, user, or file..." class="admin-input">
                     <select id="filter-status" class="admin-select">
@@ -136,18 +146,56 @@
                 </div>
             </section>
 
-            <!-- User Management -->
-            <section class="admin-section">
-                <h2>User Management</h2>
-                <div class="admin-controls">
-                    <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
-                    <button id="refresh-users" class="btn-primary">Refresh</button>
-                </div>
-                <div id="users-container">
-                    <div class="loading-state">Loading users...</div>
-                </div>
-            </section>
+            <div id="management-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>Sheet Builder</h2>
+                    <p>Define custom data fields for your users' uploads.</p>
+                    <div id="schema-builder-container">
+                        <!-- Schema builder UI will be dynamically generated here -->
+                    </div>
+                    <button id="add-field-btn" class="btn-secondary">Add Field</button>
+                    <button id="save-schema-btn" class="btn-primary">Save Schema</button>
+                </section>
+                <section class="admin-section">
+                    <h2>Global Analytics</h2>
+                    <p>Aggregated data from all users' sheets.</p>
+                    <div id="global-analytics-container">
+                        <!-- Analytics view will be here -->
+                    </div>
+                </section>
+            </div>
+
+            <div id="users-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>User Management</h2>
+                    <div class="admin-controls">
+                        <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
+                        <button id="refresh-users" class="btn-primary">Refresh</button>
+                        <button id="invite-user-btn" class="btn-primary">Invite User</button>
+                    </div>
+                    <div id="users-container">
+                        <div class="loading-state">Loading users...</div>
+                    </div>
+                </section>
+            </div>
         </main>
+    </div>
+
+    <div id="invite-user-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Invite New User</h2>
+            <form id="invite-user-form">
+                <input type="email" id="invite-email" placeholder="Email" required>
+                <select id="sheet-assignment-select" class="admin-select">
+                    <option value="">Select Sheet to Assign</option>
+                    <!-- Sheet options will be dynamically loaded here -->
+                </select>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                    <button type="button" id="close-invite-modal" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="admin.js"></script>

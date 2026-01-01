@@ -27,6 +27,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { auth, storage, db } = window.firebase;
     const googleProvider = new GoogleAuthProvider();
 
+    // Function to initialize the app with a user (real or mock)
+    async function initializeAppWithUser(user) {
+        userInfo.style.display = 'flex';
+        loginSection.style.display = 'none';
+        mainContent.style.display = 'grid';
+        loginModal.style.display = 'none';
+
+        const isAdmin = user.isAdmin || await checkAdminStatus(user);
+        const adminLinkContainer = document.getElementById('admin-link-container');
+        if (isAdmin && adminLinkContainer) {
+            adminLinkContainer.style.display = 'inline';
+        }
+
+        if (!isAdmin) {
+            await loadUserProfile(user);
+        }
+    }
+
     // DOM Elements
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
@@ -50,6 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
         if (!user) return false;
+        if (user.isMock) return user.isAdmin;
         
         // Get the ID token to check custom claims
         try {
@@ -61,36 +80,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Authentication State
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Check if email is verified
-            if (!user.emailVerified) {
-                // Email not verified, redirect to login with message
-                if (!window.location.pathname.includes('login.html')) {
-                    window.location.href = 'login.html?verify=true';
-                }
-                return;
-            }
-            // User is signed in and verified
-            userInfo.style.display = 'flex';
-            loginSection.style.display = 'none';
-            mainContent.style.display = 'grid';
-            loginModal.style.display = 'none';
-            
-            // Check admin status and show admin link
-            const isAdmin = await checkAdminStatus(user);
-            const adminLinkContainer = document.getElementById('admin-link-container');
-            if (isAdmin && adminLinkContainer) {
-                adminLinkContainer.style.display = 'inline';
-            }
-        } else {
-            // User is signed out - redirect to login page only if not already there
-            if (!window.location.pathname.includes('login.html')) {
-                window.location.href = 'login.html';
+    // Fetch user profile and render dynamic form
+    async function loadUserProfile(user) {
+        if (!user) return;
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+
+        if (!businessId) {
+            console.error("User is not associated with a business.");
+            return;
+        }
+
+        const userRef = doc(db, 'businesses', businessId, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.assignedSchemaId) {
+                await renderDynamicForm(businessId, userData.assignedSchemaId);
             }
         }
-    });
+    }
+
+    // Render dynamic form based on schema
+    async function renderDynamicForm(businessId, schemaId) {
+        const schemaRef = doc(db, 'businesses', businessId, 'schemas', schemaId);
+        const schemaDoc = await getDoc(schemaRef);
+        if (schemaDoc.exists()) {
+            const schemaData = schemaDoc.data().schema; // The schema is nested under the 'schema' key
+            const fieldsContainer = document.getElementById('dynamic-form-fields');
+            fieldsContainer.innerHTML = ''; // Clear existing fields
+            if (schemaData.fields) {
+                schemaData.fields.forEach(field => {
+                    const fieldHtml = `
+                        <div class="form-field">
+                            <label for="${field.id}">${field.label}</label>
+                            <input type="${field.type}" id="${field.id}" name="${field.id}" class="admin-input">
+                        </div>
+                    `;
+                    fieldsContainer.insertAdjacentHTML('beforeend', fieldHtml);
+                });
+            }
+        }
+    }
+
+    // Authentication State
+    if (window.mockUser) {
+        initializeAppWithUser(window.mockUser);
+    } else {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    // Email not verified, redirect to login with message
+                    if (!window.location.pathname.includes('login.html')) {
+                        window.location.href = 'login.html?verify=true';
+                    }
+                    return;
+                }
+                // User is signed in and verified
+                initializeAppWithUser(user);
+                updateHistory(user.uid);
+            } else {
+                // User is signed out - redirect to login page only if not already there
+                if (!window.location.pathname.includes('login.html')) {
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    }
 
     // Login redirect (if login button exists, redirect to login page)
     loginBtn?.addEventListener('click', () => {
@@ -268,6 +325,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) {
+            console.error("User is not associated with a business.");
+            alert("Could not upload file. User not part of a business.");
+            return;
+        }
+
         // Validate file type
         if (!file.type || !file.type.startsWith('image/')) {
             console.error('Invalid file type:', file.type);
@@ -332,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     uploadStatus.style.color = 'var(--secondary-color)';
                     
                     // Create batch document in Firestore
-                    const batchRef = doc(db, 'batches', user.uid);
+                    const batchRef = doc(db, 'businesses', businessId, 'batches', user.uid);
                     await setDoc(batchRef, {
                         status: 'processing',
                         fileName: fileName,
@@ -393,9 +458,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="data-label">Category:</span>
                         <span class="data-value">${receiptData.category || 'N/A'}</span>
                     </div>
-                    <p style="margin-top: 15px; color: var(--text-secondary);">
-                        Data has been written to your Google Sheet.
-                    </p>
                 </div>
             `;
         } else if (data.status === 'error') {
@@ -409,9 +471,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function updateHistory(userId) {
-        // This would fetch and display upload history
-        // For now, we'll just show a placeholder
-        const batchRef = doc(db, 'batches', userId);
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) return;
+
+        const batchRef = doc(db, 'businesses', businessId, 'batches', userId);
         const snapshot = await getDoc(batchRef);
         
         if (snapshot.exists()) {
@@ -429,11 +496,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
     }
-
-    // Initialize history on load
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            updateHistory(user.uid);
-        }
-    });
 });
