@@ -95,19 +95,9 @@ This document outlines the implementation of:
 
 ### Firestore Data Structure
 
-#### Admin Collection
+#### User Profile Data (Siloed)
 ```
-/admins/{email}
-{
-  email: "admin@example.com",
-  createdAt: timestamp,
-  role: "admin"
-}
-```
-
-#### User Profile Data (optional enhancement)
-```
-/users/{userId}
+/businesses/{businessId}/users/{userId}
 {
   email: string,
   createdAt: timestamp,
@@ -120,15 +110,11 @@ This document outlines the implementation of:
 ### Security Rules Updates
 
 ```javascript
-// Firestore Rules
-match /admins/{email} {
-  allow read: if request.auth != null && 
-    exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-}
-
-match /users/{userId} {
+// Firestore Rules (Multi-Tenant Silo Architecture)
+match /businesses/{businessId}/users/{userId} {
   allow read, write: if request.auth != null && 
-    request.auth.uid == userId;
+    request.auth.token.businessId == businessId &&
+    (request.auth.uid == userId || request.auth.token.admin == true);
 }
 ```
 

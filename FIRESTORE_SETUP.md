@@ -59,9 +59,10 @@ Once Firestore is enabled, update the security rules:
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /batches/{userId} {
-      // Users can only read/write their own batch documents
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Multi-Tenant Silos
+    match /businesses/{businessId}/receipts/{receiptId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.businessId == businessId;
     }
   }
 }

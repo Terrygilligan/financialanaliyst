@@ -67,7 +67,7 @@
 **Files to Update**:
 - `functions/src/sheet-operations.ts` - Use `getServiceAccountKey()` from secret-manager
 - `functions/src/business-provisioning.ts` - Use `getServiceAccountKey()` and `getOAuthClientSecret()`
-- `functions/src/sheets.ts` - Use `getServiceAccountKey()`
+- `functions/src/index.ts` - Standardize business silo logic
 
 **Note**: Firebase Functions v2 requires secrets to be passed in function options. This requires updating function definitions to include secrets in the options object.
 

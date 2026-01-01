@@ -1,4 +1,8 @@
-# Phase 4 Update: Multi-Sheet Management - What We're Building
+# DEPRECATED: Phase 4 Multi-Sheet Management
+
+> ⚠️ **IMPORTANT**: The Google Sheets and Google Drive integration described in this document is **DEPRECATED**. 
+> All multi-sheet logic and legacy API dependencies have been removed in favor of **Firestore Business Silos**.
+> Please refer to `AGENTS.md` for the current architectural "Golden Rules".
 
 ## 🎯 Overview
 
@@ -231,7 +235,7 @@
 - `index.ts` - Direct processing uses multi-sheet routing
 - `finalize.ts` - Review workflow uses multi-sheet routing
 - `admin-review.ts` - Admin approval uses multi-sheet routing
-- `sheets.ts` - New `appendReceiptToUserSheet()` function
+- `processor.ts` - New `processReceiptBatch()` function with businessId scoping
 
 ---
 

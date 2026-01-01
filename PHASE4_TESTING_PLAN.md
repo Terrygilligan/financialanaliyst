@@ -1,6 +1,10 @@
-# Phase 4: Multi-Sheet Management - Testing Plan
+# DEPRECATED: Phase 4 Multi-Sheet Management - Testing Plan
 
-**Status**: Ready for Testing  
+> ⚠️ **IMPORTANT**: The Google Sheets and Google Drive integration described in this document is **DEPRECATED**. 
+> All multi-sheet logic and legacy API dependencies have been removed in favor of **Firestore Business Silos**.
+> Please refer to `AGENTS.md` for the current architectural "Golden Rules".
+
+**Status**: DEPRECATED  
 **Estimated Time**: 2-3 hours
 
 ---
@@ -28,7 +32,7 @@
 ### 2. Test Data Setup
 - [ ] Create 2-3 test users in Firebase Auth
 - [ ] Create 1-2 test entities in Firestore (`/entities`)
-- [ ] Assign users to entities (update `/users/{userId}` with `entity` field)
+- [ ] Assign users to entities (update `/businesses/{businessId}/users/{userId}` with `entity` field)
 
 ---
 
@@ -194,7 +198,7 @@
 - ✅ Assignment succeeds
 - ✅ Success message shows count of assigned users
 - ✅ Users appear in assignments list
-- ✅ User documents updated in Firestore (`/users/{userId}.sheetConfigId`)
+- ✅ User documents updated in Firestore (`/businesses/{businessId}/users/{userId}.sheetConfigId`)
 
 **Status**: [ ] Pass [ ] Fail
 

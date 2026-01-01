@@ -44,6 +44,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Phase 2.6: Get businessId from custom claims (Identity & Context Rule)
+        const idTokenResult = await user.getIdTokenResult(true);
+        window.businessId = idTokenResult.claims.businessId;
+        console.log(`🏢 Admin context: ${window.businessId || 'Global'}`);
+
         // Verify admin status
         const isAdmin = await checkAdminStatus(user);
         if (!isAdmin) {
@@ -90,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Check if user has admin privileges
+ * Check if user has admin privileges via custom claims
  */
 async function checkAdminStatus(user) {
     if (!user) {
@@ -101,23 +106,12 @@ async function checkAdminStatus(user) {
     console.log('[Admin Review] 🔍 Checking admin status for:', user.email);
     
     try {
-        // Method 1: Check custom claims (preferred, faster)
+        // Check custom claims (secure, instant check)
         const idTokenResult = await user.getIdTokenResult(true); // Force refresh
         console.log('[Admin Review] 📋 Token claims:', idTokenResult.claims);
         
         if (idTokenResult.claims.admin === true) {
             console.log('[Admin Review] ✅ Admin status confirmed via custom claims');
-            return true;
-        }
-        
-        // Method 2: Check Firestore admins collection (fallback)
-        console.log('[Admin Review] 🔍 Custom claims not found, checking Firestore admins collection...');
-        const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-        const adminDoc = await getDoc(doc(db, 'admins', user.email));
-        console.log('[Admin Review] 📄 Admin doc exists:', adminDoc.exists());
-        
-        if (adminDoc.exists()) {
-            console.log('[Admin Review] ✅ Admin status confirmed via Firestore admins collection');
             return true;
         }
         
@@ -130,11 +124,28 @@ async function checkAdminStatus(user) {
 }
 
 /**
- * Load review queue from Firestore
+ * Load review queue from Firestore (Siloed)
  */
 function loadReviewQueue(user) {
+    const businessId = window.businessId;
+    
+    if (!businessId) {
+        console.error('[Admin Review] ❌ No businessId found for admin');
+        loadingEl.style.display = 'none';
+        emptyStateEl.innerHTML = `
+            <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
+            <h2>Identity Error</h2>
+            <p>Your account is not associated with a business silo. Please contact support.</p>
+        `;
+        emptyStateEl.style.display = 'block';
+        return;
+    }
+
+    console.log(`[Admin Review] 🚀 Loading review queue for silo: ${businessId}`);
+    
+    // Multi-Tenant Silo Query
     const q = query(
-        collection(db, 'pending_receipts'),
+        collection(db, 'businesses', businessId, 'receipts'),
         where('status', '==', 'needs_admin_review'),
         orderBy('createdAt', 'desc')
     );

@@ -10,41 +10,15 @@ const db = getFirestore();
  * Look up business for a user (driver or bookkeeper)
  * 
  * Priority:
- * 1. Check if user is a bookkeeper (has businessId in /users/{userId})
- * 2. Check if user is assigned to a business (via business_assignments)
- * 3. Fall back to entity lookup (backward compatibility)
+ * 1. Check if user is assigned to a business (via business_assignments)
+ * 2. Check bookkeeper lookup (if user is the owner)
  * 
  * @param userId - Firebase Auth UID
  * @returns Business object or null
  */
 export async function lookupBusinessForUser(userId: string): Promise<Business | null> {
   try {
-    // Method 1: Check if user is a bookkeeper
-    const userDoc = await db.collection('users').doc(userId).get();
-    
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      
-      // Check if user has a businessId (bookkeeper)
-      if (userData?.businessId) {
-        const business = await getBusiness(userData.businessId);
-        if (business && business.status === 'active') {
-          console.log(`[Business Lookup] Found business for bookkeeper: ${business.name}`);
-          return business;
-        }
-      }
-      
-      // Check if user is assigned to a business (driver)
-      if (userData?.assignedBusinessId) {
-        const business = await getBusiness(userData.assignedBusinessId);
-        if (business && business.status === 'active') {
-          console.log(`[Business Lookup] Found assigned business: ${business.name}`);
-          return business;
-        }
-      }
-    }
-    
-    // Method 2: Check business_assignments collection
+    // Method 1: Check business_assignments collection
     const assignmentDoc = await db.collection('business_assignments').doc(userId).get();
     if (assignmentDoc.exists) {
       const assignmentData = assignmentDoc.data();
@@ -57,7 +31,7 @@ export async function lookupBusinessForUser(userId: string): Promise<Business | 
       }
     }
     
-    // Method 3: Try bookkeeper lookup (in case user is bookkeeper but businessId not set)
+    // Method 2: Try bookkeeper lookup (if user is the owner)
     const business = await getBusinessByBookkeeper(userId);
     if (business && business.status === 'active') {
       console.log(`[Business Lookup] Found business via bookkeeper lookup: ${business.name}`);

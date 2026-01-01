@@ -2,19 +2,18 @@
 
 Complete guide to all project documentation, organized by category and purpose.
 
-**Last Updated**: December 17, 2025  
-**Project Status**: ✅ Production Ready - Phase 1-3 complete, Phase 4 (Multi-Sheet Management) planned
+**Last Updated**: December 31, 2025  
+**Project Status**: ✅ Production Ready - Multi-Tenant SaaS Architecture Implemented
 
 ---
 
 ## 📚 Quick Navigation
 
 - [Getting Started](#getting-started)
-- [Core Documentation](#core-documentation)
+- [Multi-Tenant Core](#multi-tenant-core)
 - [Setup Guides](#setup-guides)
-- [Implementation Plans](#implementation-plans)
+- [Security & Compliance](#security--compliance)
 - [Troubleshooting](#troubleshooting)
-- [Development Workflows](#development-workflows)
 - [Status & Progress](#status--progress)
 
 ---
@@ -23,240 +22,102 @@ Complete guide to all project documentation, organized by category and purpose.
 
 ### Essential Reading (Start Here)
 
-1. **[README.md](README.md)** ⭐ **START HERE**
-   - Project overview and architecture
-   - Completed features and phases
+1. **[AGENTS.md](AGENTS.md)** ⭐ **THE GOLDEN RULES**
+   - Mandatory development standards
+   - Data Isolation (Silo Rule)
+   - Deprecation policies (No Google Sheets, No Global Collections)
+
+2. **[README.md](README.md)** ⭐ **PROJECT OVERVIEW**
+   - Multi-tenant architecture overview
    - Quick start guide
-   - Project structure
    - Configuration details
 
-2. **[USER_GUIDE.md](USER_GUIDE.md)** 👤 **FOR USERS**
-   - Complete user guide for end users
-   - How to upload receipts
-   - Profile management
-   - Troubleshooting
-   - FAQs
+3. **[USER_GUIDE.md](USER_GUIDE.md)** 👤 **FOR USERS**
+   - How to upload receipts to your business silo
+   - Viewing personal statistics
 
-3. **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** 👨‍💼 **FOR ADMINS**
-   - Complete admin guide
+4. **[ADMIN_GUIDE.md](ADMIN_GUIDE.md)** 👨‍💼 **FOR BUSINESS ADMINS**
+   - Managing your business silo
+   - Field Builder (Custom AI Extraction)
    - User management
-   - System monitoring
-   - Entity management
-   - Data archiving
-
-4. **[TODO.md](TODO.md)** - Current priorities and next steps
-   - Completed phases checklist
-   - Priority tasks (Testing, Enhancements, Production)
-   - Known issues and future fixes
-
-5. **[SETUP.md](SETUP.md)** - Complete backend setup instructions
-   - Step-by-step setup guide
-   - Service Account configuration
-   - Environment variables
 
 ---
 
-## Core Documentation
+## Multi-Tenant Core
 
-### Project Overview
-- **[README.md](README.md)** - Main project documentation
-  - Architecture overview
-  - Data flow diagrams
-  - Security information
-  - Testing instructions
-  - Branch workflow reference
+### Implementation & Architecture
+- **[MULTI_TENANCY_GUIDE.md](MULTI_TENANCY_GUIDE.md)** - Deep dive into silo architecture
+- **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** - Development and feature branch strategy
+- **[ADMIN_AND_PROFILE_PLAN.md](ADMIN_AND_PROFILE_PLAN.md)** - Consolidated feature plan
+- **[SME_PLAN_SUMMARY.md](SME_PLAN_SUMMARY.md)** - Compliance and automation roadmap
+- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** - Release day verification steps
 
-### Progress Tracking
-- **[TODO.md](TODO.md)** - Task list and priorities
-  - Completed phases (1-5)
-  - Remaining tasks with priorities
-  - Quick reference checklists
-  - Known issues
-
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Profile & Admin Dashboard completion summary
-  - ✅ Completed features list
-  - Files created/modified
-  - Deployment checklist
-
-- **[IMPLEMENTATION_UPDATES.md](IMPLEMENTATION_UPDATES.md)** - Custom Claims & Performance enhancements
-  - Security improvements (Custom Claims)
-  - Performance optimizations
-  - Migration guide
+### Security Rules
+- **[FIRESTORE_RULES_COMPLETE.md](FIRESTORE_RULES_COMPLETE.md)** - Current production rules (Recommended)
+- **[STORAGE_RULES.md](STORAGE_RULES.md)** - Multi-tenant storage isolation rules
 
 ---
 
 ## Setup Guides
 
 ### Initial Setup
-- **[SETUP.md](SETUP.md)** - Complete backend setup
-- **[ENV_SETUP.md](ENV_SETUP.md)** - Environment variables configuration
-- **[BACKEND_SETUP_CHECKLIST.md](BACKEND_SETUP_CHECKLIST.md)** - Quick setup checklist
+- **[SETUP.md](SETUP.md)** - Complete backend setup guide
+- **[ENV_SETUP.md](ENV_SETUP.md)** - Environment variables (`functions/.env`)
+- **[ADMIN_SETUP_QUICK.md](ADMIN_SETUP_QUICK.md)** - Fast-track to admin privileges via Custom Claims
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment walkthrough
+- **[BACKEND_SETUP_CHECKLIST.md](BACKEND_SETUP_CHECKLIST.md)** - Rapid infrastructure checklist
 
 ### Service Configuration
 - **[VERTEX_AI_SETUP.md](VERTEX_AI_SETUP.md)** - Vertex AI (Gemini) setup
 - **[GEMINI_API_SETUP.md](GEMINI_API_SETUP.md)** - Gemini API configuration
 - **[API_KEY_GUIDE.md](API_KEY_GUIDE.md)** - API key management
-- **[FIRESTORE_SETUP.md](FIRESTORE_SETUP.md)** - Firestore database setup
-
-### Authentication & Security
-- **[AUTHENTICATION_SETUP.md](AUTHENTICATION_SETUP.md)** - Auth system setup
-- **[CUSTOM_CLAIMS_SETUP.md](CUSTOM_CLAIMS_SETUP.md)** - Admin custom claims setup
-- **[ADMIN_SETUP.md](ADMIN_SETUP.md)** - Admin access configuration (legacy - see Custom Claims)
-- **[SECURITY_AUDIT.md](SECURITY_AUDIT.md)** - Security review
-
-### Hosting & Deployment
-- **[HOSTING_SETUP.md](HOSTING_SETUP.md)** - Firebase Hosting setup
-- **[GITHUB_SETUP.md](GITHUB_SETUP.md)** - GitHub repository setup
-
-### Icons & Assets
-- **[ICON_CREATION_GUIDE.md](ICON_CREATION_GUIDE.md)** - PWA icon creation
-- **[QUICK_ICON_SETUP.md](QUICK_ICON_SETUP.md)** - Quick icon setup
 
 ---
 
-### Implementation Plans
+## Security & Compliance
 
-- **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** - SME AUTOMATION UPGRADE (Phase 1-3)
-  - Phase 0: Setup & Security (Week 1) ✅
-  - Phase 1: Foundation Features - Entity Tracking, Translations, Archive (Week 2) ✅
-  - Phase 2: Core Workflow - Pending Receipts, Validation, Currency, Categories (Week 3-4) ✅
-  - Phase 3: Compliance Features - VAT, Accountant Tab, Audit Trail (Week 5) ✅
-  - Complete branch workflow, testing strategy, and deployment procedures
-  - Status: ✅ Complete
+### Authentication
+- **[AUTHENTICATION_REQUIREMENTS.md](AUTHENTICATION_REQUIREMENTS.md)** - User type auth logic and requirements
+- **[CUSTOM_CLAIMS_SETUP.md](CUSTOM_CLAIMS_SETUP.md)** - Detailed guide on JWT custom claims
+- **[ADMIN_SETUP.md](ADMIN_SETUP.md)** - Modernized admin setup guide (Custom Claims)
+- **[SECURITY_CHECKLIST.md](SECURITY_CHECKLIST.md)** - Pre-deployment security verification
 
-- **[ADMIN_AND_PROFILE_PLAN.md](ADMIN_AND_PROFILE_PLAN.md)** - Admin & Profile Features
-  - Admin Dashboard implementation (✅ Complete)
-  - User Profile implementation (✅ Complete)
-  - Enhanced User Dashboard (Future)
-  - Receipt editing features (Future)
-  - Consolidated from IMPLEMENTATION_PLAN.md and PROFILE_AND_ADMIN_PLAN.md
-
-### Branch Workflow & Development Plan
-- **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** ⭐ **MASTER PLAN** - Complete SME Automation Upgrade plan
-  - Phase 0: Security hardening
-  - Phase 1: Foundation (Entities, Translations, Archive)
-  - Phase 2: Core Workflow (Pending Receipts, Validation, Currency, Categories)
-  - Phase 3: Compliance (VAT, Accountant Tab, Audit Trail)
-  - Complete branch workflow, testing strategy, rollback procedures
-  - Feature flag management and deployment guide
-
-- **[QUICK_START_BRANCHES.md](QUICK_START_BRANCHES.md)** - Quick branch workflow guide
-- **[scripts/README.md](scripts/README.md)** - Git workflow PowerShell scripts
+### Compliance
+- **[SECURITY_AUDIT.md](SECURITY_AUDIT.md)** - Internal security review
+- **[STAKEHOLDER_PRESENTATION.md](STAKEHOLDER_PRESENTATION.md)** - Summary of the SaaS architecture for stakeholders
 
 ---
 
 ## Troubleshooting
 
 ### Common Issues
-- **[EMAIL_VERIFICATION_TROUBLESHOOTING.md](EMAIL_VERIFICATION_TROUBLESHOOTING.md)** - Email verification problems
-- **[VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md](VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md)** - Vertex AI 404 errors
+- **[EMAIL_VERIFICATION_TROUBLESHOOTING.md](EMAIL_VERIFICATION_TROUBLESHOOTING.md)** - Auth issues
+- **[VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md](VERTEX_AI_GEMINI_404_TROUBLESHOOTING.md)** - Vertex AI errors
 - **[GEMINI_API_KEY_FIX.md](GEMINI_API_KEY_FIX.md)** - API key issues
-- **[FIX_ENV_VARS_PRODUCTION.md](FIX_ENV_VARS_PRODUCTION.md)** - Production environment variables
 
-### Mobile Issues
-- **[MOBILE_TROUBLESHOOTING.md](MOBILE_TROUBLESHOOTING.md)** - Mobile app issues
-- **[MOBILE_DEBUGGING.md](MOBILE_DEBUGGING.md)** - Mobile debugging guide
-- **[MOBILE_ISSUES_ANALYSIS.md](MOBILE_ISSUES_ANALYSIS.md)** - Mobile issues analysis
-- **[MOBILE_FIXES_SUMMARY.md](MOBILE_FIXES_SUMMARY.md)** - Mobile fixes summary
-
-### Testing & Verification
-- **[PHASE3_WEB_SUCCESS.md](PHASE3_WEB_SUCCESS.md)** - Phase 3 web success notes
-
----
-
-## Security & Rules
-
-### Security Rules Documentation
-- **[FIRESTORE_RULES.md](FIRESTORE_RULES.md)** - Firestore security rules
-- **[FIRESTORE_RULES_UPDATED.md](FIRESTORE_RULES_UPDATED.md)** - Updated Firestore rules
-- **[FIRESTORE_RULES_CUSTOM_CLAIMS.md](FIRESTORE_RULES_CUSTOM_CLAIMS.md)** - Rules with Custom Claims (Current)
-- **[STORAGE_RULES.md](STORAGE_RULES.md)** - Firebase Storage security rules
-
----
-
-## Development Workflows
-
-### Git & Branching
-- **[BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md)** - Complete branch workflow guide
-- **[QUICK_START_BRANCHES.md](QUICK_START_BRANCHES.md)** - Quick branch commands
-- **[scripts/README.md](scripts/README.md)** - PowerShell workflow scripts
-
-### Deployment
-- **[HOSTING_SETUP.md](HOSTING_SETUP.md)** - Hosting deployment
-- **[GITHUB_SETUP.md](GITHUB_SETUP.md)** - GitHub integration
+### Mobile & PWA
+- **[MOBILE_TROUBLESHOOTING.md](MOBILE_TROUBLESHOOTING.md)** - PWA and mobile issues
+- **[MOBILE_DEBUGGING.md](MOBILE_DEBUGGING.md)** - Chrome remote debugging guide
 
 ---
 
 ## Status & Progress
 
 ### Completion Summaries
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Profile & Admin Dashboard ✅
-- **[IMPLEMENTATION_UPDATES.md](IMPLEMENTATION_UPDATES.md)** - Custom Claims & Performance ✅
-- **[PHASE3_WEB_SUCCESS.md](PHASE3_WEB_SUCCESS.md)** - Phase 3 web success ✅
-
-### Presentations
-- **[STAKEHOLDER_PRESENTATION.md](STAKEHOLDER_PRESENTATION.md)** - Stakeholder presentation notes
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Feature completion summary
+- **[IMPLEMENTATION_UPDATES.md](IMPLEMENTATION_UPDATES.md)** - Security and performance updates
+- **[TODO.md](TODO.md)** - Roadmap and remaining tasks
 
 ---
 
-## 📋 Documentation by Status
+## 🎯 Quick Reference for Developers
 
-### ✅ Complete & Current
-- README.md
-- TODO.md
-- SETUP.md
-- ENV_SETUP.md
-- ADMIN_AND_PROFILE_PLAN.md (consolidated)
-- IMPLEMENTATION_SUMMARY.md
-- IMPLEMENTATION_UPDATES.md
-- CUSTOM_CLAIMS_SETUP.md
-- FIRESTORE_RULES_CUSTOM_CLAIMS.md
-- BRANCH_WORKFLOW.md
-
-### 📝 Reference (May Need Updates)
-- PROFILE_AND_ADMIN_PLAN.md (superseded by ADMIN_AND_PROFILE_PLAN.md)
-- IMPLEMENTATION_PLAN.md (superseded by ADMIN_AND_PROFILE_PLAN.md)
-- ADMIN_SETUP.md (legacy - use CUSTOM_CLAIMS_SETUP.md instead)
-
-### 🔧 Troubleshooting (Current)
-- All troubleshooting guides are current and relevant
+1.  **Read [AGENTS.md](AGENTS.md)**: Follow the "Golden Rules".
+2.  **Follow [SETUP.md](SETUP.md)**: Get the environment running.
+3.  **Check [TODO.md](TODO.md)**: See what needs work.
+4.  **Use [ADMIN_SETUP_QUICK.md](ADMIN_SETUP_QUICK.md)**: Gain admin access for testing.
 
 ---
 
-## 🎯 Quick Reference
-
-### For New Developers
-1. Read [README.md](README.md)
-2. Follow [SETUP.md](SETUP.md)
-3. Check [TODO.md](TODO.md) for current priorities
-4. Review [BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md) for development process
-
-### For Deployment
-1. [HOSTING_SETUP.md](HOSTING_SETUP.md)
-2. [ENV_SETUP.md](ENV_SETUP.md)
-3. [CUSTOM_CLAIMS_SETUP.md](CUSTOM_CLAIMS_SETUP.md) (for admin access)
-
-### For Troubleshooting
-1. Check relevant troubleshooting guide
-2. Review [SECURITY_AUDIT.md](SECURITY_AUDIT.md)
-3. Check [IMPLEMENTATION_UPDATES.md](IMPLEMENTATION_UPDATES.md) for recent changes
-
-### For Feature Development
-1. [BRANCH_WORKFLOW.md](BRANCH_WORKFLOW.md) - Development workflow
-2. [ADMIN_AND_PROFILE_PLAN.md](ADMIN_AND_PROFILE_PLAN.md) - Feature plans
-3. [TODO.md](TODO.md) - Priority tasks
-
----
-
-## 📝 Notes
-
-- **Status Icons**: ✅ Complete | 📝 Reference | 🔧 Troubleshooting | ⭐ Important
-- **Legacy Files**: Some files may reference older approaches (e.g., Firestore `/admins` collection). Always check for newer documentation (e.g., Custom Claims).
-- **Consolidation**: IMPLEMENTATION_PLAN.md and PROFILE_AND_ADMIN_PLAN.md have been consolidated into ADMIN_AND_PROFILE_PLAN.md
-
----
-
-**Last Updated**: 2024-12-19  
-**Maintained By**: Development Team  
-**Questions?** Check the relevant guide or see [README.md](README.md) for project overview.
-
+**Status**: ✅ Documentation fully modernized for Multi-Tenant SaaS
+**Maintained By**: Jules & AI Development Team

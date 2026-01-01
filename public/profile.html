@@ -6,7 +6,7 @@
     <meta name="description" content="User Profile - AI Financial Analyst">
     <title>My Profile - AI Financial Analyst</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20251231-design-final">
     <!-- Translations (Phase 1.2: Multi-Language Support) -->
     <script src="translations.js"></script>
     <!-- Firebase SDKs -->
@@ -42,10 +42,11 @@
             <div id="auth-section">
                 <div id="user-info" style="display: none;">
                     <nav class="nav-links">
-                        <a href="/index.html" class="nav-link" id="home-link">Home</a>
+                        <a href="/index.html" class="nav-link" id="home-link">Dashboard</a>
                         <a href="/profile.html" class="nav-link active">Profile</a>
                         <span id="admin-link-container" style="display: none;">
-                            <a href="/admin.html" class="nav-link admin-link">Admin</a>
+                            <a href="/admin.html" class="nav-link admin-link">Admin Panel</a>
+                            <a href="https://builder.io/content" target="_blank" class="nav-link" style="color: var(--secondary-color); border: 1px solid var(--secondary-color);">Builder Workspace</a>
                         </span>
                     </nav>
                     <button id="logout-btn" class="btn-secondary">Logout</button>

@@ -19,8 +19,9 @@ ui-debug.log
 .env.local
 .env.*.local
 functions/.env
-*.env
-*.env.*
+.env*
+!.env.example
+!.env.template
 
 # Secrets and keys
 *service-account*.json

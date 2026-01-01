@@ -4,7 +4,8 @@
   "description": "A full-stack serverless application that automatically processes receipt images using AI and stores structured financial data in Firestore silos.",
   "main": "check-drive-api-status.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "builder:link": "builder link"
   },
   "repository": {
     "type": "git",

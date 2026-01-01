@@ -12,7 +12,7 @@ export const firebaseConfig = {
     // Google OAuth Client ID for Drive/Sheets API access
     oauthClientId: "<YOUR_OAUTH_CLIENT_ID>",
     // Builder.io Public API Key (Space ID)
-    builderApiKey: "<YOUR_BUILDER_API_KEY>"
+    builderApiKey: "8f07f9dafbb844f980657a324fe9a7ec"
 };
 
 /**

@@ -36,18 +36,18 @@ Based on excellent technical feedback, the implementation has been updated to us
 - Multiple Firestore reads
 - Real-time calculation overhead
 
-**After**: Statistics stored in `/users` collection ✅
+**After**: Statistics stored in `/businesses/{businessId}/users/{userId}` silo ✅
 - **Single document read** - Fast, instant statistics
 - **Pre-calculated** - Updated by Cloud Function after each receipt
 - **Scalable** - Performance doesn't degrade with receipt count
 
 **Files Updated:**
 - `functions/src/index.ts` - Added user statistics update in receipt processing
-- `public/profile.js` - Updated to read from `/users` collection
+- `public/profile.js` - Updated to read from siloed users collection
 
 **Data Structure:**
 ```javascript
-/users/{userId}
+/businesses/{businessId}/users/{userId}
 {
   totalReceipts: 154,
   totalAmount: 9876.50,

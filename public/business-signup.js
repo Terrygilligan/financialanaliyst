@@ -46,6 +46,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingText = document.getElementById('loading-text');
 
+    // --- TRIAL MODE CHECK ---
+    const isTrial = window.location.search.includes('trial=true');
+    if (isTrial) {
+        console.log('🌟 Initializing Trial Registration...');
+        const trialBadge = document.getElementById('trial-badge');
+        const signupTitle = document.getElementById('signup-title');
+        const signupSubtitle = document.getElementById('signup-subtitle');
+        
+        if (trialBadge) trialBadge.style.display = 'block';
+        if (signupTitle) signupTitle.textContent = '🚀 Start Your 14-Day Trial';
+        if (signupSubtitle) signupSubtitle.textContent = 'Unlock full enterprise AI features for your business today.';
+    }
+    // ------------------------
+
     // ... existing functions (showError, showSuccess, showLoading, hideLoading, checkExistingBusiness) ...
 
     async function handleEmailSignup() {

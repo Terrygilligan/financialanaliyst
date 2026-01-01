@@ -9,17 +9,8 @@ service firebase.storage {
         request.auth.uid == driverId;
     }
     
-    // Legacy path (keep for backward compatibility during migration)
-    match /receipts/{userId}/{fileName} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
     // Allow read access to all authenticated users (for admin dashboard oversight)
     // In production, you might want to restrict this further
-    match /receipts/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.token.admin == true;
-    }
-    
     match /tenants/{allPaths=**} {
       allow read: if request.auth != null && request.auth.token.admin == true;
     }

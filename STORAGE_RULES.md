@@ -16,17 +16,17 @@ This error means Firebase Storage security rules are blocking file uploads. You 
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow users to upload and read their own receipt files
-    match /receipts/{userId}/{fileName} {
-      // Only authenticated users can upload
-      allow write: if request.auth != null && request.auth.uid == userId;
-      // Users can only read their own files
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Multi-Tenant Isolation: /tenants/{businessId}/drivers/{driverId}/receipts/
+    match /tenants/{businessId}/drivers/{driverId}/receipts/{fileName} {
+      // Users can only access their own tenant/driver silo
+      allow read, write: if request.auth != null && 
+        request.auth.token.businessId == businessId && 
+        request.auth.uid == driverId;
     }
     
-    // Deny all other paths
-    match /{allPaths=**} {
-      allow read, write: if false;
+    // Admin Oversight
+    match /tenants/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.admin == true;
     }
   }
 }
@@ -36,26 +36,11 @@ service firebase.storage {
 
 ## What the Rules Do
 
-- **Authenticated users only**: `request.auth != null` - User must be logged in
-- **Own files only**: `request.auth.uid == userId` - User can only access files in their own folder
-- **Path structure**: Files must be in `receipts/{userId}/{fileName}` format
-- **Security**: All other paths are denied
-
-## For Testing (Temporary - Less Secure)
-
-If you want to test quickly, you can use more permissive rules temporarily:
-
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    // WARNING: This allows any authenticated user to upload anywhere - ONLY FOR TESTING!
-    match /receipts/{userId}/{fileName} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
+- **Multi-Tenant Isolation**: Enforces that users can only access files within their own business tenant (`businessId`) and driver silo (`uid`).
+- **JWT Context**: Uses custom claims in the authentication token to verify the user's `businessId`.
+- **Authenticated users only**: `request.auth != null` - User must be logged in.
+- **Siloed Path**: Files MUST be stored at `tenants/{businessId}/drivers/{uid}/receipts/{filename}`.
+- **Admin Access**: Users with the `admin` custom claim can read all files for oversight purposes.
 
 **⚠️ IMPORTANT**: Replace with proper rules before going to production!
 

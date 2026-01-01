@@ -11,20 +11,18 @@
 
 ### Environment Configuration
 - [ ] Firebase project: `<YOUR_PROJECT_ID>`
-- [ ] Google Sheets API enabled
-- [ ] Service account has Editor access to sheets
+- [ ] Multi-tenant Identity Platform enabled
 - [ ] Environment variables set in Functions config:
   ```bash
   firebase functions:config:get
   ```
   Check for:
-  - `google.sheet_id`
   - `google.base_currency` (optional, defaults to GBP)
 
 ### Security
-- [ ] Firestore security rules published
-- [ ] Admin users configured in `/admins` collection
-- [ ] Service account credentials secure
+- [ ] Firestore security rules published (enforcing `businessId` silos)
+- [ ] Storage security rules published (enforcing `tenants/{businessId}` isolation)
+- [ ] Admin users configured via Custom Claims (see `CUSTOM_CLAIMS_SETUP.md`)
 
 ---
 
@@ -60,11 +58,11 @@ firebase deploy --only functions
 
 ### 1. Test User Functionality
 - [ ] Navigate to production URL
-- [ ] Sign up / Log in
+- [ ] Sign up / Log in (Business Signup for admins)
 - [ ] Upload a receipt
 - [ ] Review receipt data
 - [ ] Finalize receipt
-- [ ] Check Google Sheet for data
+- [ ] Verify data appears in Firestore business silo: `/businesses/{businessId}/receipts/`
 
 ### 2. Test Admin Functionality
 - [ ] Log in as admin user
@@ -147,15 +145,14 @@ git push origin rollback/dec17-emergency
 
 ✅ **Deployment Successful If:**
 - Users can upload and process receipts
-- Data appears correctly in Google Sheets
+- Data appears correctly in Firestore business silos
 - Admin dashboard loads without errors
 - No critical errors in Cloud Functions logs
 - Browser console shows no JavaScript errors
-- Admin link appears for admin users (after hard refresh)
 
 🚨 **Rollback Immediately If:**
 - Users cannot upload receipts
-- Data is not written to Google Sheets
+- Data is not written to Firestore silos
 - Critical errors in Cloud Functions logs
 - Admin dashboard completely broken
 - Security rules preventing normal operations

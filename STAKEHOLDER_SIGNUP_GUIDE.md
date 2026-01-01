@@ -120,7 +120,7 @@ When you sign up, the system automatically:
 - Your data is **encrypted in transit** (HTTPS)
 - Stored securely in **Firebase/Firestore**
 - Only you and admins can see your receipts
-- Google Sheets data is **private to authorized accounts**
+- Firestore data is **private to authorized accounts** within your business silo
 
 ---
 
@@ -155,7 +155,7 @@ Sign Up → Verify Email → Sign In → Dashboard
 
 ### 2. First Receipt Upload
 ```
-Upload Image → AI Extraction → Review Data → Finalize → Google Sheets
+Upload Image → AI Extraction → Review Data → Finalize → Firestore Silo
 ```
 
 ### 3. Regular Usage
@@ -180,19 +180,19 @@ Sign In → Admin Link → Dashboard → Review Flagged Receipts
 3. Wait for AI processing (~5-10 seconds)
 4. Review extracted data
 5. Click "Finalize Receipt"
-6. Check Google Sheet for data
+6. Check Firestore silo for data: `/businesses/{businessId}/receipts/`
 
 #### Test Case 2: Multi-Currency Receipt
 1. Upload receipt in USD, EUR, or other currency
 2. Verify currency is detected
 3. Check if amount is converted to GBP
-4. Finalize and verify Google Sheet shows both amounts
+4. Finalize and verify Firestore shows both amounts
 
 #### Test Case 3: Receipt with VAT
 1. Upload UK receipt with VAT details
 2. Verify VAT Number is extracted
 3. Check VAT breakdown (subtotal, VAT amount, rate)
-4. Finalize and verify Accountant CSV tab
+4. Finalize and verify in the business activity log
 
 #### Test Case 4: Error Handling
 1. Upload receipt with future date
@@ -211,7 +211,7 @@ Sign In → Admin Link → Dashboard → Review Flagged Receipts
 **A:** After signing in, click "Upload Receipt" button, select an image file (JPEG, PNG, GIF, WebP), and the AI will process it automatically.
 
 ### Q: What happens to my uploaded receipts?
-**A:** Receipt images are stored in Firebase Storage. Extracted data goes to Firestore (for the app) and Google Sheets (for reporting).
+**A:** Receipt images are stored in Firebase Storage. Extracted data goes to Firestore business silos for secure multi-tenant isolation.
 
 ### Q: Can I see other users' receipts?
 **A:** No. Regular users only see their own receipts. Only admins can see all receipts across all users.
@@ -255,7 +255,7 @@ Sign In → Admin Link → Dashboard → Review Flagged Receipts
 |--------|--------------|
 | Upload Receipt | Sends image to AI for processing |
 | Review Receipt | Check and edit extracted data |
-| Finalize Receipt | Approves data and writes to Google Sheets |
+| Finalize Receipt | Approves data and writes to Firestore silo |
 | View Profile | See your statistics and settings |
 
 ### Admin Actions (if you have admin access)
@@ -272,7 +272,7 @@ Sign In → Admin Link → Dashboard → Review Flagged Receipts
 
 1. ✅ **Upload a test receipt** to familiarize yourself with the workflow
 2. ✅ **Review the extracted data** to see how AI performs
-3. ✅ **Check the Google Sheet** to see how data is organized
+3. ✅ **Check the business activity log** to see how data is organized
 4. ✅ **Explore the Profile page** to view your statistics
 5. ✅ **Read the User Guide** for detailed instructions
 

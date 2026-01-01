@@ -374,26 +374,26 @@ git commit -m "Phase 3.1: Enhance Gemini schema for VAT extraction
 git push origin feature/phase-3-vat
 ```
 
-### Step 2: Accountant CSV Tab
+### Step 2: Accountant Activity Log
 
 ```bash
 git checkout feature/sme-automation-upgrade
-git checkout -b feature/phase-3-accountant-tab
+git checkout -b feature/phase-3-accountant-activity
 
 # Make changes:
-# - Update functions/src/sheets.ts (add accountant tab function)
-# - Update functions/src/finalize.ts (write to both tabs)
-# - Add retry logic and error handling
+# - Update functions/src/finalize.ts (enhanced activity logging)
+# - Update Firestore security rules for accountant access
+# - Add business-level activity filtering
 
 git add .
-git commit -m "Phase 3.2: Add accountant CSV-ready sheet tab
+git commit -m "Phase 3.2: Add accountant-ready activity logs
 
-- Add appendToAccountantSheet function with retry logic
-- Create Accountant_CSV_Ready tab in Google Sheets
-- Write to both main and accountant tabs
-- Resilient error handling with partial success support"
+- Enhanced activity logs with VAT and compliance fields
+- Siloed activity storage under /businesses/{id}/activity
+- Performance optimized activity queries
+- Support for historical activity exports (JSON/CSV)"
 
-git push origin feature/phase-3-accountant-tab
+git push origin feature/phase-3-accountant-activity
 ```
 
 ### Step 3: Audit Trail & Error Logging
@@ -405,15 +405,14 @@ git checkout -b feature/phase-3-audit
 # Make changes:
 # - Create functions/src/error-logging.ts
 # - Update all functions with error logging
-# - Add audit trail columns to Sheets
-# - Create /error_logs Firestore collection
+# - Add audit trail fields to Firestore documents
+# - Use siloed /businesses/{id}/error_logs
 
 git add .
 git commit -m "Phase 3.3: Add audit trail and error logging
 
 - Create structured error logging system
-- Add /error_logs Firestore collection
-- Add audit flag columns to Google Sheets
+- Siloed error logs under /businesses/{id}/error_logs
 - Enhanced audit trail with full JSON history"
 
 git push origin feature/phase-3-audit

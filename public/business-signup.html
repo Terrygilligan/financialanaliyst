@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Business Signup - AI Financial Analyst</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20251231-design-final">
     
     <!-- Firebase SDKs -->
     <script type="module">
@@ -57,155 +57,16 @@
         // Make available globally
         window.firebase = { app, auth, functions, googleProvider };
     </script>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-        }
-        .signup-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 500px;
-        }
-        .signup-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .signup-header h1 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-        .signup-header p {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-        .signup-form {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .form-group label {
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-        .form-group input {
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        .info-box {
-            background-color: #e3f2fd;
-            border: 1px solid #90caf9;
-            color: #1565c0;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        .info-box strong {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: none;
-        }
-        .success-message {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: none;
-        }
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .divider span {
-            padding: 0 10px;
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .back-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 14px;
-        }
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-        }
-        .loading-overlay.active {
-            display: flex;
-        }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+</head>
 </head>
 <body>
     <div class="signup-container">
+        <div id="trial-badge" style="display: none; text-align: center; margin-bottom: 10px;">
+            <span style="background: var(--warning-color); color: black; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase;">✨ 14-Day Free Trial</span>
+        </div>
         <div class="signup-header">
-            <h1>🏢 Create Your Business</h1>
-            <p>Set up your automated financial tracking system</p>
+            <h1 id="signup-title">🏢 Create Your Business</h1>
+            <p id="signup-subtitle">Set up your automated financial tracking system</p>
         </div>
 
         <div class="error-message" id="error-message"></div>

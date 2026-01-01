@@ -27,7 +27,7 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
   - Total amount processed
   - Success rate percentage
   - Recent activity count
-  - **Optimized**: Statistics stored in `/users` collection for fast loading
+  - **Optimized**: Statistics stored in `/businesses/{businessId}/users/{userId}` silo for fast loading
 
 - ✅ Receipt history
   - List of all uploaded receipts
@@ -148,14 +148,14 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
 **Status**: ✅ **IMPLEMENTED**
 
 **User Statistics:**
-- Statistics stored in `/users/{userId}` collection
+- Statistics stored in `/businesses/{businessId}/users/{userId}` silo
 - Pre-calculated by Cloud Function after each receipt
 - Single document read (fast, instant statistics)
 - Scalable - performance doesn't degrade with receipt count
 
 **Data Structure:**
 ```javascript
-/users/{userId}
+/businesses/{businessId}/users/{userId}
 {
   totalReceipts: 154,
   totalAmount: 9876.50,
@@ -176,7 +176,7 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
 // Set via Cloud Function: setAdminClaim(userId)
 
 // User statistics (optimized)
-/users/{userId}
+/businesses/{businessId}/users/{userId}
 {
   totalReceipts: number,
   totalAmount: number,
@@ -185,8 +185,8 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
   lastReceiptTimestamp: timestamp
 }
 
-// Receipt batches (existing)
-/batches/{userId}
+// Activity & Audit Logs (Replaces top-level /batches)
+/businesses/{businessId}/activity/{activityId}
 {
   status: "complete" | "error" | "processing",
   lastFileProcessed: "filename.jpg",
@@ -201,8 +201,8 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
   errorMessage: string // if error
 }
 
-// Individual receipts (for future editing)
-/receipts/{userId}/{receiptId}  // Future enhancement
+// Individual receipts silo
+/businesses/{businessId}/receipts/{receiptId}
 {
   fileName: "receipt.jpg",
   receiptData: { ... },
@@ -251,19 +251,18 @@ This consolidated plan combines the Admin Dashboard and User Profile implementat
 #### Step 2.3: Receipt Editing
 - [ ] Add "Edit" button to each receipt in history
 - [ ] Create edit modal/form
-- [ ] Update Firestore document with corrected data
-- [ ] Update Google Sheets (via Cloud Function)
+- [ ] Update Firestore document within the business silo
+- [ ] Update user/business statistics if amount changes
 - [ ] Show success/error feedback
 
 **Implementation:**
 - Create `updateReceipt` Cloud Function
-- Add `updateReceiptInSheet` function in `sheets.ts`
+- Ensure function checks for `request.auth.token.businessId` consistency
 - Update UI in `dashboard.js` or `profile.js`
 
 **Files to Create/Modify:**
 - `public/dashboard.js` - Edit UI
 - `functions/src/index.ts` - Add `updateReceipt` function
-- `functions/src/sheets.ts` - Add `updateReceiptInSheet` function
 
 **Estimated Time**: 4-5 hours
 

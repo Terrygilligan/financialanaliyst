@@ -110,18 +110,17 @@ The **SME Automation Upgrade** is a comprehensive plan to add enterprise feature
 - Add `supplierVatNumber` and `vatBreakdown` fields
 - **Branch**: `feature/phase-3-vat`
 
-#### 3.2: Accountant CSV Tab
-- Update `functions/src/sheets.ts` (add accountant tab function)
-- Update `functions/src/finalize.ts` (write to both tabs)
-- Create `Accountant_CSV_Ready` tab in Google Sheets
-- Add retry logic and error handling
-- **Branch**: `feature/phase-3-accountant-tab`
+#### 3.2: Accountant Activity Log
+- Update `functions/src/finalize.ts` (enhanced activity logging)
+- Support for accountant-ready activity logs in Firestore
+- Optimized queries for historical activity exports
+- **Branch**: `feature/phase-3-accountant-activity`
 
 #### 3.3: Audit Trail & Error Logging
 - Create `functions/src/error-logging.ts`
 - Update all functions with error logging
-- Add audit trail columns to Sheets
-- Create `/error_logs` Firestore collection
+- Add audit trail fields to Firestore documents
+- Create siloed `/error_logs` collections
 - **Branch**: `feature/phase-3-audit`
 
 ---
@@ -142,7 +141,7 @@ The **SME Automation Upgrade** is a comprehensive plan to add enterprise feature
 
 ### Compliance Features
 - VAT number extraction and validation
-- Separate accountant-ready CSV tab in Sheets
+- Enhanced activity logs for accountant review
 - Complete audit trail with error logging
 
 ### Enterprise Features
@@ -209,7 +208,7 @@ feature/phase-2-currency
 feature/phase-2-validation
 feature/phase-2-admin-review
 feature/phase-3-vat
-feature/phase-3-accountant-tab
+feature/phase-3-accountant-activity
 feature/phase-3-audit
 ```
 
@@ -245,7 +244,7 @@ feature/phase-3-audit
 
 ### Phase 3 Complete When:
 - [ ] VAT extraction enhanced
-- [ ] Accountant CSV tab created and populated
+- [ ] Enhanced activity logs functional
 - [ ] Audit trail and error logging functional
 
 ---

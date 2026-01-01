@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const passwordError = document.getElementById('password-error');
     const adminLinkContainer = document.getElementById('admin-link-container');
 
-    // Check if user is admin via custom claims OR Firestore admins collection
+    // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
         if (!user) {
             console.log('❌ checkAdminStatus: No user provided');
@@ -88,22 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('🔍 [Profile] Checking admin status for:', user.email);
         
         try {
-            // Method 1: Check custom claims (preferred, faster)
+            // Check custom claims (secure, instant check)
             const idTokenResult = await user.getIdTokenResult(true); // Force refresh
             console.log('📋 [Profile] Token claims:', idTokenResult.claims);
             
             if (idTokenResult.claims.admin === true) {
                 console.log('✅ [Profile] Admin status confirmed via custom claims');
-                return true;
-            }
-            
-            // Method 2: Check Firestore admins collection (fallback)
-            console.log('🔍 [Profile] Custom claims not found, checking Firestore admins collection...');
-            const adminDoc = await getDoc(doc(db, 'admins', user.email));
-            console.log('📄 [Profile] Admin doc exists:', adminDoc.exists());
-            
-            if (adminDoc.exists()) {
-                console.log('✅ [Profile] Admin status confirmed via Firestore admins collection');
                 return true;
             }
             
@@ -117,7 +107,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Authentication State
     onAuthStateChanged(auth, async (user) => {
+        const isDemo = window.location.search.includes('demo=true') || sessionStorage.getItem('demo_mode') === 'true';
+        
         if (user) {
+            // ... existing auth logic ...
+            // Multi-tenant: Get businessId from custom claims (Identity & Context Rule)
+            const idTokenResult = await user.getIdTokenResult(true);
+            window.businessId = idTokenResult.claims.businessId;
+            console.log(`🏢 Profile context: ${window.businessId || 'None'}`);
+
             // Check if email is verified
             if (!user.emailVerified) {
                 if (!window.location.pathname.includes('login.html')) {
@@ -139,6 +137,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('ℹ️ [Profile] User is not admin, hiding admin link');
                 adminLinkContainer.style.display = 'none';
             }
+        } else if (isDemo) {
+            console.log('🌟 Profile: User is guest but in Demo Mode');
+            await loadProfileData(null);
+            
+            // Show demo badge in header
+            const headerH1 = document.querySelector('header h1');
+            if (headerH1 && !document.getElementById('demo-badge')) {
+                const badge = document.createElement('span');
+                badge.id = 'demo-badge';
+                badge.textContent = 'Demo Mode';
+                badge.style.cssText = 'background: var(--warning-color); color: black; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-left: 10px; text-transform: uppercase;';
+                headerH1.parentElement.appendChild(badge);
+            }
+            
+            // Unlock nav links for demo
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.href.includes('.html')) {
+                    const url = new URL(link.href);
+                    url.searchParams.set('demo', 'true');
+                    link.href = url.toString();
+                }
+            });
+            
+            if (userInfo) userInfo.style.display = 'flex';
+            if (adminLinkContainer) adminLinkContainer.style.display = 'inline'; // Show admin in demo
         } else {
             // User is signed out - redirect to login
             window.location.href = 'login.html';
@@ -149,6 +172,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadProfileData(user) {
         mainContent.style.display = 'grid';
         
+        // --- DEMO MODE CHECK ---
+        const isDemo = window.location.search.includes('demo=true');
+        if (isDemo) {
+            console.log('🌟 Profile in Demo Mode');
+            userEmailDisplay.textContent = 'demo.executive@acme-global.com';
+            avatarInitial.textContent = 'D';
+            accountCreated.textContent = 'Account created: 01/01/2025';
+            verificationStatus.textContent = '✓ Verified Enterprise Account';
+            verificationStatus.style.color = 'var(--primary-color)';
+            
+            // Mock Stats
+            document.getElementById('total-receipts').textContent = '1,284';
+            document.getElementById('total-amount').textContent = '$42,950.20';
+            document.getElementById('success-rate').textContent = '99.4%';
+            document.getElementById('recent-activity').textContent = '12';
+            
+            // Mock History
+            document.getElementById('receipt-history-container').innerHTML = `
+                <div class="history-item">
+                    <div class="history-details">
+                        <div class="file-name">executive_travel_q4.pdf</div>
+                        <div class="history-meta">
+                            <span>Vendor: British Airways</span>
+                            <span>Amount: $1,240.00</span>
+                            <span>Category: Travel</span>
+                        </div>
+                    </div>
+                    <span class="file-status complete">processed</span>
+                </div>
+            `;
+            return; // Skip Firebase load
+        }
+        // -------------------------
+
         // Display user information
         userEmailDisplay.textContent = user.email;
         avatarInitial.textContent = user.email.charAt(0).toUpperCase();
@@ -181,16 +238,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadReceiptHistory(user.uid);
     }
 
-    // Load receipt statistics from /users collection (optimized)
+    // Load receipt statistics from business silo (Silo Rule)
     async function loadReceiptStatistics(userId) {
         try {
-            // Read from /users collection for fast statistics
-            const userRef = doc(db, 'users', userId);
+            const businessId = window.businessId;
+            if (!businessId) {
+                console.warn('⚠️ No businessId found for user stats');
+                return;
+            }
+
+            // Read from siloed users collection for fast statistics
+            const userRef = doc(db, 'businesses', businessId, 'users', userId);
             const userSnap = await getDoc(userRef);
             
-            // Also get batch data for status information
-            const batchRef = doc(db, 'batches', userId);
-            const batchSnap = await getDoc(batchRef);
+            // Also get activity data from the silo (replacing legacy batches)
+            const activityRef = doc(db, 'businesses', businessId, 'activity', userId);
+            const activitySnap = await getDoc(activityRef);
 
             let receiptsCount = 0;
             let totalAmountValue = 0;
@@ -198,7 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let errorCount = 0;
             let recentCount = 0;
 
-            // Get statistics from /users collection (fast)
+            // Get statistics from siloed user doc
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 receiptsCount = userData.totalReceipts || 0;
@@ -215,12 +278,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Get status information from batch
-            if (batchSnap.exists()) {
-                const batchData = batchSnap.data();
-                if (batchData.status === 'complete') {
+            // Get status information from activity log
+            if (activitySnap.exists()) {
+                const activityData = activitySnap.data();
+                if (activityData.status === 'complete' || activityData.status === 'processed') {
                     successCount = 1;
-                } else if (batchData.status === 'error') {
+                } else if (activityData.status === 'error') {
                     errorCount = 1;
                 }
             }
@@ -240,55 +303,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Load receipt history
+    // Load receipt history (Siloed)
     async function loadReceiptHistory(userId) {
         try {
-            const batchRef = doc(db, 'batches', userId);
-            const batchSnap = await getDoc(batchRef);
+            const businessId = window.businessId;
+            if (!businessId) {
+                console.warn('⚠️ No businessId found for user history');
+                return;
+            }
 
-            if (!batchSnap.exists()) {
+            // Read from siloed receipts collection (The Silo Rule)
+            const receiptsRef = collection(db, 'businesses', businessId, 'receipts');
+            const q = query(receiptsRef, where('userId', '==', userId), orderBy('timestamp', 'desc'), limit(10));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
                 receiptHistoryContainer.innerHTML = '<p class="empty-state">No receipt history yet. Upload your first receipt to get started!</p>';
                 return;
             }
 
-            const data = batchSnap.data();
             const historyItems = [];
-
-            if (data.receiptData) {
-                const receipt = data.receiptData;
-                const status = data.status || 'unknown';
-                const fileName = data.fileName || data.lastFileProcessed || 'Unknown';
-                const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
-
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
                 historyItems.push({
-                    fileName,
-                    status,
-                    receipt,
-                    timestamp
+                    id: doc.id,
+                    ...data
                 });
-            }
-
-            if (historyItems.length === 0) {
-                receiptHistoryContainer.innerHTML = '<p class="empty-state">No receipt history yet.</p>';
-                return;
-            }
+            });
 
             // Display history
             receiptHistoryContainer.innerHTML = historyItems.map(item => `
                 <div class="history-item">
                     <div class="history-details">
-                        <div class="file-name">${item.fileName}</div>
+                        <div class="file-name">${item.fileName || 'Unknown'}</div>
                         <div class="history-meta">
-                            ${item.receipt.vendorName ? `<span>Vendor: ${item.receipt.vendorName}</span>` : ''}
-                            ${item.receipt.transactionDate ? `<span>Date: ${item.receipt.transactionDate}</span>` : ''}
-                            ${item.receipt.totalAmount ? `<span>Amount: $${item.receipt.totalAmount.toFixed(2)}</span>` : ''}
-                            ${item.receipt.category ? `<span>Category: ${item.receipt.category}</span>` : ''}
+                            ${item.vendorName ? `<span>Vendor: ${item.vendorName}</span>` : ''}
+                            ${item.transactionDate ? `<span>Date: ${item.transactionDate}</span>` : ''}
+                            ${item.totalAmount ? `<span>Amount: $${(item.totalAmount || 0).toFixed(2)}</span>` : ''}
+                            ${item.category ? `<span>Category: ${item.category}</span>` : ''}
                         </div>
                         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
-                            ${item.timestamp.toLocaleString()}
+                            ${item.timestamp ? new Date(item.timestamp).toLocaleString() : 'N/A'}
                         </div>
                     </div>
-                    <span class="file-status ${item.status}">${item.status}</span>
+                    <span class="file-status ${item.status}">${item.status || 'unknown'}</span>
                 </div>
             `).join('');
         } catch (error) {

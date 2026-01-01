@@ -57,9 +57,10 @@ This plan outlines the implementation of:
 
 ### Step 1.3: All Receipts Viewer
 **Goal**: Display all receipts from all users
+**Note**: All data is now siloed under `/businesses/{businessId}/`
 
 **Tasks**:
-- [ ] Query Firestore `batches` collection (all users)
+- [ ] Query Firestore `/businesses/{businessId}/activity` silo
 - [ ] Display receipts in table/card format with:
   - User email/ID
   - Receipt data (vendor, date, amount, category)
@@ -70,7 +71,7 @@ This plan outlines the implementation of:
 
 **Data Structure**:
 ```javascript
-// Firestore: /batches/{userId}
+// Firestore: /businesses/{businessId}/activity/{activityId}
 {
   status: 'complete' | 'error' | 'processing',
   lastFileProcessed: 'filename.jpg',
@@ -165,7 +166,7 @@ This plan outlines the implementation of:
 - [ ] Add date range filtering
 
 **Data Aggregation**:
-- Query user's `/batches/{userId}` document
+- Query user's `/businesses/{businessId}/activity` silo
 - Extract `receiptData` from all successful receipts
 - Group by category and date
 
@@ -182,20 +183,18 @@ This plan outlines the implementation of:
 **Tasks**:
 - [ ] Add "Edit" button to each receipt in history
 - [ ] Create edit modal/form
-- [ ] Update Firestore document with corrected data
-- [ ] Update Google Sheets (via Cloud Function or direct API)
+- [ ] Update Firestore document within the business silo
 - [ ] Show success/error feedback
 
 **Implementation Options**:
-1. **Direct Firestore Update** (simpler, but Sheets won't update)
-2. **Cloud Function** (update both Firestore and Sheets)
+1. **Direct Firestore Update** (simpler, checks businessId isolation)
+2. **Cloud Function** (for complex updates or statistics recalculated)
 
 **Recommended**: Option 2 - Create `updateReceipt` Cloud Function
 
 **Files to Create/Modify**:
 - `public/dashboard.js` - Edit UI
 - `functions/src/index.ts` - Add `updateReceipt` function
-- `functions/src/sheets.ts` - Add `updateReceiptInSheet` function
 
 **Estimated Time**: 4-5 hours
 
@@ -245,15 +244,10 @@ This plan outlines the implementation of:
 ### Firestore Data Structure
 
 ```javascript
-// Admin collection
-/admins/{email}
-{
-  email: "admin@example.com",
-  createdAt: timestamp
-}
+// Admin access (Custom Claims - not in Firestore)
 
-// User batches (existing)
-/batches/{userId}
+// Business Activity Silo (Replaces top-level /batches)
+/businesses/{businessId}/activity/{activityId}
 {
   status: "complete",
   lastFileProcessed: "receipt.jpg",
@@ -267,8 +261,8 @@ This plan outlines the implementation of:
   timestamp: "2024-01-15T10:30:00Z"
 }
 
-// Enhanced: Store individual receipts (for editing)
-/receipts/{userId}/{receiptId}
+// Individual receipts silo
+/businesses/{businessId}/receipts/{receiptId}
 {
   fileName: "receipt.jpg",
   receiptData: { ... },
@@ -295,15 +289,10 @@ export const updateReceipt = onCall(async (request) => {
 ### Security Rules Updates
 
 ```javascript
-// Firestore Rules
-match /admins/{email} {
-  allow read: if request.auth != null && 
-    exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-}
-
-match /receipts/{userId}/{receiptId} {
+// Firestore Rules (Multi-Tenant Silo Architecture)
+match /businesses/{businessId}/receipts/{receiptId} {
   allow read, write: if request.auth != null && 
-    request.auth.uid == userId;
+    request.auth.token.businessId == businessId;
 }
 ```
 

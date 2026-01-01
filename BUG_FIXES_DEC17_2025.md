@@ -112,7 +112,7 @@ await db.runTransaction(async (transaction) => {
 ### Bug 2 Testing
 1. Disable review workflow: `ENABLE_REVIEW_WORKFLOW=false`
 2. Upload multiple receipts simultaneously (5-10 receipts)
-3. Check user statistics in Firestore `/users/{userId}`
+3. Check user statistics in Firestore `/businesses/{businessId}/users/{userId}` silo
 4. Verify `totalReceipts` count matches the actual number of processed receipts
 5. Verify `totalAmount` is the sum of all receipt amounts
 

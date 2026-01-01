@@ -148,15 +148,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Load pending receipts
+    // Load pending receipts (Siloed)
     async function loadPendingReceipts(userId) {
         try {
             loadingMessage.style.display = 'block';
             noReceiptsMessage.style.display = 'none';
             receiptsList.style.display = 'none';
 
-            const pendingReceiptsRef = collection(db, 'pending_receipts');
-            const q = query(pendingReceiptsRef, where('userId', '==', userId), where('status', '==', 'pending_review'));
+            // Get businessId from global window state
+            const businessId = window.businessId;
+            if (!businessId) {
+                console.error('❌ No businessId available for user');
+                loadingMessage.innerHTML = '<p style="color: red;">Error: Business association missing. Please re-login.</p>';
+                return;
+            }
+
+            console.log(`🚀 Loading pending receipts from silo: ${businessId}`);
+            
+            // Multi-Tenant Silo Query
+            const receiptsRef = collection(db, 'businesses', businessId, 'receipts');
+            const q = query(receiptsRef, where('userId', '==', userId), where('status', '==', 'pending_review'));
             
             const snapshot = await getDocs(q);
             

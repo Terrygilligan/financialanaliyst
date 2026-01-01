@@ -313,7 +313,7 @@ firebase deploy --only functions
 
 - **Error Logging**: `functions/src/error-logging.ts` - Complete implementation
 - **Schema**: `functions/src/schema.ts` - Audit trail fields
-- **Sheets**: `functions/src/sheets.ts` - Audit column integration
+- **Firestore**: `businesses/{id}/activity` - Audit field integration
 - **Admin Guide**: `ADMIN_GUIDE.md` - For administrators
 
 ---

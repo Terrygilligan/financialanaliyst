@@ -14,20 +14,18 @@ Quick reference checklist for setting up the backend.
 - [ ] Storage bucket name updated in `functions/src/index.ts` (line 24)
 
 ## ✅ GCP APIs Enabled
-- [ ] Google Sheets API enabled
 - [ ] Generative Language API enabled (for Gemini)
+- [ ] Vertex AI API enabled (recommended for production)
 
 ## ✅ Service Account Setup
-- [ ] Service Account created in GCP Console
-- [ ] Service Account granted "Google Sheets Editor" role
-- [ ] JSON key file downloaded (e.g., `sheets-writer-key.json`)
-- [ ] Service Account email copied (for sharing Google Sheet)
+- [ ] Default App Engine or Cloud Functions service account identified
+- [ ] Service account granted "Vertex AI User" role
+- [ ] Service account granted "Firestore User" and "Storage Object User" roles
 
-## ✅ Google Sheet Setup
-- [ ] New Google Sheet created
-- [ ] Headers added (Row 1): `Vendor Name | Date | Total Amount | Category | Timestamp`
-- [ ] Sheet shared with Service Account email (Editor access)
-- [ ] Sheet ID extracted from URL
+## ✅ Business Silo Setup
+- [ ] Business provisioning via `provisionNewBusiness` Cloud Function
+- [ ] Secure Firestore silos created under `/businesses/{businessId}/`
+- [ ] Identity Platform configured with multi-tenancy
 
 ## ✅ Gemini API Key
 - [ ] API key created at [Google AI Studio](https://aistudio.google.com/app/apikey)
@@ -38,13 +36,11 @@ Choose one method:
 
 ### Option A: .env File (Local Development)
 - [ ] `.env` file created in `functions/` directory
-- [ ] `GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY` set (JSON as string)
-- [ ] `GOOGLE_SHEET_ID` set
-- [ ] `GEMINI_API_KEY` set
+- [ ] `GEMINI_API_KEY` set (for local testing without Vertex AI)
 - [ ] `GEMINI_MODEL` set (optional, defaults to gemini-1.5-flash)
 
 ### Option B: Secret Manager (Production)
-- [ ] Secrets created in GCP Secret Manager
+- [ ] `GEMINI_API_KEY` created in GCP Secret Manager (if used)
 - [ ] Cloud Function service account granted Secret Accessor role
 - [ ] Secrets configured in function deployment
 
@@ -58,10 +54,10 @@ Choose one method:
 - [ ] Environment variables configured (if using Secret Manager)
 
 ## ✅ Testing
-- [ ] Test receipt uploaded to Storage path: `receipts/test-user/receipt.jpg`
+- [ ] Test receipt uploaded to Storage path: `tenants/{businessId}/drivers/{uid}/receipts/receipt.jpg`
 - [ ] Function logs checked (`firebase functions:log`)
-- [ ] Data verified in Google Sheet
-- [ ] Firestore status document checked
+- [ ] Data verified in Firestore business silo: `/businesses/{businessId}/receipts/`
+- [ ] Business statistics verified in `/businesses/{businessId}` document
 
 ## 🔒 Security Verification
 - [ ] Service Account key file in `.gitignore`

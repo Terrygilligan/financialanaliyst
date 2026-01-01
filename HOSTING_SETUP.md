@@ -50,17 +50,17 @@ export const firebaseConfig = {
 
 1. Go to **Storage** in Firebase Console
 2. Click **Rules** tab
-3. Update rules to allow authenticated uploads:
+3. Update rules to allow multi-tenant isolated uploads:
 
 ```javascript
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /receipts/{userId}/{fileName} {
-      // Only authenticated users can upload
-      allow write: if request.auth != null && request.auth.uid == userId;
-      // Users can only read their own files
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Multi-Tenant Isolation
+    match /tenants/{businessId}/drivers/{driverId}/receipts/{fileName} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.businessId == businessId && 
+        request.auth.uid == driverId;
     }
   }
 }
@@ -70,15 +70,16 @@ service firebase.storage {
 
 1. Go to **Firestore Database** in Firebase Console
 2. Click **Rules** tab
-3. Update rules:
+3. Update rules to enforce business silos:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /batches/{userId} {
-      // Users can only read/write their own batch documents
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Business Silos
+    match /businesses/{businessId}/receipts/{receiptId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.businessId == businessId;
     }
   }
 }

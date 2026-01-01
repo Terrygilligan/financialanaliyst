@@ -21,19 +21,8 @@ async function setupAdmin(email) {
   try {
     console.log(`\n🔐 Setting up admin access for: ${email}\n`);
     
-    // Step 1: Add to Firestore 'admins' collection
-    console.log('Step 1: Adding to Firestore admins collection...');
-    await db.collection('admins').doc(email).set({
-      email: email,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      role: 'admin',
-      setupBy: 'setup-script',
-      setupAt: new Date().toISOString()
-    });
-    console.log('✅ Added to Firestore admins collection');
-    
-    // Step 2: Try to find user by email and set custom claims (optional, more secure)
-    console.log('\nStep 2: Setting custom claims (if user exists)...');
+    // Step 1: Set custom claims (secure method)
+    console.log('Step 1: Setting custom claims...');
     try {
       const userRecord = await admin.auth().getUserByEmail(email);
       await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
@@ -42,6 +31,7 @@ async function setupAdmin(email) {
     } catch (authError) {
       console.log('ℹ️  User not found in Auth (they may not have signed up yet)');
       console.log('   Admin access will work once they sign up with this email');
+      console.log('   (Custom claims can only be set for existing users)');
     }
     
     console.log('\n✅ Admin setup complete!\n');

@@ -1,18 +1,23 @@
 // Builder.io SDK Initialization and Component Registration
 import { firebaseConfig } from './firebase-config.js';
 
-// Load Builder.io SDK
-(function() {
-  const script = document.createElement('script');
-  script.src = 'https://cdn.builder.io/js/browser@latest';
-  script.async = true;
-  script.onload = initBuilder;
-  document.head.appendChild(script);
-})();
+// Wait for Builder to load from index.html
+function checkBuilder() {
+  if (window.Builder) {
+    initBuilder();
+  } else {
+    // If not loaded yet, wait 100ms and try again
+    setTimeout(checkBuilder, 100);
+  }
+}
+
+// Start checking
+checkBuilder();
 
 function initBuilder() {
   if (!window.Builder) return;
 
+  console.log('🏗️ Builder.io SDK Initialized');
   // Initialize with API Key
   Builder.init(firebaseConfig.builderApiKey);
 

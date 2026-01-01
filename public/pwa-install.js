@@ -72,8 +72,45 @@ function dismissBanner() {
             banner.remove();
         }, 300);
     }
-    // Remember that user dismissed (don't show again for 7 days)
+// Remember that user dismissed (don't show again for 7 days)
     localStorage.setItem('pwa-install-dismissed', Date.now());
+}
+
+// iOS Check
+(function() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    
+    if (isIOS && !isStandalone) {
+        if (dismissed) {
+            const daysSinceDismissed = (Date.now() - parseInt(dismissed)) / (1000 * 60 * 60 * 24);
+            if (daysSinceDismissed < 7) return;
+        }
+        window.addEventListener('load', () => {
+            setTimeout(showIOSInstallPromotion, 2000);
+        });
+    }
+})();
+
+function showIOSInstallPromotion() {
+    if (!document.getElementById('pwa-install-banner')) {
+        const banner = document.createElement('div');
+        banner.id = 'pwa-install-banner';
+        banner.className = 'pwa-install-banner show';
+        banner.innerHTML = `
+            <div class="pwa-install-content">
+                <div style="font-size: 32px;">📱</div>
+                <div class="pwa-install-text">
+                    <strong>Add to Home Screen</strong>
+                    <p>Tap share and "Add to Home Screen"</p>
+                </div>
+                <button id="pwa-dismiss-btn" class="pwa-dismiss-btn">×</button>
+            </div>
+        `;
+        document.body.appendChild(banner);
+        document.getElementById('pwa-dismiss-btn').addEventListener('click', dismissBanner);
+    }
 }
 
 // Check if already dismissed recently

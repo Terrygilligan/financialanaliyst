@@ -1,184 +1,97 @@
-# Admin Dashboard Setup Guide
+# Admin Access Setup Guide (Modernized)
 
-## 📋 Overview
+This guide explains how to set up admin access using **Firebase Custom Claims**, which is the required approach for role-based access control in this multi-tenant SaaS platform.
 
-This guide explains how to set up admin access for the Admin Dashboard feature.
-
----
-
-## 🔐 Setting Up Admin Access
-
-### Step 1: Create Admin Collection in Firestore
-
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project: **<YOUR_PROJECT_ID>**
-3. Click **Firestore Database** in the left menu
-4. Click **Start collection** (if Firestore is empty) or click **Add collection**
-5. Collection ID: `admins`
-6. Click **Next**
-
-### Step 2: Add Admin User
-
-1. In the `admins` collection, click **Add document**
-2. **Document ID**: Enter the admin's email address (e.g., `admin@example.com`)
-3. Add fields:
-   - Field: `email`, Type: `string`, Value: `admin@example.com`
-   - Field: `createdAt`, Type: `timestamp`, Value: (current timestamp)
-   - Field: `role`, Type: `string`, Value: `admin` (optional)
-4. Click **Save**
-
-### Step 3: Repeat for Additional Admins
-
-Add one document per admin user, using their email address as the document ID.
+> ⚠️ **IMPORTANT**: The previous method using a top-level `/admins` Firestore collection is **DEPRECATED** and violates the "Golden Rules" (AGENTS.md). All admin access is now managed via secure Custom Claims.
 
 ---
 
-## 🔒 Firestore Security Rules
+## 🚀 Recommended Method: Using Node.js Script
 
-Update your Firestore security rules to allow admin access:
+This is the fastest and most reliable way to grant admin privileges.
 
-### Go to Firestore Rules
+### Prerequisites
 
-1. In Firebase Console → Firestore Database
-2. Click the **Rules** tab
-3. Replace the existing rules with:
+1.  **Clone the repository** and navigate to the project root.
+2.  **Install dependencies**:
+    ```bash
+    cd functions
+    npm install
+    cd ..
+    ```
+3.  **Authentication**: Ensure you are authenticated with Google Cloud:
+    ```bash
+    gcloud auth application-default login
+    ```
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users can read/write their own batch documents
-    match /batches/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Admin collection - only admins can read
-    match /admins/{email} {
-      allow read: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-      // Only admins can write (optional - for self-service admin management)
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
-    }
-    
-    // User profile collection (optional - for future enhancements)
-    match /users/{userId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == userId;
-    }
-  }
-}
+### Run the Setup Script
+
+The `setup-admin.js` script (located in the root) handles finding the user and setting the `admin: true` claim.
+
+```bash
+node setup-admin.js YOUR_EMAIL@EXAMPLE.COM
 ```
 
-4. Click **Publish**
+The script will:
+- ✅ Find your user account by email (using the `user_lookup` collection)
+- ✅ Set the `admin: true` custom claim on your account
+- ✅ Provide next steps for verification
 
 ---
 
-## ✅ Verifying Admin Access
+## 🎯 Alternative Method: Using Cloud Function Call
 
-### Test Admin Access
+If you have already deployed your Cloud Functions, you can call the `setAdminClaim` function directly via the Firebase CLI:
 
-1. Log in to the app with an admin email address
-2. You should see an **Admin** link in the navigation
-3. Click the **Admin** link to access the admin dashboard
-4. If you don't see the link, verify:
-   - The email in Firestore `admins` collection matches your login email exactly
-   - Firestore security rules are published
-   - You've refreshed the page after logging in
-
-### Test Non-Admin Access
-
-1. Log in with a non-admin email address
-2. You should **NOT** see the Admin link
-3. If you try to access `/admin.html` directly, you'll see an "Access Denied" message
+```bash
+# Get your user's UID from Firebase Console → Authentication → Users
+# Note: In multi-tenant setup, ensure you're looking at the correct tenant
+firebase functions:call setAdminClaim --data '{"uid":"YOUR_USER_UID_HERE"}'
+```
 
 ---
 
-## 🛠️ Admin Dashboard Features
+## ✅ Verification Checklist
 
-Once set up, admins can:
+After running the setup:
 
-1. **View System Statistics**
-   - Total receipts processed
-   - Success rate
-   - Total amount processed
-   - Active users count
+1.  **Important**: You must **sign out and sign back in** for the custom claim to take effect. Custom claims are only updated in the user's ID token upon a fresh login or token refresh.
+2.  **Check Navigation**: You should now see an **Admin** link in the navigation menu.
+3.  **Test Access**: Click the link or navigate directly to `/admin.html`. You should see the dashboard instead of "Access Denied".
 
-2. **View All Receipts**
-   - See receipts from all users
-   - Search and filter functionality
-   - Sort by date, status, etc.
+---
 
-3. **View Error Logs**
-   - All processing errors
-   - Error details and timestamps
-   - User information for each error
+## 🔒 Security Architecture
 
-4. **User Management**
-   - List all users
-   - User statistics
-   - Activity tracking
+The application enforces admin security in two ways:
 
-5. **Analytics**
-   - Charts showing receipts by category
-   - Status distribution
-   - Visual data representation
+1.  **Frontend**: UI elements (like the Admin link) are only visible if the ID token contains the `admin: true` claim.
+2.  **Firestore Rules**: All admin-only collections (e.g., `/admin_data`) are protected by rules that check the token:
+    ```javascript
+    match /admin_data/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.admin == true;
+    }
+    ```
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Admin Link Not Showing
+### Admin Link Not Showing?
 
-**Problem**: Admin link doesn't appear in navigation
-
-**Solutions**:
-1. Verify the email in Firestore `admins` collection matches your login email exactly (case-sensitive)
-2. Check browser console for errors
-3. Refresh the page after logging in
-4. Clear browser cache and try again
-
-### Access Denied on Admin Page
-
-**Problem**: Getting "Access Denied" message on admin page
-
-**Solutions**:
-1. Verify your email is in the `admins` collection
-2. Check Firestore security rules are published
-3. Ensure you're logged in with the correct email
-4. Wait a few seconds for Firestore rules to propagate
-
-### Firestore Permission Errors
-
-**Problem**: Getting permission errors when accessing admin features
-
-**Solutions**:
-1. Verify Firestore security rules are correctly published
-2. Check that the rules include the admin collection access
-3. Ensure the admin email in Firestore matches the logged-in user's email exactly
+1.  **Sign out and sign back in**: mandatory step.
+2.  **Check Firebase Console**: Go to **Authentication** → **Users**, find your user, and verify that **Custom claims** shows `{"admin": true}`.
+3.  **Check for Errors**: Look at the Browser Console (F12) for any permission errors when the app loads.
 
 ---
 
-## 📝 Notes
+## 📚 Related Documentation
 
-- Admin access is controlled via Firestore `admins` collection
-- Email addresses must match exactly (case-sensitive)
-- Only authenticated users with admin email in Firestore can access admin features
-- Admin dashboard requires email verification (same as regular users)
-
----
-
-## 🚀 Quick Setup Checklist
-
-- [ ] Create `admins` collection in Firestore
-- [ ] Add admin document with email as document ID
-- [ ] Update Firestore security rules
-- [ ] Publish security rules
-- [ ] Test admin access by logging in
-- [ ] Verify Admin link appears in navigation
-- [ ] Test admin dashboard features
+- `CUSTOM_CLAIMS_SETUP.md` - Technical details on the claims implementation
+- `FIRESTORE_RULES_CUSTOM_CLAIMS.md` - The specific security rules used
+- `AGENTS.md` - The project's "Golden Rules" on data isolation and deprecation
 
 ---
 
-**Last Updated**: Profile & Admin Dashboard Implementation
-**Status**: Ready for use
+**Last Updated**: December 31, 2025
+**Status**: ✅ Updated to Custom Claims
