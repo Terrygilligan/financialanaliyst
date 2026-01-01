@@ -69,12 +69,24 @@ export const analyzeReceiptUpload = onObjectFinalized(
 
         if (!userId) {
             console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
             return;
         }
 
+        // Fetch user's custom claims and profile data
+        const user = await auth.getUser(userId);
+        const businessId = user.customClaims?.businessId;
+
+        if (!businessId) {
+            console.error(`User ${userId} is not associated with a business.`);
+            return;
+        }
+
+        const userRef = db.collection('businesses').doc(businessId).collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const assignedSchemaId = userDoc.exists ? userDoc.data()?.assignedSchemaId : null;
+
         // 4. Call the core processor function (defined in processor.ts)
-        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
+        const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath, businessId, assignedSchemaId);
 
         // 5. Append data to Google Sheets (Steps 8-9)
         const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -263,3 +275,83 @@ export const removeAdminClaim = onCall(
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.
+
+export const saveSchema = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        const { schema, schemaName } = request.data;
+        const callerUid = request.auth?.uid;
+
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        const caller = await auth.getUser(callerUid);
+        if (!caller.customClaims?.admin) {
+            throw new Error("Only admins can save schemas");
+        }
+
+        const businessId = caller.customClaims?.businessId;
+        if (!businessId) {
+            throw new Error("Admin user is not associated with a business.");
+        }
+
+        try {
+            const schemaRef = db.collection('businesses').doc(businessId).collection('schemas').doc(schemaName);
+            await schemaRef.set({ schema });
+
+            return { success: true, message: `Schema ${schemaName} saved successfully.` };
+        } catch (error) {
+            console.error(`Error saving schema ${schemaName}:`, error);
+            throw new Error(`Failed to save schema: ${(error as Error).message}`);
+        }
+    }
+);
+
+export const inviteUserToBusiness = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        const { email, assignedSchemaId } = request.data;
+        const callerUid = request.auth?.uid;
+
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        const caller = await auth.getUser(callerUid);
+        if (!caller.customClaims?.admin) {
+            throw new Error("Only admins can invite users");
+        }
+
+        const businessId = caller.customClaims?.businessId;
+        if (!businessId) {
+            throw new Error("Admin user is not associated with a business.");
+        }
+
+        try {
+            const userRecord = await auth.createUser({
+                email: email,
+                emailVerified: false,
+                disabled: false
+            });
+
+            await auth.setCustomUserClaims(userRecord.uid, { businessId: businessId });
+
+            await db.collection('businesses').doc(businessId).collection('users').doc(userRecord.uid).set({
+                email: email,
+                assignedSchemaId: assignedSchemaId,
+                invitedBy: callerUid,
+                createdAt: new Date().toISOString()
+            });
+
+            return { success: true, message: `User ${email} invited successfully.` };
+        } catch (error) {
+            console.error(`Error inviting user ${email}:`, error);
+            throw new Error(`Failed to invite user: ${(error as Error).message}`);
+        }
+    }
+);

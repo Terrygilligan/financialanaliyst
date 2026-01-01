@@ -22,120 +22,17 @@
         // Make available globally
         window.firebase = { app, auth, googleProvider };
     </script>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .login-header h1 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-        .login-header p {
-            color: var(--text-secondary);
-        }
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .login-form input {
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .login-form input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        .password-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-input-wrapper input {
-            padding-right: 45px;
-            width: 100%;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            transition: color 0.2s;
-        }
-        .password-toggle:hover {
-            color: var(--text-primary);
-        }
-        .password-toggle svg {
-            pointer-events: none;
-        }
-        .verification-message {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 12px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-size: 14px;
-        }
-        .verification-message p {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .error-message {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            display: none;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .back-link a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
+<body class="login-body">
+    <div class="container" style="max-width: 420px;">
+        <header>
             <h1>💰 AI Financial Analyst</h1>
-            <p>Sign in to continue</p>
-        </div>
-
-        <div class="error-message" id="error-message"></div>
+        </header>
+        <div class="login-container">
+            <div class="login-header">
+                <h2>Sign in to continue</h2>
+            </div>
+            <div class="error-message" id="error-message"></div>
 
         <form id="login-form" class="login-form">
             <input type="email" id="email-input" placeholder="Email" required>
@@ -201,10 +98,6 @@
             </button>
             <button type="button" id="login-toggle" class="btn-link">Already have an account? Login</button>
         </form>
-
-        <div class="back-link">
-            <a href="index.html">← Back to home</a>
-        </div>
     </div>
 
     <script type="module" src="login.js"></script>

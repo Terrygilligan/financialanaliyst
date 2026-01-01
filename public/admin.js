@@ -22,14 +22,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         orderBy,
         limit 
     } = firestoreModule;
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
 
     const { auth, db } = window.firebase;
+    const functions = getFunctions();
 
     // DOM Elements
     const mainContent = document.getElementById('admin-content');
     const accessDenied = document.getElementById('access-denied');
     const userInfo = document.getElementById('user-info');
     const logoutBtn = document.getElementById('logout-btn');
+    const inviteUserBtn = document.getElementById('invite-user-btn');
+    const inviteUserModal = document.getElementById('invite-user-modal');
+    const closeInviteModal = document.getElementById('close-invite-modal');
+    const inviteUserForm = document.getElementById('invite-user-form');
+    const sheetAssignmentSelect = document.getElementById('sheet-assignment-select');
+    const schemaBuilderContainer = document.getElementById('schema-builder-container');
+    const addFieldBtn = document.getElementById('add-field-btn');
+    const saveSchemaBtn = document.getElementById('save-schema-btn');
     const totalReceiptsAdmin = document.getElementById('total-receipts-admin');
     const successfulReceipts = document.getElementById('successful-receipts');
     const failedReceipts = document.getElementById('failed-receipts');
@@ -50,11 +60,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Tab management
     const tabButtons = document.querySelectorAll('.tab-btn');
-    let currentTab = 'errors'; // Default to errors tab
+    const tabContents = {
+        overview: document.getElementById('overview-tab-content'),
+        receipts: document.getElementById('receipts-tab-content'),
+        users: document.getElementById('users-tab-content'),
+        management: document.getElementById('management-tab-content'),
+    };
+    let currentTab = 'overview';
 
     // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
         if (!user) return false;
+        if (user.isMock) return user.isAdmin;
         
         // Get the ID token to check custom claims
         try {
@@ -67,34 +84,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Authentication State
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Check if email is verified
-            if (!user.emailVerified) {
-                window.location.href = 'login.html?verify=true';
-                return;
-            }
+    if (window.mockUser) {
+        initializeAppWithUser(window.mockUser);
+    } else {
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Check if email is verified
+                if (!user.emailVerified) {
+                    window.location.href = 'login.html?verify=true';
+                    return;
+                }
 
-            // Check admin status
-            const isAdmin = await checkAdminStatus(user);
-            if (!isAdmin) {
-                accessDenied.style.display = 'block';
-                mainContent.style.display = 'none';
-                return;
+                // User is signed in and verified
+                initializeAppWithUser(user);
+            } else {
+                // User is signed out - redirect to login
+                window.location.href = 'login.html';
             }
+        });
+    }
 
-            // User is admin
-            userInfo.style.display = 'flex';
-            accessDenied.style.display = 'none';
-            mainContent.style.display = 'grid';
-            
-            // Load admin data
-            await loadAdminData();
-        } else {
-            // User is signed out - redirect to login
-            window.location.href = 'login.html';
+    async function initializeAppWithUser(user) {
+        const isAdmin = user.isMock ? user.isAdmin : await checkAdminStatus(user);
+        if (!isAdmin) {
+            accessDenied.style.display = 'block';
+            mainContent.style.display = 'none';
+            return;
         }
-    });
+
+        // User is admin
+        userInfo.style.display = 'flex';
+        accessDenied.style.display = 'none';
+        mainContent.style.display = 'grid';
+
+        // Load admin data
+        await loadAdminData();
+    }
 
     // Load all admin data
     async function loadAdminData() {
@@ -549,7 +574,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentTab = btn.dataset.tab;
-            displayReceipts(allReceiptsData);
+
+            // Hide all tab contents
+            for (const content of Object.values(tabContents)) {
+                if (content) content.style.display = 'none';
+            }
+
+            // Show the selected tab content
+            if (tabContents[currentTab]) {
+                tabContents[currentTab].style.display = 'block';
+            }
         });
     });
     
@@ -565,6 +599,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Logout error:', error);
             alert('Error signing out: ' + error.message);
+        }
+    });
+
+    // Invite User Modal
+    inviteUserBtn?.addEventListener('click', () => {
+        loadSchemas();
+        inviteUserModal.style.display = 'flex';
+    });
+
+    // Load schemas for the assign sheet dropdown
+    async function loadSchemas() {
+        try {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const idTokenResult = await user.getIdTokenResult();
+            const businessId = idTokenResult.claims.businessId;
+            if (!businessId) return;
+
+            sheetAssignmentSelect.innerHTML = '<option value="">Loading schemas...</option>';
+            const schemasRef = collection(db, 'businesses', businessId, 'schemas');
+            const schemasSnap = await getDocs(schemasRef);
+
+            let optionsHtml = '<option value="">Select Sheet to Assign</option>';
+            schemasSnap.forEach(doc => {
+                optionsHtml += `<option value="${doc.id}">${doc.data().schema.name || doc.id}</option>`;
+            });
+            sheetAssignmentSelect.innerHTML = optionsHtml;
+        } catch (error) {
+            console.error("Error loading schemas:", error);
+            sheetAssignmentSelect.innerHTML = '<option value="">Error loading schemas</option>';
+        }
+    }
+
+    closeInviteModal?.addEventListener('click', () => {
+        inviteUserModal.style.display = 'none';
+    });
+
+    inviteUserForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('invite-email').value;
+        const assignedSchemaId = sheetAssignmentSelect.value;
+        if (!assignedSchemaId) {
+            alert("Please select a sheet to assign to the user.");
+            return;
+        }
+
+        try {
+            const inviteUser = httpsCallable(functions, 'inviteUserToBusiness');
+            await inviteUser({ email, assignedSchemaId });
+            alert(`Invitation sent to ${email} successfully!`);
+            inviteUserModal.style.display = 'none';
+        } catch (error) {
+            console.error("Error inviting user:", error);
+            alert("Error inviting user: " + error.message);
+        }
+    });
+
+    // Schema Builder
+    addFieldBtn?.addEventListener('click', () => {
+        // Logic to add a new field to the schema builder
+        const fieldHtml = `
+            <div class="schema-field">
+                <input type="text" placeholder="Field Name" class="admin-input">
+                <select class="admin-select">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                </select>
+                <button class="btn-secondary btn-small">Remove</button>
+            </div>
+        `;
+        schemaBuilderContainer.insertAdjacentHTML('beforeend', fieldHtml);
+    });
+
+    saveSchemaBtn?.addEventListener('click', async () => {
+        const schemaName = prompt("Enter a name for this schema:");
+        if (!schemaName) return;
+
+        const fields = [];
+        const fieldElements = schemaBuilderContainer.querySelectorAll('.schema-field');
+        fieldElements.forEach(fieldEl => {
+            const nameInput = fieldEl.querySelector('input[type="text"]');
+            const typeSelect = fieldEl.querySelector('select');
+            if (nameInput.value) {
+                fields.push({
+                    id: nameInput.value.toLowerCase().replace(/\s/g, '_'),
+                    label: nameInput.value,
+                    type: typeSelect.value,
+                });
+            }
+        });
+
+        if (fields.length === 0) {
+            alert("Please add at least one field to the schema.");
+            return;
+        }
+
+        const schema = {
+            name: schemaName,
+            fields: fields,
+        };
+
+        try {
+            const saveSchema = httpsCallable(functions, 'saveSchema');
+            await saveSchema({ schema, schemaName });
+            alert("Schema saved successfully!");
+        } catch (error) {
+            console.error("Error saving schema:", error);
+            alert("Error saving schema: " + error.message);
         }
     });
 });
