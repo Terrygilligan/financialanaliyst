@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Admin Dashboard - AI Financial Analyst">
     <title>Admin Dashboard - AI Financial Analyst</title>
-    <script src="auth-bypass.js"></script>
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="styles.css">
     <!-- Chart.js for statistics -->
@@ -38,6 +37,9 @@
                         <a href="index.html" class="nav-link">Home</a>
                         <a href="profile.html" class="nav-link">Profile</a>
                         <a href="admin.html" class="nav-link active admin-link">Admin</a>
+                        <a href="admin-review.html" class="nav-link admin-link">Review Queue</a>
+                        <a href="business-signup.html" class="nav-link">Create Account</a>
+                        <a href="login.html" class="nav-link">Login</a>
                     </nav>
                     <button id="logout-btn" class="btn-secondary">Logout</button>
                 </div>
@@ -113,6 +115,7 @@
                 <button class="tab-btn" data-tab="receipts">All Receipts</button>
                 <button class="tab-btn" data-tab="users">User Management</button>
                 <button class="tab-btn" data-tab="management">Management</button>
+                <button class="tab-btn" id="office-management-tab" data-tab="office-management" style="display: none;">Office Management</button>
             </div>
 
             <!-- Tab Content -->
@@ -178,6 +181,22 @@
                     </div>
                 </section>
             </div>
+
+            <div id="office-management-tab-content" style="display: none;">
+                <section class="admin-section">
+                    <h2>SuperAdmin Console</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Manage admins and view all users in your business with their roles.
+                    </p>
+                    <div class="admin-controls">
+                        <button id="invite-admin-btn" class="btn-primary">Invite Admin</button>
+                        <button id="refresh-office-users" class="btn-secondary">Refresh</button>
+                    </div>
+                    <div id="office-users-container">
+                        <div class="loading-state">Loading office users...</div>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -193,6 +212,23 @@
                 <div class="modal-buttons">
                     <button type="submit" class="btn-primary">Send Invite</button>
                     <button type="button" id="close-invite-modal" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="invite-admin-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Invite Admin</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Invite a new admin user to your business. Admins can manage users and receipts but cannot modify SuperAdmin settings.
+            </p>
+            <form id="invite-admin-form">
+                <input type="email" id="invite-admin-email" placeholder="Email" required>
+                <input type="text" id="invite-admin-name" placeholder="Display Name (optional)">
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                    <button type="button" id="close-invite-admin-modal" class="btn-secondary">Cancel</button>
                 </div>
             </form>
         </div>

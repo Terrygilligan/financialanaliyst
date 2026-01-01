@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Business Signup - AI Financial Analyst</title>
-    <link rel="stylesheet" href="styles.css?v=20251231-design-final">
+    <link rel="stylesheet" href="styles.css?v=20250101-dark-modern">
     
     <!-- Firebase SDKs -->
     <script type="module">
@@ -58,14 +58,22 @@
         window.firebase = { app, auth, functions, googleProvider };
     </script>
 </head>
-</head>
 <body>
+    <!-- Navigation Bar -->
+    <nav style="position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="index.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Home</a>
+        <a href="login.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Login</a>
+        <a href="business-signup.html" style="padding: 8px 16px; background: var(--primary-color); color: #0a0a0a; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 600;">Sign Up</a>
+        <a href="forgot-password.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Reset Password</a>
+        <a href="admin.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Admin</a>
+        <a href="profile.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Profile</a>
+    </nav>
     <div class="signup-container">
         <div id="trial-badge" style="display: none; text-align: center; margin-bottom: 10px;">
             <span style="background: var(--warning-color); color: black; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase;">✨ 14-Day Free Trial</span>
         </div>
         <div class="signup-header">
-            <h1 id="signup-title">🏢 Create Your Business</h1>
+            <h1 id="signup-title">Create Your Account</h1>
             <p id="signup-subtitle">Set up your automated financial tracking system</p>
         </div>
 

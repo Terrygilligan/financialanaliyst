@@ -84,9 +84,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Redirect if already logged in and verified
     onAuthStateChanged(auth, async (user) => {
         if (user && user.emailVerified) {
-            // User is signed in and verified, redirect to main page
+            // User is signed in and verified, check role and redirect accordingly
             if (window.location.pathname.includes('login.html')) {
-                window.location.href = 'index.html';
+                try {
+                    const idTokenResult = await user.getIdTokenResult(true);
+                    const isAdmin = idTokenResult.claims.admin === true || 
+                                   idTokenResult.claims.superAdmin === true ||
+                                   idTokenResult.claims.role === 'admin' ||
+                                   idTokenResult.claims.role === 'super_admin';
+                    
+                    if (isAdmin) {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                } catch (error) {
+                    console.error('Error checking admin status:', error);
+                    window.location.href = 'index.html';
+                }
             }
         } else if (user && !user.emailVerified) {
             // User is signed in but not verified
@@ -178,8 +193,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Check if email is verified
-            if (!user.emailVerified) {
+            // Check if we're in emulator mode (for testing, skip email verification)
+            const isEmulatorMode = window.location.hostname === 'localhost' || 
+                                   window.location.hostname === '127.0.0.1' ||
+                                   localStorage.getItem('useEmulator') === 'true';
+            
+            // Check if email is verified (skip in emulator mode for testing)
+            if (!user.emailVerified && !isEmulatorMode) {
                 await auth.signOut();
                 auth.tenantId = null; // Clear tenant context
                 showError('Please verify your email address before logging in. Check your inbox for the verification link.');
@@ -205,7 +225,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 return;
             }
-            // Email is verified, redirect will happen automatically via onAuthStateChanged
+            
+            // Email is verified (or emulator mode), check role and redirect accordingly
+            console.log('✅ Login successful, checking user role...');
+            
+            // Check if user is admin/super admin
+            try {
+                const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
+                const isAdmin = idTokenResult.claims.admin === true || 
+                               idTokenResult.claims.superAdmin === true ||
+                               idTokenResult.claims.role === 'admin' ||
+                               idTokenResult.claims.role === 'super_admin';
+                
+                if (isAdmin) {
+                    console.log('👑 User is admin/super admin, redirecting to admin dashboard...');
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 100);
+                } else {
+                    console.log('👤 User is regular user, redirecting to home...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                // Default to index.html if check fails
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 100);
+            }
         } catch (error) {
             showError('Login error: ' + error.message);
         }

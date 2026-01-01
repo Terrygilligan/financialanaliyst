@@ -7,26 +7,60 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Login - AI Financial Analyst</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20250101-dark-modern">
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { firebaseConfig } from './firebase-config.js';
+        import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { firebaseConfig, shouldUseEmulators, emulatorConfig } from './firebase-config.js';
         
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
+        // Connect to emulators if needed
+        if (shouldUseEmulators()) {
+            console.log('🔧 Emulator mode enabled (auto-detected localhost)');
+            
+            // Connect Auth emulator
+            try {
+                connectAuthEmulator(auth, `http://${emulatorConfig.auth.host}:${emulatorConfig.auth.port}`, { disableWarnings: true });
+                console.log(`✅ Connected to Auth emulator on ${emulatorConfig.auth.host}:${emulatorConfig.auth.port}`);
+            } catch (error) {
+                console.log('⚠️  Auth emulator already connected or error:', error.message);
+            }
+            
+            // Connect Firestore emulator
+            try {
+                connectFirestoreEmulator(db, emulatorConfig.firestore.host, emulatorConfig.firestore.port);
+                console.log(`✅ Connected to Firestore emulator on ${emulatorConfig.firestore.host}:${emulatorConfig.firestore.port}`);
+            } catch (error) {
+                console.log('⚠️  Firestore emulator already connected or error:', error.message);
+            }
+        } else {
+            console.log('🌐 Using live Firebase');
+        }
+
         // Make available globally
-        window.firebase = { app, auth, googleProvider };
+        window.firebase = { app, auth, db, googleProvider };
     </script>
 </head>
 <body class="login-body">
+    <!-- Navigation Bar -->
+    <nav style="position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="index.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Home</a>
+        <a href="login.html" style="padding: 8px 16px; background: var(--primary-color); color: #0a0a0a; text-decoration: none; border-radius: 4px; font-size: 14px; font-weight: 600;">Login</a>
+        <a href="business-signup.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Sign Up</a>
+        <a href="forgot-password.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Reset Password</a>
+        <a href="admin.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Admin</a>
+        <a href="profile.html" style="padding: 8px 16px; background: var(--bg-primary); color: var(--text-primary); text-decoration: none; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px;">Profile</a>
+    </nav>
     <div class="container" style="max-width: 420px;">
         <header>
-            <h1>💰 AI Financial Analyst</h1>
+            <h1>AI Financial Analyst</h1>
         </header>
         <div class="login-container">
             <div class="login-header">

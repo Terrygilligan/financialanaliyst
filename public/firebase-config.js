@@ -1,14 +1,26 @@
 // Firebase Configuration
 // Supports both Live and Emulator modes
 
+// Project ID from .firebaserc
+const PROJECT_ID = "financialanaliyst";
+
+// For emulators, we can use the actual project ID - emulators work with any project ID
+const isEmulatorMode = () => {
+    const hostname = window.location.hostname;
+    return (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') 
+        && (window.location.port === '5000' || window.location.port === '');
+};
+
 export const firebaseConfig = {
-    apiKey: "<YOUR_API_KEY>",
-    authDomain: "<YOUR_PROJECT_ID>.firebaseapp.com",
-    projectId: "<YOUR_PROJECT_ID>",
-    storageBucket: "<YOUR_PROJECT_ID>.firebasestorage.app",
-    messagingSenderId: "<YOUR_SENDER_ID>",
-    appId: "<YOUR_APP_ID>",
-    measurementId: "<YOUR_MEASUREMENT_ID>",
+    // For emulators, use dummy values (emulators don't validate these)
+    // For production, replace with actual values from Firebase Console
+    apiKey: isEmulatorMode() ? "demo-api-key" : "<YOUR_API_KEY>",
+    authDomain: isEmulatorMode() ? `${PROJECT_ID}.firebaseapp.com` : "<YOUR_PROJECT_ID>.firebaseapp.com",
+    projectId: PROJECT_ID, // Use actual project ID for both emulator and production
+    storageBucket: isEmulatorMode() ? `${PROJECT_ID}.firebasestorage.app` : "<YOUR_PROJECT_ID>.firebasestorage.app",
+    messagingSenderId: isEmulatorMode() ? "123456789" : "<YOUR_SENDER_ID>",
+    appId: isEmulatorMode() ? "1:123456789:web:abcdef" : "<YOUR_APP_ID>",
+    measurementId: isEmulatorMode() ? undefined : "<YOUR_MEASUREMENT_ID>",
     // Google OAuth Client ID for Drive/Sheets API access
     oauthClientId: "<YOUR_OAUTH_CLIENT_ID>",
     // Builder.io Public API Key (Space ID)

@@ -29,10 +29,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to initialize the app with a user (real or mock)
     async function initializeAppWithUser(user) {
+        const landingPage = document.getElementById('landing-page');
+        const welcomeSection = document.getElementById('welcome-section');
         userInfo.style.display = 'flex';
         loginSection.style.display = 'none';
         mainContent.style.display = 'grid';
         loginModal.style.display = 'none';
+        if (landingPage) landingPage.style.display = 'none';
+        if (welcomeSection) welcomeSection.style.display = 'none';
 
         const isAdmin = user.isAdmin || await checkAdminStatus(user);
         const adminLinkContainer = document.getElementById('admin-link-container');
@@ -124,10 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Authentication State
-    if (window.mockUser) {
-        initializeAppWithUser(window.mockUser);
-    } else {
-        onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // Check if email is verified
                 if (!user.emailVerified) {
@@ -141,13 +142,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initializeAppWithUser(user);
                 updateHistory(user.uid);
             } else {
-                // User is signed out - redirect to login page only if not already there
-                if (!window.location.pathname.includes('login.html')) {
+                // User is signed out
+                const isHomePage = window.location.pathname.includes('index.html') || 
+                                   window.location.pathname === '/' || 
+                                   window.location.pathname.endsWith('/');
+                const isLoginPage = window.location.pathname.includes('login.html');
+                
+                if (isHomePage) {
+                    // On home page - show landing page, hide main content
+                    const mainContent = document.getElementById('main-content');
+                    const loginSection = document.getElementById('login-section');
+                    const userInfo = document.getElementById('user-info');
+                    const landingPage = document.getElementById('landing-page');
+                    const welcomeSection = document.getElementById('welcome-section');
+                    
+                    if (mainContent) mainContent.style.display = 'none';
+                    if (loginSection) loginSection.style.display = 'flex';
+                    if (userInfo) userInfo.style.display = 'none';
+                    if (landingPage) landingPage.style.display = 'block';
+                    if (welcomeSection) welcomeSection.style.display = 'none';
+                } else if (!isLoginPage) {
+                    // Redirect to login only if not on home or login page
                     window.location.href = 'login.html';
                 }
             }
         });
-    }
 
     // Login redirect (if login button exists, redirect to login page)
     loginBtn?.addEventListener('click', () => {
@@ -157,6 +176,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoutBtn?.addEventListener('click', async () => {
         try {
             await signOut(auth);
+            // Show welcome section after logout
+            const welcomeSection = document.getElementById('welcome-section');
+            const landingPage = document.getElementById('landing-page');
+            if (welcomeSection) welcomeSection.style.display = 'block';
+            if (landingPage) landingPage.style.display = 'none';
         } catch (error) {
             console.error('Logout error:', error);
             alert('Error signing out: ' + error.message);
@@ -497,3 +521,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
+// Demo mode function (available globally)
+window.enterDemoMode = function() {
+    // Wait for Firebase to initialize, then create mock user
+    if (window.firebase && window.firebase.auth) {
+        const mockUser = {
+            uid: 'demo-user',
+            email: 'demo@example.com',
+            emailVerified: true,
+            isMock: true,
+            isAdmin: false,
+            getIdTokenResult: async () => ({
+                claims: { businessId: 'demo-business', role: 'driver' }
+            })
+        };
+        
+        // Trigger the auth state change handler by calling initializeAppWithUser
+        // This is a simplified version - in production you'd want proper auth flow
+        const mainContent = document.getElementById('main-content');
+        const loginSection = document.getElementById('login-section');
+        const userInfo = document.getElementById('user-info');
+        const landingPage = document.getElementById('landing-page');
+        
+        if (mainContent) mainContent.style.display = 'grid';
+        if (loginSection) loginSection.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'flex';
+        if (landingPage) landingPage.style.display = 'none';
+    }
+};

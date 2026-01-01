@@ -1,25 +1,116 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getRole() {
+      return request.auth.token.role;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && getRole() == 'super_admin';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getRole() == 'admin' || getRole() == 'super_admin');
+    }
+
+    // Allow reading user_lookup for tenant detection during login/password reset
+    // This collection only contains businessId mappings (non-sensitive)
+    // Writing is restricted to authenticated admin users only
+    match /user_lookup/{email} {
+      allow read: if true; // Allow unauthenticated reads for login flow
+      allow write: if request.auth != null && (isAdmin() || request.auth.token.admin == true);
+    }
+
     match /businesses/{businessId} {
       // Allow read/write access only if the user's businessId matches the document's businessId
-      allow read, write: if request.auth.token.businessId == businessId;
+      // SuperAdmins have full access to their business
+      allow read, write: if request.auth != null && (
+        (isSuperAdmin() && request.auth.token.businessId == businessId) ||
+        request.auth.token.businessId == businessId
+      );
 
       // Rules for the 'users' subcollection
       match /users/{userId} {
-        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
+        allow read: if request.auth != null && (
+          isSuperAdmin() ||
+          isAdmin() ||
+          request.auth.uid == userId
+        );
+        allow write: if request.auth != null && (
+          isSuperAdmin() ||
+          (isAdmin() && resource.data.role != 'super_admin') ||
+          request.auth.uid == userId
+        );
       }
 
       // Rules for the 'schemas' subcollection
       match /schemas/{schemaId} {
-        allow read: if request.auth.token.businessId == businessId;
-        allow write: if request.auth.token.admin == true;
+        allow read: if request.auth != null && request.auth.token.businessId == businessId;
+        allow write: if request.auth != null && (
+          isSuperAdmin() ||
+          (isAdmin() && request.auth.token.businessId == businessId)
+        );
       }
 
       // Rules for the 'batches' subcollection
       match /batches/{userId} {
-        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
+        allow read: if request.auth != null && (
+          isSuperAdmin() ||
+          isAdmin() ||
+          request.auth.uid == userId
+        );
+        allow write: if request.auth != null && (
+          isSuperAdmin() ||
+          isAdmin() ||
+          request.auth.uid == userId
+        );
       }
+
+      // Audit logs (append-only, SuperAdmin-readable)
+      match /audit_logs/{logId} {
+        allow create: if request.auth != null && request.auth.token.businessId == businessId;
+        allow read: if request.auth != null && isSuperAdmin() && request.auth.token.businessId == businessId;
+        allow update, delete: if false; // Append-only
+      }
+    }
+
+    // Top-level users collection (for backward compatibility)
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        isSuperAdmin() ||
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+      allow write: if request.auth != null && (
+        isSuperAdmin() ||
+        (isAdmin() && resource.data.role != 'super_admin') ||
+        request.auth.uid == userId
+      );
+    }
+
+    // Top-level batches collection (for backward compatibility)
+    match /batches/{userId} {
+      allow read: if request.auth != null && (
+        isSuperAdmin() ||
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+      allow write: if request.auth != null && (
+        isSuperAdmin() ||
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+    }
+
+    // Billing collection (SuperAdmin only)
+    match /billing/{docId} {
+      allow read, write: if request.auth != null && isSuperAdmin();
     }
   }
 }

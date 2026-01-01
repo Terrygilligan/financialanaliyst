@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Verification</title>
-    <script src="auth-bypass.js"></script>
     <link rel="stylesheet" href="styles.css">
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -18,36 +17,13 @@
         };
     </script>
 </head>
-<body style="background-color: var(--bg-secondary);">
-    <div id="test-container"></div>
-    <script type="module">
-        if (window.mockUser) {
-            if (window.mockUser.isAdmin) {
-                fetch('admin.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        document.getElementById('test-container').append(doc.querySelector('main'));
-                        const adminScript = document.createElement('script');
-                        adminScript.src = 'admin.js';
-                        adminScript.type = 'module';
-                        document.body.appendChild(adminScript);
-                    });
-            } else {
-                fetch('index.html')
-                    .then(response => response.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        document.getElementById('test-container').append(doc.querySelector('main'));
-                        const appScript = document.createElement('script');
-                        appScript.src = 'app.js';
-                        appScript.type = 'module';
-                        document.body.appendChild(appScript);
-                    });
-            }
-        }
-    </script>
+<body style="background-color: var(--bg-secondary); padding: 40px; text-align: center;">
+    <div style="max-width: 600px; margin: 0 auto; background: var(--bg-primary); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <h1 style="color: var(--text-primary); margin-bottom: 20px;">Email Verification</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 30px;">
+            Please check your email and click the verification link to complete your account setup.
+        </p>
+        <a href="login.html" class="btn-primary" style="text-decoration: none; display: inline-block;">Return to Login</a>
+    </div>
 </body>
 </html>

@@ -65,8 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         receipts: document.getElementById('receipts-tab-content'),
         users: document.getElementById('users-tab-content'),
         management: document.getElementById('management-tab-content'),
+        'office-management': document.getElementById('office-management-tab-content'),
     };
     let currentTab = 'overview';
+    const officeManagementTab = document.getElementById('office-management-tab');
 
     // Check if user is admin via custom claims
     async function checkAdminStatus(user) {
@@ -83,11 +85,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Check if user is SuperAdmin via custom claims
+    async function checkSuperAdminStatus(user) {
+        if (!user) return false;
+        if (user.isMock) return user.superAdmin === true;
+        
+        try {
+            const idTokenResult = await user.getIdTokenResult(true);
+            return idTokenResult.claims.superAdmin === true || 
+                   idTokenResult.claims.role === 'super_admin';
+        } catch (error) {
+            console.error('Error checking super admin status:', error);
+            return false;
+        }
+    }
+
     // Authentication State
-    if (window.mockUser) {
-        initializeAppWithUser(window.mockUser);
-    } else {
-        onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // Check if email is verified
                 if (!user.emailVerified) {
@@ -102,7 +116,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = 'login.html';
             }
         });
-    }
 
     async function initializeAppWithUser(user) {
         const isAdmin = user.isMock ? user.isAdmin : await checkAdminStatus(user);
@@ -112,6 +125,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Check if user is SuperAdmin and show Office Management tab
+        const isSuperAdmin = await checkSuperAdminStatus(user);
+        if (isSuperAdmin && officeManagementTab) {
+            officeManagementTab.style.display = 'inline-block';
+            console.log('👑 SuperAdmin detected - Office Management tab enabled');
+        } else if (officeManagementTab) {
+            officeManagementTab.style.display = 'none';
+        }
+
         // User is admin
         userInfo.style.display = 'flex';
         accessDenied.style.display = 'none';
@@ -119,6 +141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Load admin data
         await loadAdminData();
+        
+        // If SuperAdmin, also load office users
+        if (isSuperAdmin) {
+            await loadOfficeUsers();
+        }
     }
 
     // Load all admin data
@@ -538,6 +565,117 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
     }
+
+    // Load office users with role information (SuperAdmin only)
+    async function loadOfficeUsers() {
+        const officeUsersContainer = document.getElementById('office-users-container');
+        if (!officeUsersContainer) return;
+
+        try {
+            officeUsersContainer.innerHTML = '<div class="loading-state">Loading office users...</div>';
+            
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const idTokenResult = await user.getIdTokenResult();
+            const businessId = idTokenResult.claims.businessId;
+            if (!businessId) {
+                officeUsersContainer.innerHTML = '<div class="error-state">No business ID found.</div>';
+                return;
+            }
+
+            // Get users from business silo
+            const usersRef = collection(db, 'businesses', businessId, 'users');
+            const usersSnap = await getDocs(usersRef);
+            
+            // Also get from top-level users collection for role info
+            const topLevelUsersRef = collection(db, 'users');
+            const topLevelUsersSnap = await getDocs(topLevelUsersRef);
+            
+            const roleMap = new Map();
+            topLevelUsersSnap.forEach(doc => {
+                const data = doc.data();
+                roleMap.set(doc.id, {
+                    role: data.role || 'user',
+                    admin: data.admin || false,
+                    superAdmin: data.superAdmin || false
+                });
+            });
+
+            const officeUsers = [];
+            usersSnap.forEach(doc => {
+                const userData = doc.data();
+                const roleInfo = roleMap.get(doc.id) || { role: userData.role || 'user', admin: false, superAdmin: false };
+                
+                officeUsers.push({
+                    userId: doc.id,
+                    email: userData.email || 'N/A',
+                    displayName: userData.displayName || 'N/A',
+                    role: roleInfo.role || userData.role || 'user',
+                    isAdmin: roleInfo.admin || userData.admin || false,
+                    isSuperAdmin: roleInfo.superAdmin || userData.superAdmin || false
+                });
+            });
+
+            displayOfficeUsers(officeUsers);
+        } catch (error) {
+            console.error('Error loading office users:', error);
+            officeUsersContainer.innerHTML = '<div class="error-state">Error loading office users.</div>';
+        }
+    }
+
+    // Display office users with role badges
+    function displayOfficeUsers(users) {
+        const officeUsersContainer = document.getElementById('office-users-container');
+        if (!officeUsersContainer) return;
+
+        if (users.length === 0) {
+            officeUsersContainer.innerHTML = '<div class="empty-state">No users found in your business.</div>';
+            return;
+        }
+
+        officeUsersContainer.innerHTML = `
+            <div class="admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Display Name</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => {
+                            let roleBadge = '';
+                            if (user.isSuperAdmin || user.role === 'super_admin') {
+                                roleBadge = '<span class="role-badge role-superadmin" title="Super Admin">👑 Super Admin</span>';
+                            } else if (user.isAdmin || user.role === 'admin') {
+                                roleBadge = '<span class="role-badge role-admin" title="Admin">🔷 Admin</span>';
+                            } else {
+                                roleBadge = '<span class="role-badge role-user" title="User">👤 User</span>';
+                            }
+
+                            return `
+                                <tr>
+                                    <td>${user.email}</td>
+                                    <td>${user.displayName}</td>
+                                    <td>${roleBadge}</td>
+                                    <td>
+                                        ${!user.isSuperAdmin ? `
+                                            <button class="btn-small btn-secondary" onclick="revokeAccess('${user.userId}')" title="Revoke access">
+                                                Revoke
+                                            </button>
+                                        ` : '<span style="color: var(--text-secondary);">Protected</span>'}
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
     
     // Disable user account (placeholder - requires Cloud Function)
     window.disableUser = async function(userId) {
@@ -711,4 +849,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Error saving schema: " + error.message);
         }
     });
+
+    // SuperAdmin: Invite Admin functionality
+    const inviteAdminBtn = document.getElementById('invite-admin-btn');
+    const inviteAdminModal = document.getElementById('invite-admin-modal');
+    const inviteAdminForm = document.getElementById('invite-admin-form');
+    const closeInviteAdminModal = document.getElementById('close-invite-admin-modal');
+    const refreshOfficeUsers = document.getElementById('refresh-office-users');
+
+    inviteAdminBtn?.addEventListener('click', () => {
+        inviteAdminModal.style.display = 'flex';
+    });
+
+    closeInviteAdminModal?.addEventListener('click', () => {
+        inviteAdminModal.style.display = 'none';
+    });
+
+    refreshOfficeUsers?.addEventListener('click', async () => {
+        await loadOfficeUsers();
+    });
+
+    inviteAdminForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('invite-admin-email').value;
+        const displayName = document.getElementById('invite-admin-name').value || email.split('@')[0];
+
+        try {
+            // TODO: Call Cloud Function to invite admin
+            // For now, show a placeholder message
+            alert(`Admin invitation functionality requires a Cloud Function.\nWould invite: ${email} as Admin`);
+            inviteAdminModal.style.display = 'none';
+            inviteAdminForm.reset();
+        } catch (error) {
+            console.error("Error inviting admin:", error);
+            alert("Error inviting admin: " + error.message);
+        }
+    });
+
+    // Revoke access function (SuperAdmin only)
+    window.revokeAccess = async function(userId) {
+        if (!confirm(`Are you sure you want to revoke access for this user?`)) {
+            return;
+        }
+        
+        try {
+            // TODO: Call Cloud Function to revoke access
+            alert('Revoke access functionality requires a Cloud Function. This is a placeholder.');
+            console.log('Would revoke access for user:', userId);
+            // Reload office users after revoking
+            await loadOfficeUsers();
+        } catch (error) {
+            console.error('Error revoking access:', error);
+            alert('Error revoking access: ' + error.message);
+        }
+    };
 });

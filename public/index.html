@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>AI Financial Analyst</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="styles.css?v=20251217-3">
+    <link rel="stylesheet" href="styles.css?v=20250101-dark-modern">
     <!-- Translations (Phase 1.2: Multi-Language Support) -->
     <script src="translations.js?v=20251217"></script>
     <!-- PWA Install Prompt -->
@@ -69,6 +69,63 @@
                 </div>
             </div>
         </header>
+
+        <!-- Landing Page Section (Visible when signed out) -->
+        <section id="landing-page" class="landing-section">
+            <div class="hero-content">
+                <h2>Automate Your Finance with AI</h2>
+                <p>
+                    Upload receipts, let Gemini AI extract the data, and store everything in secure, siloed enterprise environments. Total data isolation for your business.
+                </p>
+                <div class="hero-buttons" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="enterDemoMode()" class="btn-primary" style="padding: 16px 32px; font-size: 1.1rem; cursor: pointer;">View Live Demo</button>
+                    <a href="business-signup.html?trial=true" class="btn-secondary" style="padding: 16px 32px; font-size: 1.1rem; background: var(--secondary-color); color: white; border: none; text-decoration: none;">Start 14-Day Trial</a>
+                    <a href="login.html" class="btn-link" style="padding: 16px 32px; font-size: 1.1rem; color: var(--primary-color); text-decoration: none;">Sign In</a>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card" onclick="enterDemoMode()" style="cursor: pointer;">
+                    <div class="feature-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1454165833767-027ffea9e778?auto=format&fit=crop&w=800&q=80" alt="Professional Workspace">
+                    </div>
+                    <div class="feature-content">
+                        <h3>Enterprise Isolation</h3>
+                        <p>Total data sovereignty. Your business operates in its own dedicated, encrypted Firestore and Storage silo. <strong>(Click to Preview)</strong></p>
+                    </div>
+                </div>
+                <div class="feature-card" onclick="enterDemoMode()" style="cursor: pointer;">
+                    <div class="feature-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80" alt="Team analyzing data">
+                    </div>
+                    <div class="feature-content">
+                        <h3>AI-Powered Extraction</h3>
+                        <p>Leverage Gemini 2.5 Flash to automatically transform chaotic receipt images into structured financial intelligence. <strong>(Click to Preview)</strong></p>
+                    </div>
+                </div>
+                <div class="feature-card" onclick="window.location.href='profile.html?demo=true'" style="cursor: pointer;">
+                    <div class="feature-image-wrapper">
+                        <img src="https://images.unsplash.com/photo-1573163281530-5be9c2936c07?auto=format&fit=crop&w=800&q=80" alt="Professional using dashboard">
+                    </div>
+                    <div class="feature-content">
+                        <h3>Dynamic Schemas</h3>
+                        <p>Define bespoke extraction rules. Our AI adapts to your unique business logic and complex field definitions. <strong>(Click to View Profile)</strong></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Welcome Section (shown after logout) -->
+        <section id="welcome-section" style="display: none; text-align: center; padding: 60px 20px; max-width: 800px; margin: 0 auto;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 20px; color: var(--text-primary);">You've been logged out</h2>
+            <p style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 40px; line-height: 1.6;">
+                Thanks for using AI Financial Analyst. Your session has ended. Sign in again to continue.
+            </p>
+            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 40px;">
+                <a href="login.html" class="btn-primary" style="padding: 16px 32px; font-size: 1.1rem; text-decoration: none; display: inline-block;">Sign In Again</a>
+                <a href="business-signup.html" class="btn-secondary" style="padding: 16px 32px; font-size: 1.1rem; text-decoration: none; display: inline-block;">Create Account</a>
+            </div>
+        </section>
 
         <main id="main-content" style="display: none;">
             <!-- Builder.io Dynamic Content -->

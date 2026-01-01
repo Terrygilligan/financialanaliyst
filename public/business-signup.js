@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Email signup error:', error);
             hideLoading();
-            showError(`Error: ${error.message || 'Failed to create business silo'}`);
+            showError(`Error: ${error.message || 'Failed to create account'}`);
             // Clean up: If account was created but provisioning failed, we might have an issue
             // but the Cloud Function should handle most of this.
         }
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Provisioning error:', error);
             hideLoading();
-            showError(`Error: ${error.message || 'Failed to create business silo'}`);
+            showError(`Error: ${error.message || 'Failed to create account'}`);
         }
     }
 
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (buttonContainer) {
         buttonContainer.innerHTML = `
             <button type="button" id="start-provisioning-btn" class="btn-google" style="width: 100%; display: flex; align-items: center; justify-content: center; padding: 12px; border: 1px solid #dadce0; border-radius: 4px; background: white; cursor: pointer; font-size: 14px; font-weight: 500;">
-                🚀 Create Business & Sign In
+                Create Account & Sign In
             </button>
         `;
         document.getElementById('start-provisioning-btn')?.addEventListener('click', handleProvisioning);
