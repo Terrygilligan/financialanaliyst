@@ -938,3 +938,54 @@ section h2 {
         grid-template-columns: 1fr;
     }
 }
+
+/* SuperAdmin Console Styles */
+#user-management-table {
+    margin-top: 20px;
+}
+
+#user-management-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#user-management-table th,
+#user-management-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#user-management-table th {
+    background-color: var(--bg-secondary);
+}
+
+.invite-section {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.invite-section input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    background-color: var(--text-secondary);
+}
+
+.badge.super_admin {
+    background-color: var(--error-color);
+}
+
+.badge.admin {
+    background-color: var(--primary-color);
+}

@@ -47,17 +47,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusContainer = document.getElementById('status-container');
     const historyContainer = document.getElementById('history-container');
 
-    // Check if user is admin via custom claims
-    async function checkAdminStatus(user) {
-        if (!user) return false;
+    // Get user role from custom claims
+    async function getUserRole(user) {
+        if (!user) return null;
         
-        // Get the ID token to check custom claims
         try {
-            const idTokenResult = await user.getIdTokenResult();
-            return idTokenResult.claims.admin === true;
+            const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+            return idTokenResult.claims.role || 'user';
         } catch (error) {
-            console.error('Error checking admin status:', error);
-            return false;
+            console.error('Error getting user role:', error);
+            return 'user';
         }
     }
 
@@ -78,11 +77,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             mainContent.style.display = 'grid';
             loginModal.style.display = 'none';
             
-            // Check admin status and show admin link
-            const isAdmin = await checkAdminStatus(user);
+            // Check role and update UI
+            const userRole = await getUserRole(user);
             const adminLinkContainer = document.getElementById('admin-link-container');
-            if (isAdmin && adminLinkContainer) {
-                adminLinkContainer.style.display = 'inline';
+            const superAdminLinkContainer = document.getElementById('superadmin-link-container');
+            const userRoleBadge = document.getElementById('user-role-badge');
+
+            if (userRole === 'super_admin') {
+                if (adminLinkContainer) adminLinkContainer.style.display = 'inline';
+                if (superAdminLinkContainer) superAdminLinkContainer.style.display = 'inline';
+                if (userRoleBadge) {
+                    userRoleBadge.textContent = 'Super Admin';
+                    userRoleBadge.style.display = 'inline-block';
+                }
+            } else if (userRole === 'admin') {
+                if (adminLinkContainer) adminLinkContainer.style.display = 'inline';
+                if (userRoleBadge) {
+                    userRoleBadge.textContent = 'Admin';
+                    userRoleBadge.style.display = 'inline-block';
+                }
+            } else { // 'user' role
+                 if (userRoleBadge) {
+                    userRoleBadge.textContent = 'User';
+                    userRoleBadge.style.display = 'inline-block';
+                }
             }
         } else {
             // User is signed out - redirect to login page only if not already there

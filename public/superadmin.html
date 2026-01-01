@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperAdmin Console</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>SuperAdmin Console</h1>
+        <div id="user-management-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>UID</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    <!-- User data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="invite-section">
+            <input type="email" id="invite-email" placeholder="Enter email to make admin">
+            <button id="invite-admin-btn">Invite Admin</button>
+        </div>
+    </div>
+    <script src="firebase-config.js"></script>
+    <script src="superadmin.js"></script>
+</body>
+</html>
