@@ -84,6 +84,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isAdmin && adminLinkContainer) {
                 adminLinkContainer.style.display = 'inline';
             }
+
+            // Check for assignedSchemaId
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data().assignedSchemaId) {
+                uploadArea.style.display = 'block';
+                document.getElementById('no-schema-message').style.display = 'none';
+            } else {
+                uploadArea.style.display = 'none';
+                document.getElementById('no-schema-message').style.display = 'block';
+            }
         } else {
             // User is signed out - redirect to login page only if not already there
             if (!window.location.pathname.includes('login.html')) {

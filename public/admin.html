@@ -151,5 +151,27 @@
     </div>
 
     <script src="admin.js"></script>
+
+    <!-- Set Role Modal -->
+    <div id="set-role-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Set User Role</h2>
+            <p>User ID: <strong id="modal-user-id"></strong></p>
+            <div class="form-group">
+                <label for="role-select">Role:</label>
+                <select id="role-select">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="super_admin">Super Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="business-id-input">Business ID:</label>
+                <input type="text" id="business-id-input" placeholder="Enter Business ID">
+            </div>
+            <button id="save-role-btn" class="btn-primary">Save Changes</button>
+        </div>
+    </div>
 </body>
 </html>
