@@ -122,7 +122,7 @@ export const analyzeReceiptUpload = onObjectFinalized(
         }
 
         // 6. Update Firestore Status (Step 10)
-        await db.collection('batches').doc(userId).set({
+        await db.collection('businesses').doc(businessId).collection('batches').doc(userId).set({
             status: 'complete',
             lastFileProcessed: fileName,
             receiptData: receiptData, // Store the extracted data for reference
@@ -152,12 +152,17 @@ export const analyzeReceiptUpload = onObjectFinalized(
         // Update Firestore status to error (Step 10)
         const pathParts = filePath.split('/');
         const userId = pathParts[1] || 'unknown';
-        await db.collection('batches').doc(userId).set({
-            status: 'error',
-            errorFile: filePath,
-            errorMessage: (error as Error).message,
-            timestamp: new Date().toISOString()
-        }, { merge: true });
+        // We might not have businessId here if the user lookup failed, so we handle that case
+        if (userId !== 'unknown' && db.collection('businesses').doc('unknown').collection('batches').doc(userId)) {
+            const user = await auth.getUser(userId);
+            const businessId = user.customClaims?.businessId || 'unknown';
+            await db.collection('businesses').doc(businessId).collection('batches').doc(userId).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: (error as Error).message,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        }
     }
 });
 

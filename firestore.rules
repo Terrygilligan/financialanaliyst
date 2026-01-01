@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /businesses/{businessId} {
+      // Allow read/write access only if the user's businessId matches the document's businessId
+      allow read, write: if request.auth.token.businessId == businessId;
+
+      // Rules for the 'users' subcollection
+      match /users/{userId} {
+        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
+      }
+
+      // Rules for the 'schemas' subcollection
+      match /schemas/{schemaId} {
+        allow read: if request.auth.token.businessId == businessId;
+        allow write: if request.auth.token.admin == true;
+      }
+
+      // Rules for the 'batches' subcollection
+      match /batches/{userId} {
+        allow read, write: if request.auth.uid == userId || request.auth.token.admin == true;
+      }
+    }
+  }
+}

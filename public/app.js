@@ -325,6 +325,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) {
+            console.error("User is not associated with a business.");
+            alert("Could not upload file. User not part of a business.");
+            return;
+        }
+
         // Validate file type
         if (!file.type || !file.type.startsWith('image/')) {
             console.error('Invalid file type:', file.type);
@@ -389,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     uploadStatus.style.color = 'var(--secondary-color)';
                     
                     // Create batch document in Firestore
-                    const batchRef = doc(db, 'batches', user.uid);
+                    const batchRef = doc(db, 'businesses', businessId, 'batches', user.uid);
                     await setDoc(batchRef, {
                         status: 'processing',
                         fileName: fileName,
@@ -463,7 +471,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function updateHistory(userId) {
-        const batchRef = doc(db, 'batches', userId);
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const idTokenResult = await user.getIdTokenResult();
+        const businessId = idTokenResult.claims.businessId;
+        if (!businessId) return;
+
+        const batchRef = doc(db, 'businesses', businessId, 'batches', userId);
         const snapshot = await getDoc(batchRef);
         
         if (snapshot.exists()) {
