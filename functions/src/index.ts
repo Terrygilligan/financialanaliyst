@@ -150,116 +150,172 @@ export const analyzeReceiptUpload = onObjectFinalized(
 });
 
 /**
- * Cloud Function: Set Admin Custom Claim
- * 
- * This function allows an existing admin (or super-admin) to grant admin privileges
- * to a user by setting a custom claim on their auth token.
- * 
- * Usage (via Firebase Console or HTTP call):
- * - Call this function with the target user's UID
- * - Only callable by authenticated users (you can add additional checks)
- * 
- * Security: In production, you should add additional checks to ensure only
- * authorized users can call this function (e.g., check if caller is already admin).
+ * Cloud Function: Set Role
+ *
+ * This function allows a super_admin to grant roles to a user.
+ *
+ * Security: Only callable by authenticated users with the 'super_admin' role.
  */
-export const setAdminClaim = onCall(
+export const setRole = onCall(
     {
         region: "us-central1",
     },
     async (request) => {
-        // Get the target user UID from the request
-        const targetUserId = request.data.uid;
-        
-        if (!targetUserId) {
-            throw new Error("User UID is required");
-        }
-
-        // Optional: Verify the caller is already an admin
-        // For initial setup, you might want to skip this check
         const callerUid = request.auth?.uid;
-        if (callerUid) {
-            try {
-                const caller = await auth.getUser(callerUid);
-                if (!caller.customClaims?.admin) {
-                    // Optional: Allow if no admins exist yet (bootstrap scenario)
-                    const allUsers = await auth.listUsers();
-                    const hasAdmin = allUsers.users.some(u => u.customClaims?.admin);
-                    if (hasAdmin) {
-                        throw new Error("Only existing admins can grant admin privileges");
-                    }
-                }
-            } catch (error) {
-                // Re-throw authorization errors instead of silently suppressing them
-                if (error instanceof Error && error.message.includes("Only existing admins")) {
-                    throw error;
-                }
-                console.error("Error checking caller admin status:", error);
-                // For initial setup, allow the call only for non-authorization errors
-            }
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
         }
 
         try {
-            // Set the custom claim
-            await auth.setCustomUserClaims(targetUserId, { admin: true });
-            
-            console.log(`Admin claim set for user: ${targetUserId}`);
-            
+            const caller = await auth.getUser(callerUid);
+            if (caller.customClaims?.role !== 'super_admin') {
+                throw new Error("Only super_admins can set roles");
+            }
+        } catch (error) {
+            throw new Error("Unauthorized: super_admin role required");
+        }
+
+        const { uid, role } = request.data;
+        if (!uid || !['super_admin', 'admin', 'user'].includes(role)) {
+            throw new Error("User UID and a valid role are required");
+        }
+
+        try {
+            await auth.setCustomUserClaims(uid, { role });
             return {
                 success: true,
-                message: `Admin privileges granted to user ${targetUserId}`,
+                message: `Role '${role}' granted to user ${uid}`,
             };
         } catch (error) {
-            console.error(`Error setting admin claim for ${targetUserId}:`, error);
-            throw new Error(`Failed to set admin claim: ${(error as Error).message}`);
+            console.error(`Error setting role for ${uid}:`, error);
+            throw new Error(`Failed to set role: ${(error as Error).message}`);
         }
     }
 );
 
 /**
- * Cloud Function: Remove Admin Custom Claim
- * 
- * Removes admin privileges from a user.
+ * Cloud Function: List Users
+ *
+ * This function allows a super_admin to get a list of all users.
+ *
+ * Security: Only callable by authenticated users with the 'super_admin' role.
  */
-export const removeAdminClaim = onCall(
+export const listUsers = onCall(
     {
         region: "us-central1",
     },
     async (request) => {
-        const targetUserId = request.data.uid;
-        
-        if (!targetUserId) {
-            throw new Error("User UID is required");
-        }
-
-        // Verify caller is authenticated and is admin
         const callerUid = request.auth?.uid;
         if (!callerUid) {
             throw new Error("Unauthorized: Authentication required");
         }
-        
+
         try {
             const caller = await auth.getUser(callerUid);
-            if (!caller.customClaims?.admin) {
-                throw new Error("Only admins can remove admin privileges");
+            if (caller.customClaims?.role !== 'super_admin') {
+                throw new Error("Only super_admins can perform this action");
             }
         } catch (error) {
-            throw new Error("Unauthorized: Admin privileges required");
+            throw new Error("Unauthorized: super_admin role required");
         }
 
         try {
-            await auth.setCustomUserClaims(targetUserId, { admin: false });
-            console.log(`Admin claim removed for user: ${targetUserId}`);
-            
-            return {
-                success: true,
-                message: `Admin privileges removed from user ${targetUserId}`,
-            };
+            const userRecords = await auth.listUsers();
+            return userRecords.users.map(user => ({
+                uid: user.uid,
+                email: user.email,
+                role: user.customClaims?.role || 'user'
+            }));
         } catch (error) {
-            console.error(`Error removing admin claim for ${targetUserId}:`, error);
-            throw new Error(`Failed to remove admin claim: ${(error as Error).message}`);
+            console.error('Error listing users:', error);
+            throw new Error(`Could not list users: ${(error as Error).message}`);
         }
     }
 );
 
-// Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
-// and GOOGLE_SHEET_ID before deploying.
+/**
+ * Cloud Function: Get User by Email
+ *
+ * This function allows a super_admin to get a user's UID by their email.
+ *
+ * Security: Only callable by authenticated users with the 'super_admin' role.
+ */
+export const getUserByEmail = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        try {
+            const caller = await auth.getUser(callerUid);
+            if (caller.customClaims?.role !== 'super_admin') {
+                throw new Error("Only super_admins can perform this action");
+            }
+        } catch (error) {
+            throw new Error("Unauthorized: super_admin role required");
+        }
+
+        const { email } = request.data;
+        if (!email) {
+            throw new Error("Email is required");
+        }
+
+        try {
+            const userRecord = await auth.getUserByEmail(email);
+            return { uid: userRecord.uid };
+        } catch (error) {
+            console.error(`Error fetching user by email ${email}:`, error);
+            throw new Error(`Could not fetch user: ${(error as Error).message}`);
+        }
+    }
+);
+
+/**
+ * Cloud Function: Revoke Access
+ *
+ * This function allows a super_admin to delete a user.
+ *
+--
+-
+ * Security: Only callable by authenticated users with the 'super_admin' role.
+ */
+export const revokeAccess = onCall(
+    {
+        region: "us-central1",
+    },
+    async (request) => {
+        const callerUid = request.auth?.uid;
+        if (!callerUid) {
+            throw new Error("Unauthorized: Authentication required");
+        }
+
+        try {
+            const caller = await auth.getUser(callerUid);
+            if (caller.customClaims?.role !== 'super_admin') {
+                throw new Error("Only super_admins can revoke access");
+            }
+        } catch (error) {
+            throw new Error("Unauthorized: super_admin role required");
+        }
+
+        const { uid } = request.data;
+        if (!uid) {
+            throw new Error("User UID is required");
+        }
+
+        try {
+            await auth.deleteUser(uid);
+            return {
+                success: true,
+                message: `User ${uid} has been deleted.`,
+            };
+        } catch (error) {
+            console.error(`Error revoking access for ${uid}:`, error);
+            throw new Error(`Failed to revoke access: ${(error as Error).message}`);
+        }
+    }
+);
