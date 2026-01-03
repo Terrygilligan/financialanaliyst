@@ -263,3 +263,199 @@ export const removeAdminClaim = onCall(
 
 // Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
 // and GOOGLE_SHEET_ID before deploying.
+
+// --- Audit Logging ---
+
+/**
+ * Logs an activity to the audit trail.
+ * @param {string} actorUid The UID of the user performing the action.
+ * @param {string} action The action being performed (e.g., 'set_role', 'revoke_access').
+ * @param {string | null} targetUid The UID of the user being acted upon.
+ * @param {object} details Additional details about the action.
+ */
+const logActivity = async (actorUid: string, action: string, targetUid: string | null, details: object) => {
+    try {
+        const actor = await auth.getUser(actorUid);
+        let targetEmail = null;
+        if (targetUid) {
+            const targetUser = await auth.getUser(targetUid);
+            targetEmail = targetUser.email;
+        }
+
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            actorUid,
+            actorEmail: actor.email,
+            action,
+            targetUid,
+            targetEmail,
+            details,
+        };
+
+        // For now, we'll use a global audit log. This could be changed to a business-specific log.
+        const businessId = 'global';
+        await db.collection(`businesses/${businessId}/audit_logs`).add(logEntry);
+    } catch (error) {
+        console.error("Failed to write to audit log:", error);
+        // Do not throw error, as logging failure should not block the main operation.
+    }
+};
+
+
+// --- SuperAdmin Cloud Functions ---
+
+/**
+ * Checks if the calling user has admin privileges.
+ * Throws an error if the user is not authenticated or not an admin.
+ */
+const ensureAdmin = async (context: any) => {
+    if (!context.auth) {
+        throw new Error("Authentication required.");
+    }
+    const user = await auth.getUser(context.auth.uid);
+    if (user.customClaims?.admin !== true) {
+        throw new Error("Permission denied. Admin privileges required.");
+    }
+    return user;
+};
+
+/**
+ * Lists all users in the system.
+ * Only callable by admins.
+ */
+export const listUsers = onCall({ region: "us-central1" }, async (request) => {
+    await ensureAdmin(request);
+
+    try {
+        const listUsersResult = await auth.listUsers();
+        const users = listUsersResult.users.map((userRecord) => ({
+            uid: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName,
+            role: userRecord.customClaims?.admin ? 'admin' : 'user',
+            disabled: userRecord.disabled,
+            creationTime: userRecord.metadata.creationTime,
+            lastSignInTime: userRecord.metadata.lastSignInTime,
+        }));
+        return { success: true, users };
+    } catch (error) {
+        console.error("Error listing users:", error);
+        throw new Error("Failed to list users.");
+    }
+});
+
+/**
+ * Revokes a user's access by disabling their account.
+ * Only callable by admins.
+ */
+export const revokeAccess = onCall({ region: "us-central1" }, async (request) => {
+    const actor = await ensureAdmin(request);
+    const { uid } = request.data;
+
+    if (!uid) {
+        throw new Error("User UID is required.");
+    }
+
+    try {
+        await auth.updateUser(uid, { disabled: true });
+        // Also update their status in Firestore for UI purposes
+        await db.collection('users').doc(uid).set({
+            status: 'revoked'
+        }, { merge: true });
+
+        await logActivity(actor.uid, 'revoke_access', uid, { reason: 'manual revoke by admin' });
+
+        console.log(`Access revoked for user ${uid} by admin ${actor.uid}`);
+        return { success: true, message: "User access revoked." };
+    } catch (error) {
+        console.error(`Error revoking access for user ${uid}:`, error);
+        throw new Error("Failed to revoke user access.");
+    }
+});
+
+/**
+ * Sets a user's role (admin or user).
+ * Only callable by admins.
+ */
+export const setRole = onCall({ region: "us-central1" }, async (request) => {
+    const actor = await ensureAdmin(request);
+    const { uid, role } = request.data;
+
+    if (!uid || !['admin', 'user'].includes(role)) {
+        throw new Error("Valid UID and role ('admin' or 'user') are required.");
+    }
+
+    try {
+        const user = await auth.getUser(uid);
+        const oldRole = user.customClaims?.admin ? 'admin' : 'user';
+
+        if (oldRole === role) {
+            return { success: true, message: `User is already a(n) ${role}.` };
+        }
+
+        await auth.setCustomUserClaims(uid, { admin: role === 'admin' });
+
+        await logActivity(actor.uid, 'set_role', uid, { oldRole, newRole: role });
+
+        console.log(`Role for user ${uid} changed from ${oldRole} to ${role} by admin ${actor.uid}`);
+        return { success: true, message: `User role updated to ${role}.` };
+    } catch (error) {
+        console.error(`Error setting role for user ${uid}:`, error);
+        throw new Error("Failed to set user role.");
+    }
+});
+
+/**
+ * Saves a new schema for a business.
+ * Only callable by admins.
+ */
+export const saveSchema = onCall({ region: "us-central1" }, async (request) => {
+    const actor = await ensureAdmin(request);
+    const { schemaName, schemaFields } = request.data;
+
+    if (!schemaName || !schemaFields) {
+        throw new Error("Schema name and fields are required.");
+    }
+
+    try {
+        const businessId = 'global'; // Or determine from user claims
+        await db.collection(`businesses/${businessId}/schemas`).add({
+            name: schemaName,
+            fields: schemaFields,
+            createdBy: actor.uid,
+            createdAt: new Date().toISOString(),
+        });
+
+        await logActivity(actor.uid, 'save_schema', null, { schemaName, fieldCount: schemaFields.length });
+
+        console.log(`Schema '${schemaName}' saved by admin ${actor.uid}`);
+        return { success: true, message: "Schema saved successfully." };
+    } catch (error) {
+        console.error("Error saving schema:", error);
+        throw new Error("Failed to save schema.");
+    }
+});
+
+/**
+ * Gets a user's UID by their email address.
+ * Only callable by admins.
+ */
+export const getUserByEmail = onCall({ region: "us-central1" }, async (request) => {
+    await ensureAdmin(request);
+    const { email } = request.data;
+
+    if (!email) {
+        throw new Error("Email is required.");
+    }
+
+    try {
+        const userRecord = await auth.getUserByEmail(email);
+        return { success: true, uid: userRecord.uid };
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found') {
+            return { success: false, message: 'User not found.' };
+        }
+        console.error(`Error fetching user by email ${email}:`, error);
+        throw new Error("Failed to fetch user by email.");
+    }
+});

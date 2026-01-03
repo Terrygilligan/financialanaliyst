@@ -938,3 +938,174 @@ section h2 {
         grid-template-columns: 1fr;
     }
 }
+
+/* Notification System */
+#notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 25px;
+    border-radius: 6px;
+    background-color: #333;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s, bottom 0.3s;
+}
+
+#notification.show {
+    opacity: 1;
+    visibility: visible;
+    bottom: 30px;
+}
+
+#notification.success {
+    background-color: var(--secondary-color);
+}
+
+#notification.error {
+    background-color: var(--error-color);
+}
+
+#notification.info {
+    background-color: var(--primary-color);
+}
+
+/* Modal Enhancements */
+.modal-content {
+    max-width: 500px;
+}
+
+.modal-content label {
+    font-weight: 500;
+    margin-bottom: -10px;
+}
+
+.modal-content input {
+    width: 100%;
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+}
+
+/* User Management Roles & Status */
+.user-role {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.user-role.admin {
+    background-color: #e8f0fe;
+    color: var(--primary-dark);
+}
+
+.user-role.user {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.user-status.disabled {
+    color: var(--error-color);
+    font-style: italic;
+}
+
+tr.disabled-user td {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-danger {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c53929;
+}
+
+.btn-danger:disabled {
+    background-color: #f8d7da;
+    cursor: not-allowed;
+}
+
+
+/* Audit Log Timeline */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 20px;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 14px;
+    top: 5px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 3px solid var(--border-color);
+}
+
+.timeline-dot.timeline-red { border-color: var(--error-color); }
+.timeline-dot.timeline-blue { border-color: var(--primary-color); }
+.timeline-dot.timeline-green { border-color: var(--secondary-color); }
+.timeline-dot.timeline-grey { border-color: var(--text-secondary); }
+
+
+.timeline-content {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.timeline-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.timeline-content p {
+    margin: 0;
+    font-size: 14px;
+}
