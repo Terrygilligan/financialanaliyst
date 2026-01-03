@@ -138,16 +138,39 @@
 
             <!-- User Management -->
             <section class="admin-section">
-                <h2>User Management</h2>
+                <h2>Office Management</h2>
                 <div class="admin-controls">
-                    <input type="text" id="search-users" placeholder="Search by user ID..." class="admin-input">
-                    <button id="refresh-users" class="btn-primary">Refresh</button>
+                    <input type="text" id="search-users" placeholder="Search by email or UID..." class="admin-input">
+                    <button id="invite-admin-btn" class="btn-primary">Invite Admin</button>
+                    <button id="refresh-users" class="btn-secondary">Refresh</button>
                 </div>
                 <div id="users-container">
                     <div class="loading-state">Loading users...</div>
                 </div>
             </section>
+
+            <!-- Recent Activity -->
+            <section class="admin-section">
+                <h2>Recent Activity</h2>
+                <div id="audit-log-container">
+                    <div class="loading-state">Loading recent activity...</div>
+                </div>
+            </section>
         </main>
+    </div>
+
+    <!-- Invite Admin Modal -->
+    <div id="invite-admin-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Invite New Admin</h2>
+            <form id="invite-admin-form">
+                <p>Enter the email of an existing user to promote them to an Admin role.</p>
+                <label for="admin-email">User Email:</label>
+                <input type="email" id="admin-email" name="admin-email" required>
+                <button type="submit" class="btn-primary">Promote to Admin</button>
+            </form>
+        </div>
     </div>
 
     <script src="admin.js"></script>

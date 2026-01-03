@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Import Firebase modules
     const authModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js');
     const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const functionsModule = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js');
     
     const { signOut, onAuthStateChanged } = authModule;
     const { 
@@ -22,8 +23,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         orderBy,
         limit 
     } = firestoreModule;
+    const { getFunctions, httpsCallable } = functionsModule;
 
     const { auth, db } = window.firebase;
+    const functions = getFunctions();
 
     // DOM Elements
     const mainContent = document.getElementById('admin-content');
@@ -39,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const receiptsTableContainer = document.getElementById('receipts-table-container');
     const errorLogsContainer = document.getElementById('error-logs-container');
     const usersContainer = document.getElementById('users-container');
+    const auditLogContainer = document.getElementById('audit-log-container');
     const searchReceipts = document.getElementById('search-receipts');
     const filterStatus = document.getElementById('filter-status');
     const refreshReceipts = document.getElementById('refresh-receipts');
@@ -102,8 +106,69 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadStatistics(),
             loadAllReceipts(),
             loadErrorLogs(),
-            loadUsers()
+            loadUsers(),
+            loadAuditLogs()
         ]);
+    }
+
+    // --- Audit Log ---
+
+    async function loadAuditLogs() {
+        try {
+            auditLogContainer.innerHTML = '<div class="loading-state">Loading logs...</div>';
+            const businessId = 'global'; // Or from user claims
+            const logsRef = collection(db, `businesses/${businessId}/audit_logs`);
+            const q = query(logsRef, orderBy('timestamp', 'desc'), limit(20));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                auditLogContainer.innerHTML = '<div class="empty-state">No recent activity found.</div>';
+                return;
+            }
+
+            const logs = querySnapshot.docs.map(doc => formatLogEntry(doc.data()));
+            auditLogContainer.innerHTML = `<div class="timeline">${logs.join('')}</div>`;
+
+        } catch (error) {
+            console.error('Error loading audit logs:', error);
+            auditLogContainer.innerHTML = '<div class="error-state">Failed to load activity logs.</div>';
+        }
+    }
+
+    function formatLogEntry(log) {
+        const time = new Date(log.timestamp).toLocaleTimeString();
+        const actor = log.actorEmail || 'An admin';
+        const target = log.targetEmail || 'a user';
+        let message = '';
+        let color = '';
+
+        switch (log.action) {
+            case 'set_role':
+                message = `${actor} changed ${target}'s role from <strong>${log.details.oldRole}</strong> to <strong>${log.details.newRole}</strong>.`;
+                color = 'blue';
+                break;
+            case 'revoke_access':
+                message = `${actor} revoked access for ${target}.`;
+                color = 'red';
+                break;
+            case 'save_schema':
+                message = `${actor} saved a new schema: <strong>${log.details.schemaName}</strong>.`;
+                color = 'green';
+                break;
+            default:
+                message = `${actor} performed action: ${log.action}.`;
+                color = 'grey';
+        }
+
+        return `
+            <div class="timeline-item">
+                <div class="timeline-dot timeline-${color}"></div>
+                <div class="timeline-content">
+                    <span class="timeline-time">${time}</span>
+                    <p>${message}</p>
+                </div>
+            </div>
+        `;
     }
 
     // Load statistics
@@ -394,77 +459,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Load users (with statistics from /users collection)
+    // Load users using the 'listUsers' Cloud Function
     async function loadUsers() {
         try {
             usersContainer.innerHTML = '<div class="loading-state">Loading users...</div>';
-            
-            // Get users from /users collection (has statistics)
-            const usersRef = collection(db, 'users');
-            const usersSnap = await getDocs(usersRef);
-            
-            // Also get batch data for status
-            const batchesRef = collection(db, 'batches');
-            const batchesSnap = await getDocs(batchesRef);
-            
-            const userMap = new Map();
-            
-            // Add users from /users collection
-            usersSnap.forEach((docSnap) => {
-                const userId = docSnap.id;
-                const userData = docSnap.data();
-                userMap.set(userId, {
-                    userId,
-                    receiptCount: userData.totalReceipts || 0,
-                    totalAmount: userData.totalAmount || 0,
-                    lastActivity: userData.lastReceiptTimestamp || userData.lastUpdated || null,
-                    status: 'active'
-                });
-            });
-            
-            // Update with batch status
-            batchesSnap.forEach((docSnap) => {
-                const userId = docSnap.id;
-                const batchData = docSnap.data();
-                
-                if (!userMap.has(userId)) {
-                    userMap.set(userId, {
-                        userId,
-                        receiptCount: 0,
-                        totalAmount: 0,
-                        lastActivity: batchData.timestamp || null,
-                        status: batchData.status || 'unknown'
-                    });
-                }
-                
-                const user = userMap.get(userId);
-                if (batchData.status) {
-                    user.status = batchData.status;
-                }
-                if (batchData.timestamp) {
-                    const timestamp = new Date(batchData.timestamp);
-                    if (!user.lastActivity || timestamp > new Date(user.lastActivity)) {
-                        user.lastActivity = batchData.timestamp;
-                    }
-                }
-            });
-
-            allUsersData = Array.from(userMap.values());
-            displayUsers(allUsersData);
+            const listUsers = httpsCallable(functions, 'listUsers');
+            const result = await listUsers();
+            if (result.data.success) {
+                allUsersData = result.data.users;
+                displayUsers(allUsersData);
+            } else {
+                throw new Error('Failed to list users.');
+            }
         } catch (error) {
             console.error('Error loading users:', error);
-            usersContainer.innerHTML = '<div class="error-state">Error loading users.</div>';
+            usersContainer.innerHTML = `<div class="error-state">Error loading users: ${error.message}</div>`;
         }
     }
     
-    // Display users with search filter
+    // Display users with updated actions
     function displayUsers(users) {
         const searchTerm = document.getElementById('search-users')?.value.toLowerCase() || '';
         
         let filtered = users;
         if (searchTerm) {
             filtered = users.filter(user => 
-                user.userId.toLowerCase().includes(searchTerm)
+                (user.email && user.email.toLowerCase().includes(searchTerm)) ||
+                (user.displayName && user.displayName.toLowerCase().includes(searchTerm)) ||
+                user.uid.toLowerCase().includes(searchTerm)
             );
         }
         
@@ -473,38 +495,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // Sort by last activity (most recent first)
-        filtered.sort((a, b) => {
-            if (!a.lastActivity) return 1;
-            if (!b.lastActivity) return -1;
-            return new Date(b.lastActivity) - new Date(a.lastActivity);
-        });
+        // Sort by creation time (newest first)
+        filtered.sort((a, b) => new Date(b.creationTime) - new Date(a.creationTime));
 
         usersContainer.innerHTML = `
             <div class="admin-table">
                 <table>
                     <thead>
                         <tr>
-                            <th>User ID</th>
-                            <th>Receipts</th>
-                            <th>Total Amount</th>
-                            <th>Last Activity</th>
+                            <th>Email</th>
+                            <th>Role</th>
                             <th>Status</th>
+                            <th>Created</th>
+                            <th>Last Signed In</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${filtered.map(user => `
-                            <tr>
-                                <td class="user-id-cell">${user.userId.substring(0, 12)}...</td>
-                                <td>${user.receiptCount}</td>
-                                <td>$${(user.totalAmount || 0).toFixed(2)}</td>
-                                <td>${user.lastActivity ? new Date(user.lastActivity).toLocaleString() : 'N/A'}</td>
-                                <td><span class="file-status ${user.status}">${user.status}</span></td>
-                                <td>
-                                    <button class="btn-small btn-secondary" onclick="disableUser('${user.userId}')" title="Disable user account">
-                                        Disable
-                                    </button>
+                            <tr class="${user.disabled ? 'disabled-user' : ''}">
+                                <td>${user.email || 'N/A'}</td>
+                                <td><span class="user-role ${user.role}">${user.role}</span></td>
+                                <td><span class="user-status ${user.disabled ? 'disabled' : 'active'}">${user.disabled ? 'Disabled' : 'Active'}</span></td>
+                                <td>${new Date(user.creationTime).toLocaleDateString()}</td>
+                                <td>${user.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString() : 'N/A'}</td>
+                                <td class="actions-cell">
+                                    ${user.role !== 'admin' ? `<button class="btn-small" onclick="window.handleRoleChange('${user.uid}', 'admin')">Promote to Admin</button>` : ''}
+                                    ${user.role === 'admin' ? `<button class="btn-small btn-secondary" onclick="window.handleRoleChange('${user.uid}', 'user')">Demote to User</button>` : ''}
+                                    <button class="btn-small btn-danger" onclick="window.handleRevokeAccess('${user.uid}')" ${user.disabled ? 'disabled' : ''}>Revoke Access</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -513,17 +531,111 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
     }
-    
-    // Disable user account (placeholder - requires Cloud Function)
-    window.disableUser = async function(userId) {
-        if (!confirm(`Are you sure you want to disable user ${userId.substring(0, 8)}...?`)) {
-            return;
-        }
+
+    // --- Action Handlers ---
+
+    window.handleRoleChange = async function(uid, newRole) {
+        if (!confirm(`Are you sure you want to change this user to ${newRole}?`)) return;
         
-        // TODO: Implement Cloud Function to disable user
-        alert('User disable functionality requires a Cloud Function. This is a placeholder.');
-        console.log('Would disable user:', userId);
+        showLoading(`Updating role to ${newRole}...`);
+        try {
+            const setRole = httpsCallable(functions, 'setRole');
+            await setRole({ uid, role: newRole });
+
+            // Force refresh of the current admin's token to get updated claims if needed
+            await auth.currentUser.getIdToken(true);
+            showSuccess('Role updated successfully. Refreshing user list...');
+
+            await loadUsers(); // Refresh the list
+        } catch (error) {
+            console.error('Error setting role:', error);
+            showError(`Failed to set role: ${error.message}`);
+        }
+    };
+
+    window.handleRevokeAccess = async function(uid) {
+        if (!confirm('Are you sure you want to revoke access for this user? This action cannot be undone.')) return;
+
+        showLoading('Revoking access...');
+        try {
+            const revokeAccess = httpsCallable(functions, 'revokeAccess');
+            await revokeAccess({ uid });
+
+            await auth.currentUser.getIdToken(true);
+            showSuccess('User access revoked. Refreshing user list...');
+
+            await loadUsers(); // Refresh the list
+        } catch (error) {
+            console.error('Error revoking access:', error);
+            showError(`Failed to revoke access: ${error.message}`);
+        }
+    };
+
+    // --- Invite Admin Modal ---
+    const inviteAdminBtn = document.getElementById('invite-admin-btn');
+    const inviteAdminModal = document.getElementById('invite-admin-modal');
+    const closeBtn = document.querySelector('.close-button');
+    const inviteAdminForm = document.getElementById('invite-admin-form');
+
+    inviteAdminBtn?.addEventListener('click', () => {
+        inviteAdminModal.style.display = 'block';
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        inviteAdminModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == inviteAdminModal) {
+            inviteAdminModal.style.display = 'none';
+        }
+    });
+
+    inviteAdminForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('admin-email').value;
+        showLoading('Processing invitation...');
+
+        try {
+            // 1. Get user UID from email
+            const getUserByEmail = httpsCallable(functions, 'getUserByEmail');
+            const userResult = await getUserByEmail({ email });
+
+            if (!userResult.data.success) {
+                throw new Error(userResult.data.message || 'User not found.');
+            }
+
+            const uid = userResult.data.uid;
+
+            // 2. Set role to admin
+            const setRole = httpsCallable(functions, 'setRole');
+            await setRole({ uid, role: 'admin' });
+
+            showSuccess(`User ${email} is now an admin. Refreshing user list...`);
+            inviteAdminModal.style.display = 'none';
+            await loadUsers();
+        } catch (error) {
+            console.error('Error inviting admin:', error);
+            showError(`Failed to invite admin: ${error.message}`);
+        }
+    });
+
+    // --- Simple Notification System ---
+    const notification = document.createElement('div');
+    notification.id = 'notification';
+    document.body.appendChild(notification);
+
+    function showNotification(message, type = 'info') {
+        notification.textContent = message;
+        notification.className = `notification show ${type}`;
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 5000);
     }
+
+    function showLoading(message) { showNotification(message, 'info'); }
+    function showSuccess(message) { showNotification(message, 'success'); }
+    function showError(message) { showNotification(message, 'error'); }
 
     // Event listeners
     searchReceipts?.addEventListener('input', () => {
@@ -564,7 +676,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await signOut(auth);
         } catch (error) {
             console.error('Logout error:', error);
-            alert('Error signing out: ' + error.message);
+            showError(`Error signing out: ${error.message}`);
         }
     });
 });
