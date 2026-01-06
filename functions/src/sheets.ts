@@ -1,25 +1,33 @@
 // functions/src/sheets.ts
 
 import { google } from "googleapis";
+import { defineSecret } from "firebase-functions/params";
 import { ReceiptData } from "./schema";
 
 /**
+ * Define the secret parameter for the Service Account Key.
+ * This ensures the key is securely stored in Google Cloud Secret Manager
+ * and only accessible to the function at runtime.
+ */
+export const googleSheetsKey = defineSecret("GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY");
+
+/**
  * Initialize Google Sheets API client using Service Account credentials.
- * The Service Account JSON key should be provided via environment variable.
+ * The Service Account JSON key is retrieved from the Secret Manager param.
  */
 function getSheetsClient() {
-    const serviceAccountKey = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY;
+    const serviceAccountKey = googleSheetsKey.value();
     
     if (!serviceAccountKey) {
         throw new Error(
-            "GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY environment variable is not set. " +
-            "Please provide the Service Account JSON key as a string."
+            "GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY secret is not available. " +
+            "Ensure the secret is set in Firebase/Google Cloud and the function has access."
         );
     }
 
     let credentials;
     try {
-        // Parse the JSON key (could be a JSON string or already parsed)
+        // Parse the JSON key (could be a JSON string or already parsed object)
         credentials = typeof serviceAccountKey === 'string' 
             ? JSON.parse(serviceAccountKey) 
             : serviceAccountKey;
@@ -68,7 +76,6 @@ export async function appendReceiptToSheet(
 
     try {
         // Get the actual sheet name from the spreadsheet
-        // This handles different languages (e.g., "Blad1" in Dutch, "Sheet1" in English)
         const spreadsheet = await sheets.spreadsheets.get({
             spreadsheetId: sheetId,
         });
@@ -78,10 +85,9 @@ export async function appendReceiptToSheet(
         
         console.log(`Using sheet name: "${sheetName}"`);
         
-        // Append the row to the Sheet
-        // Using 'USER_ENTERED' valueInputOption to preserve number formatting
         const range = `${sheetName}!A:E`;
         console.log(`Appending to range: ${range}`);
+
         const response = await sheets.spreadsheets.values.append({
             spreadsheetId: sheetId,
             range: range,
@@ -97,8 +103,6 @@ export async function appendReceiptToSheet(
         return;
     } catch (error) {
         console.error("Error appending to Google Sheet:", error);
-        
-        // Provide more detailed error information
         if (error instanceof Error) {
             throw new Error(`Failed to append to Google Sheet: ${error.message}`);
         }
@@ -108,10 +112,6 @@ export async function appendReceiptToSheet(
 
 /**
  * Verifies that the Sheet exists and has the correct headers.
- * This is useful for initial setup validation.
- * 
- * @param sheetId - The Google Sheet ID
- * @returns Promise<boolean> - True if headers are correct
  */
 export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
     const sheets = getSheetsClient();
@@ -120,12 +120,11 @@ export async function validateSheetHeaders(sheetId: string): Promise<boolean> {
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            range: 'Sheet1!A1:E1', // Get first row (headers)
+            range: 'Sheet1!A1:E1',
         });
 
         const headers = response.data.values?.[0] || [];
         
-        // Check if headers match (case-insensitive)
         const headersMatch = expectedHeaders.every((expected, index) => {
             const actual = headers[index]?.toString().trim() || '';
             return actual.toLowerCase() === expected.toLowerCase();

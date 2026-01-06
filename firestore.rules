@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+
+    // Checks if the user is authenticated and their token has the correct businessId claim
+    function isMemberOfBusiness(businessId) {
+      return request.auth != null &&
+             request.auth.token.businessId == businessId;
+    }
+
+    // Checks if the user is authenticated and matches the userId
+    function isUser(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Checks if the user has the 'admin' role in their custom claims
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // --- Rules ---
+
+    // 1. Business Data Isolation (Strict Multi-Tenancy)
+    // All business-specific data must be under /businesses/{businessId}
+    match /businesses/{businessId} {
+      // Default: Deny all unless explicitly allowed
+
+      // Allow read/write access to the business document and subcollections
+      // ONLY if the user's custom claim matches the path's businessId
+      match /{document=**} {
+        allow read: if isMemberOfBusiness(businessId);
+        // stricter write rules can be applied per collection below,
+        // but this ensures basic tenant isolation for writes too.
+        allow write: if isMemberOfBusiness(businessId);
+      }
+
+      // Specific overrides for sensitive collections (optional example)
+      match /audit_logs/{logId} {
+        allow read: if isMemberOfBusiness(businessId) && isAdmin();
+        allow write: if false; // Logs are immutable, written by backend only
+      }
+    }
+
+    // 2. User Data (Profile & Personal Batches)
+    // Users can access their own data.
+    // Ideally, we should also check if they are still part of a valid business,
+    // but enforcing 'isUser' prevents cross-user access at minimum.
+
+    match /users/{userId} {
+      allow read, write: if isUser(userId);
+    }
+
+    match /batches/{userId} {
+      allow read, write: if isUser(userId);
+    }
+
+    // 3. Admins/System Collections
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email == email;
+    }
+  }
+}
