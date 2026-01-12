@@ -1,7 +1,5 @@
 // functions/src/index.ts
 
-// Load environment variables from .env file (for local development)
-// In production, these should be set via Secret Manager or runtime config
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -12,7 +10,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
-// Initialize the Firebase Admin SDK once for all functions
+// Initialize the Firebase Admin SDK once
 initializeApp();
 const storage = getStorage();
 const db = getFirestore();
@@ -21,7 +19,7 @@ const auth = getAuth();
 // --- Import the main processor logic ---
 import { processReceiptBatch } from "./processor"; 
 import { ReceiptData } from "./schema";
-import { appendReceiptToSheet } from "./sheets"; 
+import { appendReceiptToSheet, googleSheetsKey } from "./sheets";
 
 /**
  * Cloud Function Trigger: Activates when a new file is uploaded to Firebase Storage.
@@ -30,9 +28,11 @@ import { appendReceiptToSheet } from "./sheets";
 export const analyzeReceiptUpload = onObjectFinalized(
     {
         // IMPORTANT: Only trigger on files uploaded to the 'receipts/' prefix
-        region: "us-central1", // Use a region near your Firestore/Gemini location
-        maxInstances: 5, // Limit concurrent runs for cost control
-        memory: "1GiB", // Increase memory for image processing and AI API calls
+        region: "us-central1",
+        maxInstances: 5,
+        memory: "1GiB",
+        // Make the secret available to this function
+        secrets: [googleSheetsKey],
     },
     async (event) => {
     
@@ -44,50 +44,88 @@ export const analyzeReceiptUpload = onObjectFinalized(
     }
 
     const filePath = file.name; // e.g., receipts/user123/receipt-1678886400.jpg
-    const bucketName = file.bucket; // Get bucket from event
+    const bucketName = file.bucket;
+    const eventId = event.id;
+
+    console.log(`File uploaded to bucket: ${bucketName}, path: ${filePath}, eventId: ${eventId}`);
     
-    console.log(`File uploaded to bucket: ${bucketName}, path: ${filePath}`);
-    
-    // Ignore files not in the expected path or files created during processing (e.g., resized versions)
+    // Ignore files not in the expected path
     if (!filePath.startsWith('receipts/')) {
         console.log(`Ignoring file outside the target path: ${filePath}`);
         return;
     }
 
+    // 2. Pre-flight Memory Protection (OOM Prevention)
+    // Check file size from metadata before downloading.
+    // Limit: 10MB (Gemini has limits, and we want to avoid RAM exhaustion)
+    const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+    const fileSize = file.size ? parseInt(file.size.toString(), 10) : 0;
+
+    if (fileSize > MAX_FILE_SIZE_BYTES) {
+        console.error(`File ${filePath} is too large (${fileSize} bytes). Max allowed: ${MAX_FILE_SIZE_BYTES} bytes.`);
+        // Mark as error in DB without processing
+        const pathParts = filePath.split('/');
+        const userId = pathParts[1];
+        if (userId) {
+            await db.collection('batches').doc(userId).set({
+                status: 'error',
+                errorFile: filePath,
+                errorMessage: `File too large (${(fileSize / 1024 / 1024).toFixed(2)}MB). Max 10MB.`,
+                timestamp: new Date().toISOString()
+            }, { merge: true });
+        }
+        return;
+    }
+
+    // 3. Idempotency Check
+    // Ensure we don't process the same event twice (double-billing/counting risk)
+    const idempotencyRef = db.collection('processed_events').doc(eventId);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(idempotencyRef);
+            if (doc.exists) {
+                throw new Error("ALREADY_PROCESSED");
+            }
+            transaction.set(idempotencyRef, {
+                filePath,
+                timestamp: new Date().toISOString()
+            });
+        });
+    } catch (error) {
+        if ((error as Error).message === "ALREADY_PROCESSED") {
+            console.log(`Event ${eventId} already processed. Skipping.`);
+            return;
+        }
+        // If transaction fails for other reasons, we might want to retry or log
+        console.error("Idempotency check failed:", error);
+        throw error; // Retry
+    }
+
     console.log(`Starting analysis for file: ${filePath}`);
 
     try {
-        // 2. Download the File Buffer from Storage
+        // 4. Download the File Buffer from Storage
         const bucket = storage.bucket(bucketName);
         const [fileBuffer] = await bucket.file(filePath).download();
         
-        // 3. Extract necessary metadata (userId, filename)
-        // Assume path format is: receipts/{userId}/{filename}
+        // 5. Extract necessary metadata (userId, filename)
         const pathParts = filePath.split('/');
         const userId = pathParts[1];
         const fileName = pathParts.pop();
 
         if (!userId) {
             console.error(`Could not determine userId from path: ${filePath}`);
-            // TODO: Log status to Firestore as 'error'
             return;
         }
 
-        // 4. Call the core processor function (defined in processor.ts)
+        // 6. Call the core processor function
         const receiptData: ReceiptData = await processReceiptBatch(fileBuffer, filePath);
 
-        // 5. Append data to Google Sheets (Steps 8-9)
+        // 7. Append data to Google Sheets
         const sheetId = process.env.GOOGLE_SHEET_ID;
         let sheetsWriteSuccess = false;
         let googleSheetLink = null;
-        
-        // Debug logging for environment variables
-        console.log("Environment check:", {
-            hasSheetId: !!sheetId,
-            sheetIdLength: sheetId?.length || 0,
-            hasServiceAccountKey: !!process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY,
-            hasGeminiKey: !!process.env.GEMINI_API_KEY
-        });
         
         if (sheetId) {
             try {
@@ -96,37 +134,30 @@ export const analyzeReceiptUpload = onObjectFinalized(
                 sheetsWriteSuccess = true;
                 googleSheetLink = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
             } catch (sheetsError) {
-                // Log Sheets error but don't fail the entire operation
-                // The receipt was processed successfully, Sheets write is secondary
                 console.error(`Failed to write to Google Sheet: ${(sheetsError as Error).message}`);
-                console.error("Full error:", sheetsError);
+                // Don't fail the batch, just log
             }
-        } else {
-            console.error("❌ GOOGLE_SHEET_ID not set in environment variables!");
-            console.error("This means environment variables are not configured for the deployed function.");
-            console.error("For Firebase Functions 2nd Gen, you need to set environment variables via:");
-            console.error("1. Google Cloud Console → Cloud Functions → Environment Variables");
-            console.error("2. OR Firebase Functions Secrets");
         }
 
-        // 6. Update Firestore Status (Step 10)
+        // 8. Update Firestore Status
         await db.collection('batches').doc(userId).set({
             status: 'complete',
             lastFileProcessed: fileName,
-            receiptData: receiptData, // Store the extracted data for reference
+            receiptData: receiptData,
             sheetsWriteSuccess: sheetsWriteSuccess,
             googleSheetLink: googleSheetLink,
             timestamp: new Date().toISOString()
         }, { merge: true });
 
-        // 7. Update user statistics in /users collection
+        // 9. Update user statistics in /users collection (Safe Increment)
+        // We use FieldValue.increment to be atomic, though strict accounting might prefer transactions.
+        // Given we have the idempotency wrapper above, simple increment is safer now.
         const userRef = db.collection('users').doc(userId);
-        const userDoc = await userRef.get();
-        const currentStats = userDoc.exists ? (userDoc.data() || { totalReceipts: 0, totalAmount: 0 }) : { totalReceipts: 0, totalAmount: 0 };
+        const { FieldValue } = await import('firebase-admin/firestore');
         
         await userRef.set({
-            totalReceipts: (currentStats.totalReceipts || 0) + 1,
-            totalAmount: (currentStats.totalAmount || 0) + (receiptData.totalAmount || 0),
+            totalReceipts: FieldValue.increment(1),
+            totalAmount: FieldValue.increment(receiptData.totalAmount || 0),
             lastUpdated: new Date().toISOString(),
             lastReceiptProcessed: fileName,
             lastReceiptTimestamp: new Date().toISOString()
@@ -137,7 +168,6 @@ export const analyzeReceiptUpload = onObjectFinalized(
     } catch (error) {
         console.error(`FATAL ERROR processing file ${filePath}:`, error);
         
-        // Update Firestore status to error (Step 10)
         const pathParts = filePath.split('/');
         const userId = pathParts[1] || 'unknown';
         await db.collection('batches').doc(userId).set({
@@ -151,37 +181,22 @@ export const analyzeReceiptUpload = onObjectFinalized(
 
 /**
  * Cloud Function: Set Admin Custom Claim
- * 
- * This function allows an existing admin (or super-admin) to grant admin privileges
- * to a user by setting a custom claim on their auth token.
- * 
- * Usage (via Firebase Console or HTTP call):
- * - Call this function with the target user's UID
- * - Only callable by authenticated users (you can add additional checks)
- * 
- * Security: In production, you should add additional checks to ensure only
- * authorized users can call this function (e.g., check if caller is already admin).
  */
 export const setAdminClaim = onCall(
     {
         region: "us-central1",
     },
     async (request) => {
-        // Get the target user UID from the request
         const targetUserId = request.data.uid;
-        
         if (!targetUserId) {
             throw new Error("User UID is required");
         }
 
-        // Optional: Verify the caller is already an admin
-        // For initial setup, you might want to skip this check
         const callerUid = request.auth?.uid;
         if (callerUid) {
             try {
                 const caller = await auth.getUser(callerUid);
                 if (!caller.customClaims?.admin) {
-                    // Optional: Allow if no admins exist yet (bootstrap scenario)
                     const allUsers = await auth.listUsers();
                     const hasAdmin = allUsers.users.some(u => u.customClaims?.admin);
                     if (hasAdmin) {
@@ -189,25 +204,19 @@ export const setAdminClaim = onCall(
                     }
                 }
             } catch (error) {
-                // Re-throw authorization errors instead of silently suppressing them
-                if (error instanceof Error && error.message.includes("Only existing admins")) {
-                    throw error;
+                // Fixed: Propagate the error properly
+                if ((error as Error).message.includes("Only existing admins")) {
+                    throw new Error("Permission Denied: Only existing admins can grant admin privileges.");
                 }
                 console.error("Error checking caller admin status:", error);
-                // For initial setup, allow the call only for non-authorization errors
+                throw new Error("Internal Error verifying admin status.");
             }
         }
 
         try {
-            // Set the custom claim
             await auth.setCustomUserClaims(targetUserId, { admin: true });
-            
             console.log(`Admin claim set for user: ${targetUserId}`);
-            
-            return {
-                success: true,
-                message: `Admin privileges granted to user ${targetUserId}`,
-            };
+            return { success: true, message: `Admin privileges granted to user ${targetUserId}` };
         } catch (error) {
             console.error(`Error setting admin claim for ${targetUserId}:`, error);
             throw new Error(`Failed to set admin claim: ${(error as Error).message}`);
@@ -217,8 +226,6 @@ export const setAdminClaim = onCall(
 
 /**
  * Cloud Function: Remove Admin Custom Claim
- * 
- * Removes admin privileges from a user.
  */
 export const removeAdminClaim = onCall(
     {
@@ -226,16 +233,10 @@ export const removeAdminClaim = onCall(
     },
     async (request) => {
         const targetUserId = request.data.uid;
-        
-        if (!targetUserId) {
-            throw new Error("User UID is required");
-        }
+        if (!targetUserId) throw new Error("User UID is required");
 
-        // Verify caller is authenticated and is admin
         const callerUid = request.auth?.uid;
-        if (!callerUid) {
-            throw new Error("Unauthorized: Authentication required");
-        }
+        if (!callerUid) throw new Error("Unauthorized: Authentication required");
         
         try {
             const caller = await auth.getUser(callerUid);
@@ -248,18 +249,10 @@ export const removeAdminClaim = onCall(
 
         try {
             await auth.setCustomUserClaims(targetUserId, { admin: false });
-            console.log(`Admin claim removed for user: ${targetUserId}`);
-            
-            return {
-                success: true,
-                message: `Admin privileges removed from user ${targetUserId}`,
-            };
+            return { success: true, message: `Admin privileges removed from user ${targetUserId}` };
         } catch (error) {
             console.error(`Error removing admin claim for ${targetUserId}:`, error);
             throw new Error(`Failed to remove admin claim: ${(error as Error).message}`);
         }
     }
 );
-
-// Reminder: Add your .env configuration for GOOGLE_SHEETS_SERVICE_ACCOUNT_KEY
-// and GOOGLE_SHEET_ID before deploying.
